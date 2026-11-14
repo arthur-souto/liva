@@ -17,7 +17,22 @@ spring:
 server:
   port: 8081
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+
 confirmasus:
+  seguranca:
+    api-key: ${API_KEY:}
+  fuso: ${FUSO_HORARIO:America/Sao_Paulo}
+  disparo-diario:
+    habilitado: ${DISPARO_DIARIO_HABILITADO:true}
+    cron: ${DISPARO_DIARIO_CRON:0 0 8 * * *}
   whatsapp:
     provedor: ${WHATSAPP_PROVEDOR:console}
   demo:

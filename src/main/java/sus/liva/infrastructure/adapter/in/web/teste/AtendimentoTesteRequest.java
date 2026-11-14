@@ -25,8 +25,6 @@ public record AtendimentoTesteRequest(
         String endereco,
         @Schema(description = "Orientações de preparo (aparecem no lembrete da véspera)", example = "Jejum de 8 horas")
         String preparo,
-        @Schema(description = "Lembrete enviado logo após criar o atendimento; envie disparar=false para não enviar nada", defaultValue = "PEDIDO_CONFIRMACAO")
-        TipoLembrete lembrete,
-        @Schema(description = "Se deve disparar o lembrete imediatamente", defaultValue = "true")
-        Boolean disparar
+        @Schema(description = "Lembrete extra enviado na hora, mesmo que já tenha sido enviado (opcional)")
+        TipoLembrete lembrete
 ) {}

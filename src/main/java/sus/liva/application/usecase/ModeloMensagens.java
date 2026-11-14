@@ -29,7 +29,7 @@ public class ModeloMensagens {
                 1 - Sim, vou
                 2 - Não vou conseguir
                 3 - Quero outro horário
-                Pode responder com o número, por escrito ou com um áudio.""".formatted(
+                Responda com o número ou por escrito.""".formatted(
                     p.nomeCompleto(), a.getUnidade(), data, hora);
             case LEMBRETE_VESPERA -> {
                 String t = "Lembrete: amanhã, %s, às %s, você tem atendimento na %s.\nEndereço: %s"
@@ -57,6 +57,16 @@ public class ModeloMensagens {
                 A equipe da %s vai entrar em contato para remarcar seu atendimento.""".formatted(
                     p.nomeCompleto(), a.getUnidade());
         };
+    }
+
+    public String naoEntendi(Paciente p, Agendamento a) {
+        return """
+            Desculpe, %s, não entendi sua resposta sobre o atendimento de %s, às %s, na %s.
+            Responda apenas com o número:
+            1 - Sim, vou
+            2 - Não vou conseguir
+            3 - Quero outro horário""".formatted(
+                p.nomeCompleto(), a.getDataHora().format(DATA), a.getDataHora().format(HORA), a.getUnidade());
     }
 
     public String paraCuidador(Paciente p, String texto) {

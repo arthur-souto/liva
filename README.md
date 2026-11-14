@@ -18,7 +18,8 @@ O envio e o recebimento de mensagens usam a [Evolution API](https://doc.evolutio
 8. [Regras de negócio](#regras-de-negócio)
 9. [Testes automatizados](#testes-automatizados)
 10. [Solução de problemas](#solução-de-problemas)
-11. [Limitações conhecidas e próximos passos](#limitações-conhecidas-e-próximos-passos)
+11. [Roteiro da apresentação](#roteiro-da-apresentação)
+12. [Limitações conhecidas e próximos passos](#limitações-conhecidas-e-próximos-passos)
 
 ---
 
@@ -33,8 +34,8 @@ O envio e o recebimento de mensagens usam a [Evolution API](https://doc.evolutio
   │  POST /message/sendText ──────►│ ─────────────────────────────► "Obrigado! Presença confirmada"
 ```
 
-1. Um agendamento é criado com status `AGENDADO`.
-2. O lembrete `PEDIDO_CONFIRMACAO` é disparado (manualmente ou pela rotina do dia). O agendamento passa a `AGUARDANDO_RESPOSTA`.
+1. Um agendamento é criado (`POST /api/agendamentos`) com status `AGENDADO`. O paciente é reaproveitado se já existir, e recebe na hora a mensagem `CONFIRMACAO_AGENDAMENTO`.
+2. O lembrete `PEDIDO_CONFIRMACAO` é disparado pela rotina diária (ou na hora, se o atendimento já estiver dentro do prazo). O agendamento passa a `AGUARDANDO_RESPOSTA`.
 3. O paciente responde no WhatsApp. A Evolution chama o webhook da Liva.
 4. A Liva identifica o agendamento pelo telefone, aplica a resposta (`CONFIRMADO`, `CANCELADO` ou `REAGENDADO`) e envia uma mensagem de retorno.
 5. O status pode ser consultado em `GET /api/agendamentos/{id}`.
@@ -112,7 +113,7 @@ Regras adotadas:
 Convenções do projeto:
 
 - Casos de uso são interfaces em `port/in` implementadas por classes `*UseCaseImpl` em `application/usecase`, registradas como beans em `UseCaseConfig` (sem anotações do Spring na aplicação).
-- Validação de entrada acontece no caso de uso (lança `IllegalArgumentException`), e o `GlobalExceptionHandler` converte em HTTP 400 `{"erro": "..."}`.
+- Validação de entrada acontece no caso de uso (lança `IllegalArgumentException`), e o `GlobalExceptionHandler` converte no formato padrão de erro (ver [Erros](#erros)).
 - Controllers usam DTOs próprios (`AgendamentoResponse`, `EnviarMensagemRequest`...) em vez de expor entidades do domínio.
 - Sem Lombok e sem comentários no código; a documentação fica neste README e no Swagger.
 
@@ -132,6 +133,7 @@ Toda a configuração vem do arquivo `.env` na raiz do projeto. Ele é lido **ta
 
 | Variável | Usada por | Descrição |
 |---|---|---|
+| `API_KEY` | Liva | Chave exigida no header `X-API-Key` em todas as rotas `/api/**` (exceto o webhook). **Obrigatória**: sem ela a Liva não sobe. Gere com `openssl rand -hex 32` |
 | `WHATSAPP_PROVEDOR` | Liva | `evolution` envia de verdade; `console` só escreve a mensagem no log (padrão) |
 | `EVOLUTION_URL` | Liva | URL da Evolution. Padrão `http://localhost:8080` |
 | `EVOLUTION_API_KEY` | Liva e Evolution | Chave de autenticação da Evolution (gere com `openssl rand -hex 32`) |
@@ -144,6 +146,9 @@ Toda a configuração vem do arquivo `.env` na raiz do projeto. Ele é lido **ta
 | `WEBHOOK_URL` | Configuração do webhook | URL que a Evolution chama: `http://host.docker.internal:8081/api/webhooks/evolution` |
 | `WEBHOOK_ACEITAR_MENSAGENS_PROPRIAS` | Liva | `true` processa mensagens enviadas pelo próprio número conectado (necessário para testar respondendo a si mesmo). **Use `false` em produção** |
 | `ATENDIMENTO_TESTE_HABILITADO` | Liva | `false` desliga os endpoints `/api/teste/**`. Padrão `true` |
+| `FUSO_HORARIO` | Liva | Fuso usado para saber qual é "hoje" e para o horário do agendador. Padrão `America/Sao_Paulo` |
+| `DISPARO_DIARIO_HABILITADO` | Liva | `false` desliga o disparo automático. Padrão `true` |
+| `DISPARO_DIARIO_CRON` | Liva | Quando a rotina diária roda (cron do Spring, com segundos). Padrão `0 0 8 * * *` (todo dia às 08:00). `-` desliga |
 
 Portas:
 
@@ -211,7 +216,13 @@ O `docker-compose.yml` já mapeia `host.docker.internal` para o host, então o c
 ```
 
 - API: http://localhost:8081
-- Swagger: http://localhost:8081/swagger-ui.html
+- Swagger: http://localhost:8081/swagger-ui.html (clique em **Authorize** e cole a `API_KEY` do `.env`)
+
+Todas as chamadas a `/api/**` precisam do header `X-API-Key`. Para os exemplos abaixo, carregue a chave no terminal:
+
+```bash
+export API_KEY=$(grep '^API_KEY=' .env | cut -d= -f2)
+```
 
 Ao subir, o Flyway aplica as migrações pendentes. Na primeira vez, a Liva também cria um agendamento de demonstração (`3f2b8c1e-7a4d-4c9b-9e21-5d6f0a8b1c02`, paciente Maria da Silva) com o telefone de `confirmasus.demo.telefone` no `application.yaml`; nas próximas, ele é mantido como está. Para testes, prefira criar atendimentos novos pelo endpoint de teste.
 
@@ -221,24 +232,38 @@ Ao subir, o Flyway aplica as migrações pendentes. Na primeira vez, a Liva tamb
 
 O jeito mais simples é pelo Swagger, na seção **Teste de atendimento**.
 
+### Agendamento real
+
+```bash
+curl -X POST localhost:8081/api/agendamentos -H "X-API-Key: $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"nomePaciente": "Maria da Silva", "cpf": "52998224725", "telefone": "51993953661",
+       "dataHora": "2026-11-20T09:30:00", "tipo": "CONSULTA", "unidade": "UBS Centro",
+       "endereco": "Rua das Flores, 123 - Centro", "preparo": "Jejum de 8 horas"}'
+```
+
+Obrigatórios: `nomePaciente`, `telefone`, `dataHora` (no futuro), `tipo`, `unidade` e `endereco`. Opcionais: `cpf`, `nomeCuidador` + `telefoneCuidador`, `preparo`.
+
+A resposta (`201`, com `Location`) traz `pacienteId`, `pacienteNovo`, o `agendamento` e o resultado de cada envio em `confirmacao` e `pedidoConfirmacao` (este último só quando o atendimento já está dentro do prazo do pedido). Faça o mesmo pedido de novo com outra data e veja `pacienteNovo: false`.
+
 ### Teste completo pelo WhatsApp
 
 1. **Crie o atendimento** para o número que vai receber a mensagem:
 
    ```bash
-   curl -X POST localhost:8081/api/teste/atendimentos \
+   curl -X POST localhost:8081/api/teste/atendimentos -H "X-API-Key: $API_KEY" \
      -H "Content-Type: application/json" \
      -d '{"telefone": "51993953661", "nomePaciente": "Paciente Teste", "preparo": "Jejum de 8 horas"}'
    ```
 
-   Só `telefone` é obrigatório. Os demais campos têm padrão (data: daqui a 2 dias às 09:30; unidade: UBS Centro; lembrete: `PEDIDO_CONFIRMACAO`). A resposta traz o `agendamento.id`, o resultado do disparo e o `proximoPasso`.
+   Só `telefone` é obrigatório. Os demais campos têm padrão (data: daqui a 2 dias às 09:30; unidade: UBS Centro). Como a data está dentro do prazo, chegam duas mensagens: a confirmação do agendamento e o pedido "1, 2 ou 3". A resposta traz o `agendamento.id`, o resultado de cada envio e o `proximoPasso`. Usando o mesmo telefone e nome, o paciente de teste é reaproveitado.
 
 2. **Responda no WhatsApp** com `1`, `2` ou `3`. Você recebe a mensagem de retorno.
 
 3. **Consulte o status**:
 
    ```bash
-   curl localhost:8081/api/agendamentos/<agendamento.id>
+   curl localhost:8081/api/agendamentos/<agendamento.id> -H "X-API-Key: $API_KEY"
    ```
 
 ### Variações úteis
@@ -247,15 +272,14 @@ O jeito mais simples é pelo Swagger, na seção **Teste de atendimento**.
 |---|---|
 | Paciente com cuidador (os dois recebem o lembrete) | `{"telefone": "...", "nomeCuidador": "João", "telefoneCuidador": "..."}` |
 | Lembrete de véspera com preparo | `{"telefone": "...", "preparo": "Jejum de 8 horas", "lembrete": "LEMBRETE_VESPERA"}` |
-| Mensagem de agendamento realizado | `{"telefone": "...", "lembrete": "CONFIRMACAO_AGENDAMENTO"}` |
-| Só criar, sem enviar nada | `{"telefone": "...", "disparar": false}` |
+| Só a confirmação, sem o pedido "1, 2 ou 3" | `{"telefone": "...", "dataHora": "<daqui a mais de 3 dias>"}` |
 
 Campos opcionais devem ser **omitidos** (não envie `"string"`, que é o valor de exemplo do Swagger).
 
 ### Simular a resposta sem usar o celular
 
 ```bash
-curl -X POST localhost:8081/api/teste/atendimentos/respostas \
+curl -X POST localhost:8081/api/teste/atendimentos/respostas -H "X-API-Key: $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"telefone": "51993953661", "texto": "1"}'
 ```
@@ -276,15 +300,52 @@ Com `WHATSAPP_PROVEDOR=console`, nada é enviado: as mensagens aparecem no log d
 
 | Método | Rota | Descrição |
 |---|---|---|
-| `POST` | `/api/teste/atendimentos` | Cria paciente + agendamento para o número informado e dispara o lembrete (201) |
+| `POST` | `/api/teste/atendimentos` | Igual ao agendamento real, com valores padrão; `lembrete` envia mais um lembrete na hora (201) |
 | `POST` | `/api/teste/atendimentos/respostas` | Simula a resposta do paciente (`{"telefone", "texto"}`) |
+| `POST` | `/api/agendamentos` | Agenda um atendimento, reaproveita o paciente e envia a confirmação (201; 400 inválido) |
+| `GET` | `/api/agendamentos?inicio=&fim=&status=` | Lista para a equipe: agendamentos do período (padrão: hoje; máx. 31 dias) com paciente, telefone e contagem `porStatus`. `status` pode repetir |
 | `GET` | `/api/agendamentos/{id}` | Consulta o agendamento e o status atual (404 se não existir) |
 | `POST` | `/api/agendamentos/{id}/disparos?tipo=...&forcar=true` | Dispara um lembrete de um agendamento. `forcar=false` não reenvia o que já foi enviado |
-| `POST` | `/api/disparos/executar?data=AAAA-MM-DD` | Rotina do dia: `PEDIDO_CONFIRMACAO` para data+2 e `LEMBRETE_VESPERA` para data+1 |
+| `POST` | `/api/disparos/executar?data=AAAA-MM-DD` | Executa agora a rotina diária para a data informada (padrão: hoje). Mesma lógica do agendador |
 | `POST` | `/api/mensagens` | Envia uma mensagem avulsa `{"telefone", "texto"}` (200 enviado, 502 falha na Evolution, 400 inválido) |
 | `POST` | `/api/webhooks/evolution?token=...` | Chamado pela Evolution. 401 sem token válido; sempre 200 com o resultado do processamento |
 
-Erros de validação retornam `400 {"erro": "mensagem"}`.
+Também há `GET /actuator/health` (sem chave) para conferir se a Liva e o banco estão de pé.
+
+### Erros
+
+Todo erro, de qualquer rota, segue o mesmo formato:
+
+```json
+{
+  "timestamp": "2026-11-14T03:40:12.345Z",
+  "status": 400,
+  "codigo": "REQUISICAO_INVALIDA",
+  "mensagem": "CPF inválido: \"123.456.789-00\"",
+  "caminho": "/api/agendamentos"
+}
+```
+
+| `codigo` | HTTP | Quando |
+|---|---|---|
+| `REQUISICAO_INVALIDA` | 400 | Validação do caso de uso, JSON malformado, enum/data/UUID inválido, parâmetro obrigatório ausente |
+| `NAO_AUTORIZADO` | 401 | Sem `X-API-Key` (ou chave errada); token do webhook inválido |
+| `NAO_ENCONTRADO` | 404 | Agendamento inexistente ou rota inexistente |
+| `METODO_NAO_PERMITIDO` | 405 | Método HTTP não aceito na rota |
+| `CONFLITO` | 409 | Estado não permite a operação ou violação de unicidade (ex.: CPF duplicado) |
+| `TIPO_DE_CONTEUDO_NAO_SUPORTADO` | 415 | Corpo sem `Content-Type: application/json` |
+| `ERRO_INTERNO` | 500 | Erro inesperado (detalhes só no log) |
+| `FALHA_WHATSAPP` | 502 | A Evolution não conseguiu enviar a mensagem avulsa |
+| `SERVICO_INDISPONIVEL` | 503 | Banco fora do ar |
+
+Quem monta a resposta: `GlobalExceptionHandler` (erros dentro dos controllers), `ErroPadraoController` (erros que não chegam a um controller, no `/error`) e `ChaveApiFiltro` (401). O formato é o record `ErroResposta` e os códigos estão em `CodigoErro` (`adapter/in/web/erro`).
+
+### Segurança
+
+- Toda rota `/api/**` exige o header `X-API-Key` com o valor de `API_KEY`; sem ele, `401` com `codigo: NAO_AUTORIZADO`. A comparação é em tempo constante.
+- O webhook (`/api/webhooks/**`) não usa a chave: é chamado pela Evolution e é protegido pelo `?token=WEBHOOK_TOKEN`.
+- O Swagger (`/swagger-ui.html`, `/v3/api-docs`) fica aberto para leitura, mas as chamadas feitas por ele também precisam da chave (botão **Authorize**).
+- A verificação é um filtro de servlet (`ChaveApiFiltro`, em `adapter/in/web/seguranca`), sem Spring Security: há um único cliente (o sistema da unidade/equipe), então uma chave compartilhada basta para o MVP.
 
 ---
 
@@ -294,9 +355,44 @@ Erros de validação retornam `400 {"erro": "mensagem"}`.
 
 | Tipo | Quando (rotina do dia) | Conteúdo |
 |---|---|---|
-| `CONFIRMACAO_AGENDAMENTO` | No momento do agendamento | Data, hora, endereço, documentos |
-| `PEDIDO_CONFIRMACAO` | 2 dias antes | Pergunta "Você consegue ir? 1, 2 ou 3". Muda o status para `AGUARDANDO_RESPOSTA` |
+| `CONFIRMACAO_AGENDAMENTO` | Ao criar o agendamento | Data, hora, endereço, documentos |
+| `PEDIDO_CONFIRMACAO` | 3 dias antes | Pergunta "Você consegue ir? 1, 2 ou 3". Muda o status para `AGUARDANDO_RESPOSTA` |
 | `LEMBRETE_VESPERA` | 1 dia antes | Data, hora, endereço e preparo |
+
+A antecedência de cada lembrete vem de `TipoLembrete.getDiasAntes()`.
+
+### Agendamento e cadastro do paciente
+
+- **Com CPF**: se já existe paciente com esse CPF, ele é reaproveitado e o telefone é atualizado.
+- **Sem CPF (ou CPF ainda não cadastrado)**: procura pelo telefone **e** nome (ignorando maiúsculas, acentos e espaços). Telefone sozinho não basta, porque famílias costumam usar o mesmo número para vários pacientes. Se o paciente encontrado não tinha CPF, o CPF informado é gravado.
+- Se nada for encontrado, um paciente novo é criado. O CPF é único no banco (`V2__busca_de_paciente.sql`).
+- Se `telefoneCuidador` for informado, o cuidador do paciente é atualizado; caso contrário, o cuidador atual é mantido.
+- O CPF é validado pelos dígitos verificadores e pode ser enviado com ou sem pontuação.
+- Paciente e agendamento são gravados numa única transação. As mensagens só são enviadas **depois** do commit; se o WhatsApp falhar, o agendamento continua válido e o erro aparece em `confirmacao`.
+- Se o atendimento já está dentro do prazo do pedido de confirmação (hoje + 3 dias ou antes), o pedido é enviado na hora, já que a rotina diária não pegaria mais esse dia. O `jaEnviado` impede que a rotina repita o envio.
+
+### Disparo automático diário
+
+O `DisparoDiarioAgendador` (`adapter/in/agendador`) roda no horário de `DISPARO_DIARIO_CRON`, no fuso `FUSO_HORARIO`, e chama `DispararLembretesDoDiaUseCase`:
+
+1. Busca os agendamentos de hoje + `diasAntes` de `PEDIDO_CONFIRMACAO` e envia o pedido de confirmação.
+2. Busca os agendamentos de hoje + `diasAntes` de `LEMBRETE_VESPERA` e envia o lembrete da véspera.
+
+Regras:
+
+- **Idempotente**: o que já foi enviado com sucesso não é reenviado (`jaEnviado`). Rodar várias vezes no mesmo dia é seguro.
+- **Falhas são reenviadas na próxima execução**: um envio que falhou (ex.: Evolution fora do ar) não conta como enviado.
+- **Um agendamento com problema não interrompe os outros**: o erro vai para o log e a rotina segue.
+- Agendamentos `CANCELADO`, `REAGENDADO` etc. e pacientes sem consentimento são ignorados (`Agendamento.podeReceber`). `CONFIRMADO` ainda recebe o lembrete da véspera, que leva o preparo.
+- O "hoje" é calculado no fuso configurado, não no fuso do servidor.
+
+Ao final de cada execução aparece no log:
+
+```
+Disparo diário de 2026-11-14: 3 mensagem(ns) enviada(s)
+```
+
+**Dica para a apresentação**: para não esperar até as 08:00, use `DISPARO_DIARIO_CRON=0 * * * * *` no `.env` (roda a cada minuto) e reinicie a Liva; como a rotina é idempotente, cada lembrete sai uma única vez. Outra opção é chamar `POST /api/disparos/executar` pelo Swagger. Para um agendamento ser pego pela rotina, a data dele precisa ser exatamente hoje + 3 dias (pedido) ou hoje + 1 dia (véspera); o endpoint de teste aceita `dataHora`.
 
 Um lembrete só é enviado se o paciente tiver consentimento e o status permitir (`AGENDADO` ou `AGUARDANDO_RESPOSTA`; `CONFIRMADO` recebe apenas o `LEMBRETE_VESPERA`). Se o paciente tem cuidador, o cuidador recebe uma cópia.
 
@@ -311,6 +407,10 @@ Acentos, maiúsculas e pontuação são ignorados. O primeiro número da mensage
 | `3` | outro horário, quero outro horário, remarcar | `REAGENDADO` | "A equipe vai entrar em contato para remarcar" |
 
 A resposta só é aplicada se o agendamento estiver `AGUARDANDO_RESPOSTA`; respostas seguintes são ignoradas. O agendamento é encontrado pelo **último `PEDIDO_CONFIRMACAO` enviado com sucesso** para aquele telefone.
+
+**Resposta não reconhecida** (ex.: "talvez"): se há um pedido aguardando resposta, o paciente recebe "Desculpe, não entendi sua resposta… Responda apenas com o número: 1, 2 ou 3". A orientação não se repete em menos de 5 minutos. Sem pedido pendente, a mensagem é ignorada em silêncio.
+
+**Histórico**: toda mensagem enviada (lembretes, retornos, orientações e avulsas) é gravada em `registros_mensagem` com o `id` devolvido pela Evolution. Quando a Evolution devolve no webhook uma mensagem que a própria Liva enviou (acontece ao testar com o próprio número), ela é reconhecida pelo `id` e ignorada.
 
 ### Telefones
 
@@ -331,15 +431,20 @@ Os testes de persistência e o `LivaApplicationTests` sobem um Postgres temporá
 | `TelefoneTest` | Formatos válidos/inválidos, `apenasDigitos()` |
 | `RespostaPacienteTest` | Interpretação das respostas |
 | `EnviarMensagemUseCaseImplTest` | Envio avulso com fake da porta de saída |
-| `AgendarAtendimentoUseCaseImplTest` | Criação de paciente/agendamento e validações |
-| `ProcessarRespostaUseCaseImplTest` | Aplicação da resposta, 9º dígito, retorno ao paciente |
+| `AgendarAtendimentoUseCaseImplTest` | Criação, reaproveitamento por CPF e por telefone + nome, família no mesmo telefone, CPF inválido, envio da confirmação e do pedido depois do commit, falha do WhatsApp |
+| `ProcessarRespostaUseCaseImplTest` | Aplicação da resposta, 9º dígito, retorno ao paciente, orientação para resposta não reconhecida (sem repetir em 5 min), eco da própria Liva, histórico |
 | `EvolutionEnviadorAdapterTest` | HTTP com `MockRestServiceServer`: sucesso, `key.id`, 4xx/5xx, conexão, content-type inesperado |
-| `MensagemControllerTest`, `AgendamentoControllerTest` | Status HTTP 200/400/404/502 |
+| `ListarAgendamentosUseCaseImplTest` | Período em ordem com paciente, filtro por status, validação de período |
+| `ModeloMensagensTest` | Pedido sem menção a áudio; orientação para resposta não reconhecida |
+| `ChaveApiFiltroTest` | 401 sem chave ou com chave errada, 200 com a chave, webhook e documentação liberados, não sobe sem `API_KEY` |
+| `MensagemControllerTest`, `AgendamentoControllerTest` | `POST /api/agendamentos` (201, `Location`, paciente reaproveitado, 400) e status HTTP 200/400/404/502 |
 | `EvolutionWebhookControllerTest` | Token, `fromMe`, grupos, `@lid`, eventos ignorados |
 | `AtendimentoTesteControllerTest` | Fluxo completo: criar → disparar → simular resposta |
-| `PersistenciaPostgresAdapterTest` | Adaptadores Postgres num banco real (Testcontainers + Flyway): ida e volta das entidades, agendamentos do dia, FK, `jaEnviado`, `ultimoEnvio` sem o 9º dígito |
+| `PersistenciaPostgresAdapterTest` | Adaptadores Postgres num banco real (Testcontainers + Flyway): ida e volta das entidades, busca por CPF e telefone, CPF único, agendamentos do dia, FK, `jaEnviado`, `ultimoEnvio` sem o 9º dígito |
 | `TransacaoIntegracaoTest` | No Postgres real: rollback do paciente quando o agendamento falha; duas respostas simultâneas aplicadas uma única vez |
-| `LivaApplicationTests` | Contexto Spring sobe com Flyway e validação do schema |
+| `DispararLembretesDoDiaUseCaseImplTest` | Rotina diária: datas de cada lembrete, não reenvia, reenvia falhas, segue após erro, ignora cancelados |
+| `DisparoDiarioAgendadorTest` | Agendador usa a data do fuso configurado e não propaga falhas |
+| `LivaApplicationTests` | Contexto Spring sobe com Flyway, validação do schema e agendador registrado |
 
 ---
 
@@ -354,6 +459,8 @@ Os testes de persistência e o `LivaApplicationTests` sobem um Postgres temporá
 | `502` com `Connection refused` | Evolution parada | `docker compose up -d` |
 | `400 Telefone do cuidador inválido: "string"` | Campo opcional enviado com o valor de exemplo do Swagger | Remova o campo do JSON |
 | Resposta no WhatsApp não muda o status | Webhook não configurado ou agendamento não está `AGUARDANDO_RESPOSTA` | Veja o log `Webhook Evolution [...]`; crie um novo atendimento de teste |
+| `401 Chave de API ausente ou inválida` | Faltou o header `X-API-Key` | No Swagger use **Authorize**; no curl, `-H "X-API-Key: $API_KEY"` |
+| Liva não sobe: `API_KEY não configurada` | `API_KEY` vazia no `.env` | `echo "API_KEY=$(openssl rand -hex 32)" >> .env` |
 | Liva não sobe: `Connection to localhost:5433 refused` | `liva-postgres` parado | `docker compose up -d liva-postgres` |
 | Liva não sobe: `Schema-validation: missing column ...` | Entidade alterada sem migração correspondente | Crie uma migração `V<n>__...sql` com a alteração |
 | `./mvnw test` falha com `Could not find a valid Docker environment` | Docker parado (Testcontainers) | `colima start` |
@@ -368,13 +475,38 @@ Webhook Evolution [evento=messages.upsert, jid=555193953661@s.whatsapp.net, jidA
 
 ---
 
+## Roteiro da apresentação
+
+Preparação (antes de subir ao palco):
+
+1. `docker compose up -d` e confira `curl localhost:8080/instance/connectionState/liva -H "apikey: $EVOLUTION_API_KEY"` → `open`.
+2. `./mvnw spring-boot:run` e confira `curl localhost:8081/actuator/health` → `{"status":"UP"}`.
+3. Abra o Swagger (http://localhost:8081/swagger-ui.html), clique em **Authorize** e cole a `API_KEY`.
+4. Deixe o WhatsApp do celular de demonstração aberto (ou o chat "Você", se for o mesmo número da Evolution).
+
+Demonstração (~5 minutos):
+
+| # | Ação | O que mostrar |
+|---|---|---|
+| 1 | `POST /api/agendamentos` com o seu número, CPF e data **daqui a 2 dias** | 201; no celular chegam a confirmação do agendamento e o pedido "1, 2 ou 3" |
+| 2 | Responda **"talvez"** no WhatsApp | A Liva responde "não entendi" e lista as opções |
+| 3 | Responda **1** | Mensagem "Sua presença está confirmada…" |
+| 4 | `GET /api/agendamentos?inicio=<data>` | Visão da equipe: paciente `CONFIRMADO`, `porStatus` |
+| 5 | Repita o passo 1 com o mesmo CPF e outra data, e responda **3** | `pacienteNovo: false`; status `REAGENDADO` aparece para a equipe com `status=REAGENDADO` |
+| 6 | `POST /api/disparos/executar` | A rotina diária: lembretes pendentes saem uma única vez (rode duas vezes: a segunda envia 0) |
+| 7 | Chamada sem `X-API-Key` | `401` no formato padrão de erro |
+
+Se a internet ou o WhatsApp falharem no palco, use `WHATSAPP_PROVEDOR=console` e `POST /api/teste/atendimentos/respostas` para simular as respostas: o fluxo e os status são os mesmos, e as mensagens aparecem no log com `[WHATSAPP FAKE]`.
+
+---
+
 ## Limitações conhecidas e próximos passos
 
 - **Envio de lembretes sem garantia de entrega**: no disparo, a mensagem é enviada e depois o registro é gravado. Se a Liva cair entre os dois passos, o envio não fica registrado. Para garantir isso seria necessário o padrão Outbox.
-- **Busca de paciente por telefone/CPF** ainda não existe; cada atendimento de teste cria um paciente novo.
-- **Respostas por áudio** não são interpretadas, embora a mensagem de pedido sugira que o paciente pode responder com áudio.
-- **Rotina diária** (`/api/disparos/executar`) precisa ser chamada externamente; falta um agendador (`@Scheduled`).
-- **Mensagens de retorno** não são gravadas no histórico (`RegistroMensagem`), pois não são um `TipoLembrete`.
+- **Agendamentos de amanhã criados depois da rotina das 08:00** não recebem o lembrete da véspera (só a confirmação e o pedido).
+- **Respostas por áudio** não são interpretadas (a mensagem pede número ou texto).
+- **Agendador em uma única instância**: com mais de uma Liva rodando, todas executariam a rotina ao mesmo tempo. O `jaEnviado` reduz, mas não elimina, envios duplicados; para escalar seria preciso um lock distribuído (ex.: ShedLock).
 - **`REAGENDADO`** apenas registra a intenção; o reagendamento em si é feito pela equipe.
+- **Uma única chave de API** para todos os clientes, sem usuários nem perfis. Para várias equipes/unidades seria preciso autenticação por usuário (ex.: Spring Security com JWT).
 - **Endpoints de teste** devem ser desligados em produção (`ATENDIMENTO_TESTE_HABILITADO=false`), assim como `WEBHOOK_ACEITAR_MENSAGENS_PROPRIAS=false`.
 # liva

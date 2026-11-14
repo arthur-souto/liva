@@ -13,6 +13,7 @@ import sus.liva.application.port.in.DispararLembretesDoDiaUseCase;
 import sus.liva.application.port.in.ResultadoDisparo;
 import sus.liva.domain.model.agendamento.TipoLembrete;
 
+import java.time.Clock;
 import java.time.LocalDate;
 import java.util.Map;
 import java.util.UUID;
@@ -23,10 +24,12 @@ import java.util.UUID;
 public class DisparoController {
     private final DispararLembreteUseCase disparar;
     private final DispararLembretesDoDiaUseCase lembretesDoDia;
+    private final Clock clock;
 
-    public DisparoController(DispararLembreteUseCase disparar, DispararLembretesDoDiaUseCase lembretesDoDia) {
+    public DisparoController(DispararLembreteUseCase disparar, DispararLembretesDoDiaUseCase lembretesDoDia, Clock clock) {
         this.disparar = disparar;
         this.lembretesDoDia = lembretesDoDia;
+        this.clock = clock;
     }
 
     @PostMapping("/agendamentos/{id}/disparos")
@@ -39,10 +42,11 @@ public class DisparoController {
 
     @PostMapping("/disparos/executar")
     @Operation(summary = "Dispara os lembretes pendentes do dia",
-            description = "PEDIDO_CONFIRMACAO para atendimentos em data+2 e LEMBRETE_VESPERA para data+1. Sem data, usa hoje.")
+            description = "Mesma rotina executada automaticamente pelo agendador. PEDIDO_CONFIRMACAO e LEMBRETE_VESPERA conforme a "
+                    + "antecedência de cada lembrete (3 e 1 dia); não reenvia o que já foi enviado. Sem data, usa hoje (fuso de confirmasus.fuso).")
     public Map<String, Integer> executar(@RequestParam(required = false)
                                          @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate data) {
-        LocalDate dia = data != null ? data : LocalDate.now();
+        LocalDate dia = data != null ? data : LocalDate.now(clock);
         return Map.of("mensagensEnviadas", lembretesDoDia.dispararPendentes(dia));
     }
 }

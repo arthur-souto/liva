@@ -31,6 +31,14 @@ public class AgendamentoMemoriaAdapter implements AgendamentoRepositoryPort {
     }
 
     @Override
+    public List<Agendamento> agendamentosEntre(LocalDate inicio, LocalDate fim) {
+        return dados.values().stream()
+                .filter(a -> !a.getDataHora().toLocalDate().isBefore(inicio) && !a.getDataHora().toLocalDate().isAfter(fim))
+                .sorted(java.util.Comparator.comparing(Agendamento::getDataHora))
+                .toList();
+    }
+
+    @Override
     public void salvarAgendamento(Agendamento agendamento) {
         dados.put(agendamento.getId(), agendamento);
     }

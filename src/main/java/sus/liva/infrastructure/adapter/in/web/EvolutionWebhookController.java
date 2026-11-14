@@ -1,6 +1,7 @@
 package sus.liva.infrastructure.adapter.in.web;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 import sus.liva.application.port.in.ProcessarRespostaUseCase;
 import sus.liva.application.port.in.ResultadoResposta;
 import sus.liva.domain.model.Telefone;
@@ -44,12 +46,13 @@ public class EvolutionWebhookController {
         this.aceitarProprias = aceitarProprias;
     }
 
+    @SecurityRequirements
     @PostMapping
     @Operation(summary = "Recebe eventos da Evolution e processa a resposta do paciente",
             description = "Chamado pela Evolution. Exige ?token=WEBHOOK_TOKEN (401 caso contrário). Sempre responde 200 com o resultado do processamento.")
     public ResponseEntity<ResultadoResposta> receber(@RequestParam(required = false) String token,
                                                      @RequestBody String corpo) {
-        if (!tokenValido(token)) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        if (!tokenValido(token)) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Token do webhook ausente ou inválido");
 
         JsonNode evento;
         try {
@@ -83,7 +86,7 @@ public class EvolutionWebhookController {
         String texto = extrairTexto(dados.path("message"));
         if (texto == null) return ResultadoResposta.ignorada("Mensagem sem texto");
 
-        return processarResposta.processar(remetente.get(), texto);
+        return processarResposta.processar(remetente.get(), texto, chave.path("id").asString(null));
     }
 
     private static Optional<Telefone> extrairTelefone(JsonNode chave) {

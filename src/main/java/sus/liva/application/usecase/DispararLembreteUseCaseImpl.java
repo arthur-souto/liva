@@ -1,5 +1,6 @@
 package sus.liva.application.usecase;
 
+import sus.liva.application.exception.NaoEncontradoException;
 import sus.liva.application.port.in.DispararLembreteUseCase;
 import sus.liva.application.port.in.ResultadoDisparo;
 import sus.liva.application.port.out.AgendamentoRepositoryPort;
@@ -39,7 +40,7 @@ public class DispararLembreteUseCaseImpl implements DispararLembreteUseCase {
     @Override
     public ResultadoDisparo disparar(UUID agendamentoId, TipoLembrete tipo, boolean forcar) {
         Agendamento a = agendamentos.buscarAgendamento(agendamentoId)
-                .orElseThrow(() -> new IllegalArgumentException("Agendamento não encontrado: " + agendamentoId));
+                .orElseThrow(() -> new NaoEncontradoException("Agendamento não encontrado: " + agendamentoId));
         Paciente p = pacientes.buscarPaciente(a.getPacienteId())
                 .orElseThrow(() -> new IllegalStateException("Paciente não encontrado"));
 

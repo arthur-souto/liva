@@ -16,6 +16,7 @@ import sus.liva.domain.model.paciente.Endereco;
 import sus.liva.domain.model.paciente.Paciente;
 import sus.liva.domain.model.paciente.Sexo;
 
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -30,6 +31,7 @@ public class DemoDataConfig {
     @Bean
     public ApplicationRunner carregarDadosDemo(PacienteRepositoryPort pacientes,
                                                AgendamentoRepositoryPort agendamentos,
+                                               Clock clock,
                                                @Value("${confirmasus.demo.telefone}") String telefone) {
         return args -> {
             if (agendamentos.buscarAgendamento(AGENDAMENTO_ID).isPresent()) {
@@ -60,7 +62,7 @@ public class DemoDataConfig {
                     "Rua das Flores, 123 - Centro",
                     "UBS Centro",
                     TipoAtendimento.CONSULTA,
-                    LocalDateTime.of(LocalDate.now().plusDays(2), LocalTime.of(9, 30)),
+                    LocalDateTime.of(LocalDate.now(clock).plusDays(2), LocalTime.of(9, 30)),
                     PACIENTE_ID,
                     AGENDAMENTO_ID
             ));

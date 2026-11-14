@@ -4,6 +4,9 @@ import org.junit.jupiter.api.Test;
 import sus.liva.application.port.out.EnviadorMensagemPort;
 import sus.liva.application.port.out.MensagemSaida;
 import sus.liva.application.port.out.ResultadoEnvio;
+import sus.liva.infrastructure.adapter.out.memoria.RegistroMensagemMemoriaAdapter;
+
+import java.time.Clock;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,7 +28,8 @@ class EnviarMensagemUseCaseImplTest {
     }
 
     private final EnviadorFake enviador = new EnviadorFake();
-    private final EnviarMensagemUseCaseImpl useCase = new EnviarMensagemUseCaseImpl(enviador);
+    private final RegistroMensagemMemoriaAdapter registros = new RegistroMensagemMemoriaAdapter();
+    private final EnviarMensagemUseCaseImpl useCase = new EnviarMensagemUseCaseImpl(enviador, registros, Clock.systemUTC());
 
     @Test
     void enviaMensagemComTelefoneNormalizado() {
@@ -35,6 +39,18 @@ class EnviarMensagemUseCaseImplTest {
         assertThat(enviador.enviadas).hasSize(1);
         assertThat(enviador.enviadas.getFirst().destino().apenasDigitos()).isEqualTo("5511987654321");
         assertThat(enviador.enviadas.getFirst().texto()).isEqualTo("Olá");
+    }
+
+    @Test
+    void registraAMensagemNoHistorico() {
+        useCase.enviar("11987654321", "Olá");
+
+        assertThat(registros.enviadaPelaLiva("id-123")).isTrue();
+        assertThat(registros.todos()).singleElement().satisfies(r -> {
+            assertThat(r.agendamentoId()).isNull();
+            assertThat(r.tipo()).isNull();
+            assertThat(r.texto()).isEqualTo("Olá");
+        });
     }
 
     @Test

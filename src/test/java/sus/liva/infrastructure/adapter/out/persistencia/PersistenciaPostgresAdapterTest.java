@@ -41,6 +41,8 @@ class PersistenciaPostgresAdapterTest {
     private AgendamentoPostgresAdapter agendamentos;
     @Autowired
     private RegistroMensagemPostgresAdapter registros;
+    @Autowired
+    private PacienteJpaRepository repositorioPacientes;
 
     private Paciente paciente;
 
@@ -73,6 +75,72 @@ class PersistenciaPostgresAdapterTest {
     @Test
     void retornaVazioParaPacienteInexistente() {
         assertThat(pacientes.buscarPaciente(UUID.randomUUID())).isEmpty();
+    }
+
+    @Test
+    void buscaPacientePorCpf() {
+        assertThat(pacientes.buscarPorCpf("12345678909")).contains(paciente);
+        assertThat(pacientes.buscarPorCpf("11144477735")).isEmpty();
+    }
+
+    @Test
+    void buscaTodosOsPacientesDoMesmoTelefone() {
+        Paciente filho = new Paciente(UUID.randomUUID(), "Pedro da Silva", null, null, null, null, Sexo.MASCULINO,
+                null, Telefone.de("51993953661"), null, null, null, null, null, null, true);
+        pacientes.salvarPaciente(filho);
+
+        assertThat(pacientes.buscarPorTelefone(Telefone.de("51993953661"))).containsExactlyInAnyOrder(paciente, filho);
+        assertThat(pacientes.buscarPorTelefone(Telefone.de("11900001111"))).isEmpty();
+    }
+
+    @Test
+    void identificaMensagemEnviadaPelaLivaPeloIdExterno() {
+        registros.salvarRegistro(new RegistroMensagem(null, Telefone.de("51993953661"), null, "Olá", true,
+                "3EB0ABC", null, Instant.now()));
+
+        assertThat(registros.enviadaPelaLiva("3EB0ABC")).isTrue();
+        assertThat(registros.enviadaPelaLiva("OUTRO")).isFalse();
+    }
+
+    @Test
+    void verificaSeOMesmoTextoFoiEnviadoRecentementeMesmoSemNonoDigito() {
+        Instant agora = Instant.now().truncatedTo(ChronoUnit.MILLIS);
+        registros.salvarRegistro(new RegistroMensagem(null, Telefone.de("51993953661"), null, "Não entendi", true,
+                "id", null, agora));
+        registros.salvarRegistro(new RegistroMensagem(null, Telefone.de("51993953661"), null, "Falhou", false,
+                null, "HTTP 500", agora));
+
+        Telefone semNono = Telefone.de("555193953661");
+        assertThat(registros.enviadaDesde(semNono, "Não entendi", agora.minusSeconds(60))).isTrue();
+        assertThat(registros.enviadaDesde(semNono, "Não entendi", agora.plusSeconds(1))).isFalse();
+        assertThat(registros.enviadaDesde(semNono, "Outro texto", agora.minusSeconds(60))).isFalse();
+        assertThat(registros.enviadaDesde(semNono, "Falhou", agora.minusSeconds(60))).isFalse();
+    }
+
+    @Test
+    void listaAgendamentosDeUmPeriodoEmOrdem() {
+        Agendamento ultimo = new Agendamento(StatusAgendamento.AGENDADO, null, "Rua A", "UBS", TipoAtendimento.CONSULTA,
+                DIA.plusDays(2).atTime(23, 59), paciente.id(), UUID.randomUUID());
+        Agendamento primeiro = new Agendamento(StatusAgendamento.AGENDADO, null, "Rua A", "UBS", TipoAtendimento.CONSULTA,
+                DIA.atStartOfDay(), paciente.id(), UUID.randomUUID());
+        Agendamento fora = new Agendamento(StatusAgendamento.AGENDADO, null, "Rua A", "UBS", TipoAtendimento.CONSULTA,
+                DIA.plusDays(3).atStartOfDay(), paciente.id(), UUID.randomUUID());
+        agendamentos.salvarAgendamento(ultimo);
+        agendamentos.salvarAgendamento(primeiro);
+        agendamentos.salvarAgendamento(fora);
+
+        assertThat(agendamentos.agendamentosEntre(DIA, DIA.plusDays(2)))
+                .extracting(Agendamento::getId)
+                .containsExactly(primeiro.getId(), ultimo.getId());
+    }
+
+    @Test
+    void rejeitaDoisPacientesComOMesmoCpf() {
+        Paciente duplicado = new Paciente(UUID.randomUUID(), "Outra Maria", null, "12345678909", null, null,
+                Sexo.FEMININO, null, Telefone.de("11999998888"), null, null, null, null, null, null, true);
+
+        assertThatThrownBy(() -> repositorioPacientes.saveAndFlush(PacienteEntity.de(duplicado)))
+                .isInstanceOf(DataIntegrityViolationException.class);
     }
 
     @Test

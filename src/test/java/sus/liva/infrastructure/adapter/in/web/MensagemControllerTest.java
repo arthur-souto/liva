@@ -38,7 +38,9 @@ class MensagemControllerTest {
         mvc.perform(post("/api/mensagens").contentType(MediaType.APPLICATION_JSON)
                         .content("{\"telefone\":\"123\",\"texto\":\"Teste\"}"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.erro").value("Telefone inválido: +123"));
+                .andExpect(jsonPath("$.codigo").value("REQUISICAO_INVALIDA"))
+                .andExpect(jsonPath("$.mensagem").value("Telefone inválido: +123"))
+                .andExpect(jsonPath("$.caminho").value("/api/mensagens"));
     }
 
     @Test
@@ -48,7 +50,8 @@ class MensagemControllerTest {
         mvc.perform(post("/api/mensagens").contentType(MediaType.APPLICATION_JSON)
                         .content("{\"telefone\":\"11999999999\",\"texto\":\"Teste\"}"))
                 .andExpect(status().isBadGateway())
-                .andExpect(jsonPath("$.sucesso").value(false))
-                .andExpect(jsonPath("$.erro").value("HTTP 500: erro"));
+                .andExpect(jsonPath("$.status").value(502))
+                .andExpect(jsonPath("$.codigo").value("FALHA_WHATSAPP"))
+                .andExpect(jsonPath("$.mensagem").value("Falha no envio pelo WhatsApp: HTTP 500: erro"));
     }
 }

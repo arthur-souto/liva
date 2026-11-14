@@ -19,9 +19,12 @@ import sus.liva.infrastructure.adapter.out.memoria.PacienteMemoriaAdapter;
 import sus.liva.infrastructure.adapter.out.memoria.RegistroMensagemMemoriaAdapter;
 import sus.liva.infrastructure.adapter.out.memoria.TransacaoFake;
 
+import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -53,8 +56,25 @@ class ProcessarRespostaUseCaseImplTest {
     private final AgendamentoMemoriaAdapter agendamentos = new AgendamentoMemoriaAdapter();
     private final PacienteMemoriaAdapter pacientes = new PacienteMemoriaAdapter();
     private final EnviadorFake enviador = new EnviadorFake();
+    private Instant agora = Instant.parse("2026-11-14T12:00:00Z");
+    private final Clock relogio = new Clock() {
+        @Override
+        public ZoneId getZone() {
+            return ZoneOffset.UTC;
+        }
+
+        @Override
+        public Clock withZone(ZoneId zone) {
+            return this;
+        }
+
+        @Override
+        public Instant instant() {
+            return agora;
+        }
+    };
     private final ProcessarRespostaUseCaseImpl useCase =
-            new ProcessarRespostaUseCaseImpl(registros, agendamentos, pacientes, enviador, new ModeloMensagens(), transacao);
+            new ProcessarRespostaUseCaseImpl(registros, agendamentos, pacientes, enviador, new ModeloMensagens(), transacao, relogio);
 
     @BeforeEach
     void setUp() {
@@ -129,13 +149,71 @@ class ProcessarRespostaUseCaseImplTest {
     }
 
     @Test
-    void ignoraRespostaNaoReconhecidaSemEnviarRetorno() {
-        ResultadoResposta resultado = useCase.processar(TELEFONE_PACIENTE, "talvez");
+    void orientaOPacienteQuandoARespostaNaoEReconhecida() {
+        ResultadoResposta resultado = useCase.processar(Telefone.de("555193953661"), "talvez");
 
         assertThat(resultado.aplicada()).isFalse();
-        assertThat(enviador.enviadas).isEmpty();
+        assertThat(resultado.agendamentoId()).isEqualTo(AGENDAMENTO_ID);
+        assertThat(resultado.retornoEnviado()).isTrue();
+        assertThat(resultado.motivo()).contains("orientação enviada");
+        assertThat(enviador.enviadas).singleElement().satisfies(m -> {
+            assertThat(m.destino()).isEqualTo(TELEFONE_PACIENTE);
+            assertThat(m.texto()).contains("não entendi").contains("1 - Sim, vou").contains("UBS Centro");
+        });
         assertThat(agendamentos.buscarAgendamento(AGENDAMENTO_ID).orElseThrow().getStatus())
                 .isEqualTo(StatusAgendamento.AGUARDANDO_RESPOSTA);
+    }
+
+    @Test
+    void naoRepeteAOrientacaoEmMenosDeCincoMinutos() {
+        useCase.processar(TELEFONE_PACIENTE, "talvez");
+        agora = agora.plusSeconds(60);
+
+        ResultadoResposta resultado = useCase.processar(TELEFONE_PACIENTE, "acho que sim");
+
+        assertThat(resultado.motivo()).contains("já enviada");
+        assertThat(enviador.enviadas).hasSize(1);
+    }
+
+    @Test
+    void orientaDeNovoDepoisDoIntervalo() {
+        useCase.processar(TELEFONE_PACIENTE, "talvez");
+        agora = agora.plusSeconds(6 * 60);
+
+        useCase.processar(TELEFONE_PACIENTE, "acho que sim");
+
+        assertThat(enviador.enviadas).hasSize(2);
+    }
+
+    @Test
+    void naoOrientaQuandoNaoHaPedidoPendente() {
+        useCase.processar(TELEFONE_PACIENTE, "1");
+
+        ResultadoResposta resultado = useCase.processar(TELEFONE_PACIENTE, "obrigado!");
+
+        assertThat(resultado.motivo()).isEqualTo("Resposta não reconhecida");
+        assertThat(enviador.enviadas).hasSize(1);
+    }
+
+    @Test
+    void ignoraOEcoDeUmaMensagemEnviadaPelaLiva() {
+        ResultadoResposta resultado = useCase.processar(TELEFONE_PACIENTE, "Olá, Maria! Você consegue ir?", "id-1");
+
+        assertThat(resultado.motivo()).contains("própria Liva");
+        assertThat(enviador.enviadas).isEmpty();
+    }
+
+    @Test
+    void registraRetornoEOrientacaoNoHistorico() {
+        useCase.processar(TELEFONE_PACIENTE, "talvez");
+        agora = agora.plusSeconds(10);
+        useCase.processar(TELEFONE_PACIENTE, "1");
+
+        assertThat(registros.todos()).hasSize(3)
+                .filteredOn(r -> r.tipo() == null)
+                .allSatisfy(r -> assertThat(r.agendamentoId()).isEqualTo(AGENDAMENTO_ID))
+                .hasSize(2);
+        assertThat(registros.enviadaPelaLiva("id-retorno")).isTrue();
     }
 
     @Test

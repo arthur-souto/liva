@@ -5,6 +5,7 @@ import sus.liva.domain.model.Telefone;
 import sus.liva.domain.model.agendamento.TipoLembrete;
 import sus.liva.domain.model.mensagem.RegistroMensagem;
 
+import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -22,8 +23,24 @@ public class RegistroMensagemMemoriaAdapter implements RegistroMensagemPort {
     @Override
     public boolean jaEnviado(UUID agendamentoId, TipoLembrete tipo) {
         return dados.stream().anyMatch(r -> r.sucesso()
-                && r.agendamentoId().equals(agendamentoId)
+                && agendamentoId.equals(r.agendamentoId())
                 && r.tipo() == tipo);
+    }
+
+    @Override
+    public boolean enviadaPelaLiva(String idExterno) {
+        return dados.stream().anyMatch(r -> idExterno.equals(r.idExterno()));
+    }
+
+    @Override
+    public boolean enviadaDesde(Telefone destino, String texto, Instant desde) {
+        String chave = destino.chaveComparacao();
+        return dados.stream().anyMatch(r -> r.sucesso() && texto.equals(r.texto())
+                && r.destino().chaveComparacao().equals(chave) && r.enviadoEm().isAfter(desde));
+    }
+
+    public List<RegistroMensagem> todos() {
+        return List.copyOf(dados);
     }
 
     @Override

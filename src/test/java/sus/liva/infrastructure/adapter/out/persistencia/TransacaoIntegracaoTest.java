@@ -29,7 +29,8 @@ import java.util.concurrent.ThreadLocalRandom;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-@SpringBootTest(properties = "confirmasus.whatsapp.provedor=console")
+@SpringBootTest(properties = {"confirmasus.whatsapp.provedor=console", "confirmasus.disparo-diario.cron=-",
+        "confirmasus.seguranca.api-key=chave-de-teste"})
 @Import(TestcontainersConfig.class)
 class TransacaoIntegracaoTest {
 
@@ -69,7 +70,7 @@ class TransacaoIntegracaoTest {
     @Test
     void aplicaSomenteUmaDeDuasRespostasSimultaneas() throws Exception {
         String telefone = telefoneAleatorio();
-        Agendamento agendamento = agendarAtendimento.agendar(novo(telefone, "UBS Centro"));
+        Agendamento agendamento = agendarAtendimento.agendar(novo(telefone, "UBS Centro")).agendamento();
         dispararLembrete.disparar(agendamento.getId(), TipoLembrete.PEDIDO_CONFIRMACAO, true);
 
         CountDownLatch largada = new CountDownLatch(1);
@@ -103,7 +104,7 @@ class TransacaoIntegracaoTest {
     }
 
     private static NovoAtendimento novo(String telefone, String unidade) {
-        return new NovoAtendimento("Paciente Integração", telefone, null, null, LocalDateTime.now().plusDays(2),
+        return new NovoAtendimento("Paciente Integração", null, telefone, null, null, LocalDateTime.now().plusDays(10),
                 TipoAtendimento.CONSULTA, unidade, "Rua A, 1", null);
     }
 

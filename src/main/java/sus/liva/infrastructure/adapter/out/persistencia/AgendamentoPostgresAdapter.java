@@ -34,8 +34,14 @@ public class AgendamentoPostgresAdapter implements AgendamentoRepositoryPort {
     @Override
     @Transactional(readOnly = true)
     public List<Agendamento> agendamentosDoDia(LocalDate data) {
+        return agendamentosEntre(data, data);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Agendamento> agendamentosEntre(LocalDate inicio, LocalDate fim) {
         return repository.findByDataHoraGreaterThanEqualAndDataHoraLessThanOrderByDataHora(
-                        data.atStartOfDay(), data.plusDays(1).atStartOfDay())
+                        inicio.atStartOfDay(), fim.plusDays(1).atStartOfDay())
                 .stream()
                 .map(AgendamentoEntity::paraDominio)
                 .toList();

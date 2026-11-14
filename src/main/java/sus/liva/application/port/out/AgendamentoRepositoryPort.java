@@ -11,5 +11,6 @@ public interface AgendamentoRepositoryPort {
     Optional<Agendamento> buscarAgendamento(UUID id);
     Optional<Agendamento> buscarAgendamentoParaAtualizar(UUID id);
     List<Agendamento> agendamentosDoDia(LocalDate data);
+    List<Agendamento> agendamentosEntre(LocalDate inicio, LocalDate fim);
     void salvarAgendamento(Agendamento agendamento);
 }

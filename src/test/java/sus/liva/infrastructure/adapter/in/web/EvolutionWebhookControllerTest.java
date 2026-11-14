@@ -23,13 +23,17 @@ class EvolutionWebhookControllerTest {
     private record Chamada(Telefone remetente, String texto) {}
 
     private final List<Chamada> chamadas = new ArrayList<>();
-    private final ProcessarRespostaUseCase useCase = (remetente, texto) -> {
+    private final List<String> idsMensagem = new ArrayList<>();
+    private final ProcessarRespostaUseCase useCase = (remetente, texto, idMensagem) -> {
         chamadas.add(new Chamada(remetente, texto));
+        idsMensagem.add(idMensagem);
         return ResultadoResposta.aplicada(UUID.randomUUID(), StatusAgendamento.CONFIRMADO, true);
     };
 
     private MockMvc mvc(boolean aceitarProprias) {
-        return MockMvcBuilders.standaloneSetup(new EvolutionWebhookController(useCase, "segredo", aceitarProprias)).build();
+        return MockMvcBuilders.standaloneSetup(new EvolutionWebhookController(useCase, "segredo", aceitarProprias))
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .build();
     }
 
     private static String evento(String chave, String mensagem) {
@@ -45,6 +49,7 @@ class EvolutionWebhookControllerTest {
                 .andExpect(jsonPath("$.aplicada").value(true));
 
         assertThat(chamadas).containsExactly(new Chamada(Telefone.de("555193953661"), "1"));
+        assertThat(idsMensagem).containsExactly("A1");
     }
 
     @Test
@@ -61,7 +66,8 @@ class EvolutionWebhookControllerTest {
     void rejeitaTokenInvalido() throws Exception {
         mvc(false).perform(post("/api/webhooks/evolution").param("token", "errado").contentType(MediaType.APPLICATION_JSON)
                         .content(evento("{\"remoteJid\":\"555193953661@s.whatsapp.net\",\"fromMe\":false}", "{\"conversation\":\"1\"}")))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.codigo").value("NAO_AUTORIZADO"));
 
         assertThat(chamadas).isEmpty();
     }

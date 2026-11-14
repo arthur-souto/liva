@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import sus.liva.application.port.in.AgendarAtendimentoUseCase;
+import sus.liva.application.port.in.AtendimentoAgendado;
 import sus.liva.application.port.in.ConsultarAgendamentoUseCase;
 import sus.liva.application.port.in.DispararLembreteUseCase;
 import sus.liva.application.port.in.NovoAtendimento;
@@ -21,13 +22,13 @@ import sus.liva.application.port.in.ResultadoResposta;
 import sus.liva.domain.model.Telefone;
 import sus.liva.domain.model.agendamento.Agendamento;
 import sus.liva.domain.model.agendamento.TipoAtendimento;
-import sus.liva.domain.model.agendamento.TipoLembrete;
 import sus.liva.infrastructure.adapter.in.web.AgendamentoResponse;
 
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.Objects;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/teste/atendimentos")
@@ -41,8 +42,8 @@ public class AtendimentoTesteController {
             {"telefone": "51993953661", "nomePaciente": "Paciente Teste", "preparo": "Jejum de 8 horas"}""";
     private static final String EXEMPLO_CUIDADOR = """
             {"telefone": "51993953661", "nomePaciente": "Paciente Teste", "nomeCuidador": "João Cuidador", "telefoneCuidador": "DDD+numero do cuidador"}""";
-    private static final String EXEMPLO_SEM_DISPARO = """
-            {"telefone": "51993953661", "disparar": false}""";
+    private static final String EXEMPLO_VESPERA = """
+            {"telefone": "51993953661", "preparo": "Jejum de 8 horas", "lembrete": "LEMBRETE_VESPERA"}""";
 
     private final AgendarAtendimentoUseCase agendarAtendimento;
     private final DispararLembreteUseCase dispararLembrete;
@@ -63,16 +64,18 @@ public class AtendimentoTesteController {
     }
 
     @PostMapping
-    @Operation(summary = "Cria um atendimento de teste para o número informado e dispara o lembrete",
-            description = "Só o telefone é obrigatório. Depois responda pelo WhatsApp (1, 2 ou 3) ou use o endpoint de simular resposta.")
+    @Operation(summary = "Cria um atendimento de teste para o número informado",
+            description = "Só o telefone é obrigatório. Como no agendamento real, envia a confirmação e, dentro do prazo, o pedido de confirmação. "
+                    + "Informe lembrete para enviar também outro lembrete na hora. Depois responda pelo WhatsApp (1, 2 ou 3) ou use o endpoint de simular resposta.")
     public ResponseEntity<AtendimentoTesteResponse> criar(
             @io.swagger.v3.oas.annotations.parameters.RequestBody(content = @Content(examples = {
                     @ExampleObject(name = "Somente paciente", value = EXEMPLO_PACIENTE),
                     @ExampleObject(name = "Paciente com cuidador", value = EXEMPLO_CUIDADOR),
-                    @ExampleObject(name = "Criar sem disparar", value = EXEMPLO_SEM_DISPARO)}))
+                    @ExampleObject(name = "Com lembrete da véspera", value = EXEMPLO_VESPERA)}))
             @RequestBody AtendimentoTesteRequest request) {
-        Agendamento agendamento = agendarAtendimento.agendar(new NovoAtendimento(
+        AtendimentoAgendado agendado = agendarAtendimento.agendar(new NovoAtendimento(
                 Objects.requireNonNullElse(request.nomePaciente(), NOME_PADRAO),
+                null,
                 request.telefone(),
                 request.nomeCuidador(),
                 request.telefoneCuidador(),
@@ -82,15 +85,14 @@ public class AtendimentoTesteController {
                 Objects.requireNonNullElse(request.endereco(), ENDERECO_PADRAO),
                 request.preparo()));
 
-        ResultadoDisparo disparo = null;
-        if (!Boolean.FALSE.equals(request.disparar())) {
-            TipoLembrete lembrete = Objects.requireNonNullElse(request.lembrete(), TipoLembrete.PEDIDO_CONFIRMACAO);
-            disparo = dispararLembrete.disparar(agendamento.getId(), lembrete, true);
-        }
+        UUID id = agendado.agendamento().getId();
+        ResultadoDisparo lembrete = request.lembrete() == null ? null : dispararLembrete.disparar(id, request.lembrete(), true);
 
-        Agendamento atual = consultarAgendamento.consultar(agendamento.getId()).orElse(agendamento);
+        Agendamento atual = consultarAgendamento.consultar(id).orElse(agendado.agendamento());
         return ResponseEntity.status(HttpStatus.CREATED).body(new AtendimentoTesteResponse(
-                atual.getPacienteId(), AgendamentoResponse.de(atual), disparo, proximoPasso(atual, disparo)));
+                atual.getPacienteId(), agendado.pacienteNovo(), AgendamentoResponse.de(atual),
+                agendado.confirmacao(), agendado.pedidoConfirmacao(), lembrete,
+                proximoPasso(atual, agendado.confirmacao())));
     }
 
     @PostMapping("/respostas")
@@ -105,13 +107,13 @@ public class AtendimentoTesteController {
         return processarResposta.processar(Telefone.de(request.telefone()), request.texto());
     }
 
-    private static String proximoPasso(Agendamento agendamento, ResultadoDisparo disparo) {
-        if (disparo == null) return "Nenhum lembrete disparado. Use POST /api/agendamentos/" + agendamento.getId() + "/disparos para enviar.";
-        if (disparo.motivoNaoEnvio() != null) return "Lembrete não enviado: " + disparo.motivoNaoEnvio();
-        if (disparo.envios().stream().noneMatch(e -> e.sucesso()))
-            return "Falha no envio pelo WhatsApp: " + disparo.envios().getFirst().erro();
+    private static String proximoPasso(Agendamento agendamento, ResultadoDisparo confirmacao) {
+        if (confirmacao.motivoNaoEnvio() != null) return "Confirmação não enviada: " + confirmacao.motivoNaoEnvio();
+        if (confirmacao.envios().stream().noneMatch(e -> e.sucesso()))
+            return "Falha no envio pelo WhatsApp: " + confirmacao.envios().getFirst().erro();
         if (agendamento.aguardandoResposta())
             return "Responda 1, 2 ou 3 no WhatsApp (ou use POST /api/teste/atendimentos/respostas) e consulte GET /api/agendamentos/" + agendamento.getId();
-        return "Lembrete enviado. Consulte GET /api/agendamentos/" + agendamento.getId();
+        return "Confirmação enviada. O pedido de confirmação sai pela rotina diária; para enviar agora use POST /api/agendamentos/"
+                + agendamento.getId() + "/disparos?tipo=PEDIDO_CONFIRMACAO";
     }
 }

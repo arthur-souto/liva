@@ -5,5 +5,6 @@ import sus.liva.infrastructure.adapter.in.web.AgendamentoResponse;
 
 import java.util.UUID;
 
-public record AtendimentoTesteResponse(UUID pacienteId, AgendamentoResponse agendamento,
-                                       ResultadoDisparo disparo, String proximoPasso) {}
+public record AtendimentoTesteResponse(UUID pacienteId, boolean pacienteNovo, AgendamentoResponse agendamento,
+                                       ResultadoDisparo confirmacao, ResultadoDisparo pedidoConfirmacao,
+                                       ResultadoDisparo lembrete, String proximoPasso) {}

@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 
 public record NovoAtendimento(
         String nomePaciente,
+        String cpf,
         String telefone,
         String nomeCuidador,
         String telefoneCuidador,

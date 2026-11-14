@@ -43,28 +43,34 @@ class AtendimentoTesteControllerTest {
     private final RegistroMensagemMemoriaAdapter registros = new RegistroMensagemMemoriaAdapter();
     private final ModeloMensagens modelos = new ModeloMensagens();
 
+    private final DispararLembreteUseCaseImpl dispararLembrete = new DispararLembreteUseCaseImpl(agendamentos, pacientes, registros, enviador, modelos);
+
     private final MockMvc mvc = MockMvcBuilders.standaloneSetup(new AtendimentoTesteController(
-                    new AgendarAtendimentoUseCaseImpl(pacientes, agendamentos, new TransacaoFake(), CLOCK),
-                    new DispararLembreteUseCaseImpl(agendamentos, pacientes, registros, enviador, modelos),
+                    new AgendarAtendimentoUseCaseImpl(pacientes, agendamentos, dispararLembrete, new TransacaoFake(), CLOCK),
+                    dispararLembrete,
                     new ConsultarAgendamentoUseCaseImpl(agendamentos),
-                    new ProcessarRespostaUseCaseImpl(registros, agendamentos, pacientes, enviador, modelos, new TransacaoFake()),
+                    new ProcessarRespostaUseCaseImpl(registros, agendamentos, pacientes, enviador, modelos, new TransacaoFake(), CLOCK),
                     CLOCK))
             .setControllerAdvice(new GlobalExceptionHandler())
             .build();
 
     @Test
-    void criaAtendimentoComPadroesEDisparaPedidoDeConfirmacao() throws Exception {
+    void criaAtendimentoComPadroesEEnviaConfirmacaoEPedido() throws Exception {
         mvc.perform(post("/api/teste/atendimentos").contentType(MediaType.APPLICATION_JSON)
                         .content("{\"telefone\":\"51993953661\"}"))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.agendamento.status").value("AGUARDANDO_RESPOSTA"))
                 .andExpect(jsonPath("$.agendamento.dataHora").value("2026-11-15T09:30:00"))
                 .andExpect(jsonPath("$.agendamento.unidade").value("UBS Centro"))
-                .andExpect(jsonPath("$.disparo.envios[0].sucesso").value(true))
+                .andExpect(jsonPath("$.pacienteNovo").value(true))
+                .andExpect(jsonPath("$.confirmacao.envios[0].sucesso").value(true))
+                .andExpect(jsonPath("$.pedidoConfirmacao.envios[0].sucesso").value(true))
+                .andExpect(jsonPath("$.lembrete").doesNotExist())
                 .andExpect(jsonPath("$.proximoPasso").value(org.hamcrest.Matchers.containsString("Responda 1, 2 ou 3")));
 
-        assertThat(enviadas).hasSize(1);
-        assertThat(enviadas.getFirst().texto()).contains("Paciente Teste").contains("Você consegue ir?");
+        assertThat(enviadas).hasSize(2);
+        assertThat(enviadas.getFirst().texto()).contains("Paciente Teste").contains("foi agendado");
+        assertThat(enviadas.getLast().texto()).contains("Você consegue ir?");
     }
 
     @Test
@@ -72,21 +78,33 @@ class AtendimentoTesteControllerTest {
         mvc.perform(post("/api/teste/atendimentos").contentType(MediaType.APPLICATION_JSON)
                         .content("{\"telefone\":\"51993953661\",\"nomeCuidador\":\"João\",\"telefoneCuidador\":\"11987654321\"}"))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.disparo.envios.length()").value(2));
+                .andExpect(jsonPath("$.confirmacao.envios.length()").value(2))
+                .andExpect(jsonPath("$.pedidoConfirmacao.envios.length()").value(2));
 
         assertThat(enviadas.get(1).destino().apenasDigitos()).isEqualTo("5511987654321");
         assertThat(enviadas.get(1).texto()).startsWith("Olá, João.");
     }
 
     @Test
-    void criaSemDispararQuandoSolicitado() throws Exception {
+    void enviaOLembreteExtraSolicitado() throws Exception {
         mvc.perform(post("/api/teste/atendimentos").contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"telefone\":\"51993953661\",\"disparar\":false}"))
+                        .content("{\"telefone\":\"51993953661\",\"preparo\":\"Jejum\",\"lembrete\":\"LEMBRETE_VESPERA\"}"))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.agendamento.status").value("AGENDADO"))
-                .andExpect(jsonPath("$.disparo").doesNotExist());
+                .andExpect(jsonPath("$.lembrete.envios[0].sucesso").value(true));
 
-        assertThat(enviadas).isEmpty();
+        assertThat(enviadas).hasSize(3);
+        assertThat(enviadas.getLast().texto()).startsWith("Lembrete:").contains("Preparo: Jejum");
+    }
+
+    @Test
+    void reaproveitaOPacienteDeTesteDoMesmoTelefone() throws Exception {
+        mvc.perform(post("/api/teste/atendimentos").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"telefone\":\"51993953661\"}"));
+
+        mvc.perform(post("/api/teste/atendimentos").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"telefone\":\"51993953661\"}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.pacienteNovo").value(false));
     }
 
     @Test
@@ -109,6 +127,7 @@ class AtendimentoTesteControllerTest {
         mvc.perform(post("/api/teste/atendimentos").contentType(MediaType.APPLICATION_JSON)
                         .content("{\"telefone\":\"123\"}"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.erro").exists());
+                .andExpect(jsonPath("$.codigo").value("REQUISICAO_INVALIDA"))
+                .andExpect(jsonPath("$.mensagem").exists());
     }
 }

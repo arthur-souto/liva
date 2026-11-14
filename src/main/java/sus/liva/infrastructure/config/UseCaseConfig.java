@@ -1,5 +1,6 @@
 package sus.liva.infrastructure.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import sus.liva.application.port.in.AgendarAtendimentoUseCase;
@@ -7,6 +8,7 @@ import sus.liva.application.port.in.ConsultarAgendamentoUseCase;
 import sus.liva.application.port.in.DispararLembreteUseCase;
 import sus.liva.application.port.in.DispararLembretesDoDiaUseCase;
 import sus.liva.application.port.in.EnviarMensagemUseCase;
+import sus.liva.application.port.in.ListarAgendamentosUseCase;
 import sus.liva.application.port.in.ProcessarRespostaUseCase;
 import sus.liva.application.port.out.AgendamentoRepositoryPort;
 import sus.liva.application.port.out.EnviadorMensagemPort;
@@ -18,10 +20,12 @@ import sus.liva.application.usecase.ConsultarAgendamentoUseCaseImpl;
 import sus.liva.application.usecase.DispararLembreteUseCaseImpl;
 import sus.liva.application.usecase.DispararLembretesDoDiaUseCaseImpl;
 import sus.liva.application.usecase.EnviarMensagemUseCaseImpl;
+import sus.liva.application.usecase.ListarAgendamentosUseCaseImpl;
 import sus.liva.application.usecase.ModeloMensagens;
 import sus.liva.application.usecase.ProcessarRespostaUseCaseImpl;
 
 import java.time.Clock;
+import java.time.ZoneId;
 
 @Configuration
 public class UseCaseConfig {
@@ -41,16 +45,17 @@ public class UseCaseConfig {
     }
 
     @Bean
-    public Clock clock() {
-        return Clock.systemDefaultZone();
+    public Clock clock(@Value("${confirmasus.fuso}") String fuso) {
+        return Clock.system(ZoneId.of(fuso));
     }
 
     @Bean
     public AgendarAtendimentoUseCase agendarAtendimentoUseCase(PacienteRepositoryPort pacientes,
                                                                AgendamentoRepositoryPort agendamentos,
+                                                               DispararLembreteUseCase dispararLembrete,
                                                                TransacaoPort transacao,
                                                                Clock clock) {
-        return new AgendarAtendimentoUseCaseImpl(pacientes, agendamentos, transacao, clock);
+        return new AgendarAtendimentoUseCaseImpl(pacientes, agendamentos, dispararLembrete, transacao, clock);
     }
 
     @Bean
@@ -64,18 +69,26 @@ public class UseCaseConfig {
                                                              PacienteRepositoryPort pacientes,
                                                              EnviadorMensagemPort enviador,
                                                              ModeloMensagens modelos,
-                                                             TransacaoPort transacao) {
-        return new ProcessarRespostaUseCaseImpl(registros, agendamentos, pacientes, enviador, modelos, transacao);
+                                                             TransacaoPort transacao,
+                                                             Clock clock) {
+        return new ProcessarRespostaUseCaseImpl(registros, agendamentos, pacientes, enviador, modelos, transacao, clock);
     }
 
     @Bean
-    public EnviarMensagemUseCase enviarMensagemUseCase(EnviadorMensagemPort enviador) {
-        return new EnviarMensagemUseCaseImpl(enviador);
+    public EnviarMensagemUseCase enviarMensagemUseCase(EnviadorMensagemPort enviador, RegistroMensagemPort registros,
+                                                       Clock clock) {
+        return new EnviarMensagemUseCaseImpl(enviador, registros, clock);
     }
 
     @Bean
     public DispararLembretesDoDiaUseCase dispararLembretesDoDiaUseCase(AgendamentoRepositoryPort agendamentos,
                                                                        DispararLembreteUseCase dispararLembrete) {
         return new DispararLembretesDoDiaUseCaseImpl(agendamentos, dispararLembrete);
+    }
+
+    @Bean
+    public ListarAgendamentosUseCase listarAgendamentosUseCase(AgendamentoRepositoryPort agendamentos,
+                                                               PacienteRepositoryPort pacientes) {
+        return new ListarAgendamentosUseCaseImpl(agendamentos, pacientes);
     }
 }

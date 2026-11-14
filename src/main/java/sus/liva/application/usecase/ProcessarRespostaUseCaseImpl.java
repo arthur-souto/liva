@@ -7,32 +7,42 @@ import sus.liva.application.port.out.EnviadorMensagemPort;
 import sus.liva.application.port.out.MensagemSaida;
 import sus.liva.application.port.out.PacienteRepositoryPort;
 import sus.liva.application.port.out.RegistroMensagemPort;
+import sus.liva.application.port.out.ResultadoEnvio;
 import sus.liva.application.port.out.TransacaoPort;
 import sus.liva.domain.model.Telefone;
 import sus.liva.domain.model.agendamento.Agendamento;
 import sus.liva.domain.model.agendamento.RespostaPaciente;
 import sus.liva.domain.model.agendamento.TipoLembrete;
 import sus.liva.domain.model.mensagem.RegistroMensagem;
+import sus.liva.domain.model.paciente.Paciente;
 
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Optional;
+import java.util.UUID;
 
 public class ProcessarRespostaUseCaseImpl implements ProcessarRespostaUseCase {
+    private static final Duration INTERVALO_ENTRE_ORIENTACOES = Duration.ofMinutes(5);
+
     private final RegistroMensagemPort registros;
     private final AgendamentoRepositoryPort agendamentos;
     private final PacienteRepositoryPort pacientes;
     private final EnviadorMensagemPort enviador;
     private final ModeloMensagens modelos;
     private final TransacaoPort transacao;
+    private final Clock clock;
 
     public ProcessarRespostaUseCaseImpl(RegistroMensagemPort registros, AgendamentoRepositoryPort agendamentos,
                                         PacienteRepositoryPort pacientes, EnviadorMensagemPort enviador,
-                                        ModeloMensagens modelos, TransacaoPort transacao) {
+                                        ModeloMensagens modelos, TransacaoPort transacao, Clock clock) {
         this.registros = registros;
         this.agendamentos = agendamentos;
         this.pacientes = pacientes;
         this.enviador = enviador;
         this.modelos = modelos;
         this.transacao = transacao;
+        this.clock = clock;
     }
 
     private record Aplicacao(ResultadoResposta ignorada, Agendamento agendamento, Telefone destino) {
@@ -42,15 +52,20 @@ public class ProcessarRespostaUseCaseImpl implements ProcessarRespostaUseCase {
     }
 
     @Override
-    public ResultadoResposta processar(Telefone remetente, String texto) {
+    public ResultadoResposta processar(Telefone remetente, String texto, String idMensagem) {
+        if (idMensagem != null && registros.enviadaPelaLiva(idMensagem))
+            return ResultadoResposta.ignorada("Mensagem enviada pela própria Liva");
+
         Optional<RespostaPaciente> resposta = RespostaPaciente.interpretar(texto);
-        if (resposta.isEmpty()) return ResultadoResposta.ignorada("Resposta não reconhecida");
+        if (resposta.isEmpty()) return orientar(remetente);
 
         Aplicacao aplicacao = transacao.executar(() -> aplicar(remetente, resposta.get()));
         if (aplicacao.ignorada() != null) return aplicacao.ignorada();
 
         Agendamento a = aplicacao.agendamento();
-        boolean retornoEnviado = enviarRetorno(resposta.get(), a, aplicacao.destino());
+        boolean retornoEnviado = pacientes.buscarPaciente(a.getPacienteId())
+                .map(p -> enviar(a.getId(), aplicacao.destino(), modelos.retornoResposta(resposta.get(), p, a)))
+                .orElse(false);
         return ResultadoResposta.aplicada(a.getId(), a.getStatus(), retornoEnviado);
     }
 
@@ -70,10 +85,28 @@ public class ProcessarRespostaUseCaseImpl implements ProcessarRespostaUseCase {
         return new Aplicacao(null, a, pedido.get().destino());
     }
 
-    private boolean enviarRetorno(RespostaPaciente resposta, Agendamento a, Telefone destino) {
-        return pacientes.buscarPaciente(a.getPacienteId())
-                .map(p -> modelos.retornoResposta(resposta, p, a))
-                .map(texto -> enviador.enviar(new MensagemSaida(a.getId(), destino, null, texto)).sucesso())
-                .orElse(false);
+    private ResultadoResposta orientar(Telefone remetente) {
+        Optional<RegistroMensagem> pedido = registros.ultimoEnvio(remetente, TipoLembrete.PEDIDO_CONFIRMACAO);
+        Optional<Agendamento> pendente = pedido.flatMap(r -> agendamentos.buscarAgendamento(r.agendamentoId()))
+                .filter(Agendamento::aguardandoResposta);
+        if (pendente.isEmpty()) return ResultadoResposta.ignorada("Resposta não reconhecida");
+
+        Agendamento a = pendente.get();
+        Optional<Paciente> paciente = pacientes.buscarPaciente(a.getPacienteId());
+        if (paciente.isEmpty()) return ResultadoResposta.ignorada("Resposta não reconhecida");
+
+        Telefone destino = pedido.get().destino();
+        String texto = modelos.naoEntendi(paciente.get(), a);
+        if (registros.enviadaDesde(destino, texto, Instant.now(clock).minus(INTERVALO_ENTRE_ORIENTACOES)))
+            return ResultadoResposta.ignorada("Resposta não reconhecida; orientação já enviada há pouco");
+
+        return ResultadoResposta.naoReconhecida(a.getId(), a.getStatus(), enviar(a.getId(), destino, texto));
+    }
+
+    private boolean enviar(UUID agendamentoId, Telefone destino, String texto) {
+        ResultadoEnvio r = enviador.enviar(new MensagemSaida(agendamentoId, destino, null, texto));
+        registros.salvarRegistro(new RegistroMensagem(agendamentoId, destino, null, texto,
+                r.sucesso(), r.idExterno(), r.erro(), Instant.now(clock)));
+        return r.sucesso();
     }
 }
