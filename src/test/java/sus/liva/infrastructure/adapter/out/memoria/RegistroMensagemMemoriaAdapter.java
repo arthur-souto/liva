@@ -39,6 +39,14 @@ public class RegistroMensagemMemoriaAdapter implements RegistroMensagemPort {
                 && r.destino().chaveComparacao().equals(chave) && r.enviadoEm().isAfter(desde));
     }
 
+    @Override
+    public List<RegistroMensagem> enviadasDoAgendamento(UUID agendamentoId) {
+        return dados.stream()
+                .filter(r -> agendamentoId.equals(r.agendamentoId()))
+                .sorted(Comparator.comparing(RegistroMensagem::enviadoEm))
+                .toList();
+    }
+
     public List<RegistroMensagem> todos() {
         return List.copyOf(dados);
     }

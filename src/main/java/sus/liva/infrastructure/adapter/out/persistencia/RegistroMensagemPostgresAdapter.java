@@ -8,6 +8,7 @@ import sus.liva.domain.model.agendamento.TipoLembrete;
 import sus.liva.domain.model.mensagem.RegistroMensagem;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -48,5 +49,13 @@ public class RegistroMensagemPostgresAdapter implements RegistroMensagemPort {
     @Transactional(readOnly = true)
     public boolean enviadaDesde(Telefone destino, String texto, Instant desde) {
         return repository.existsByChaveDestinoAndTextoAndSucessoTrueAndEnviadoEmAfter(destino.chaveComparacao(), texto, desde);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<RegistroMensagem> enviadasDoAgendamento(UUID agendamentoId) {
+        return repository.findByAgendamentoIdOrderByEnviadoEmAscIdAsc(agendamentoId).stream()
+                .map(RegistroMensagemEntity::paraDominio)
+                .toList();
     }
 }

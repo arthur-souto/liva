@@ -38,7 +38,7 @@ O envio e o recebimento de mensagens usam a [Evolution API](https://doc.evolutio
 2. O lembrete `PEDIDO_CONFIRMACAO` é disparado pela rotina diária (ou na hora, se o atendimento já estiver dentro do prazo). O agendamento passa a `AGUARDANDO_RESPOSTA`.
 3. O paciente responde no WhatsApp. A Evolution chama o webhook da Liva.
 4. A Liva identifica o agendamento pelo telefone, aplica a resposta (`CONFIRMADO`, `CANCELADO` ou `REAGENDADO`) e envia uma mensagem de retorno.
-5. O status pode ser consultado em `GET /api/agendamentos/{id}`.
+5. O status pode ser consultado em `GET /api/agendamentos/{id}` e a conversa completa em `GET /api/agendamentos/{id}/mensagens`.
 
 ---
 
@@ -306,6 +306,7 @@ Com `WHATSAPP_PROVEDOR=console`, nada é enviado: as mensagens aparecem no log d
 | `POST` | `/api/agendamentos` | Agenda um atendimento, reaproveita o paciente e envia a confirmação (201; 400 inválido) |
 | `GET` | `/api/agendamentos?inicio=&fim=&status=` | Lista para a equipe: agendamentos do período (padrão: hoje; máx. 31 dias) com paciente, telefone e contagem `porStatus`. `status` pode repetir |
 | `GET` | `/api/agendamentos/{id}` | Consulta o agendamento e o status atual (404 se não existir) |
+| `GET` | `/api/agendamentos/{id}/mensagens` | Histórico em ordem cronológica: mensagens enviadas (`ENVIADA`) e respostas do paciente (`RECEBIDA`, com o texto original e a interpretação) |
 | `POST` | `/api/agendamentos/{id}/disparos?tipo=...&forcar=true` | Dispara um lembrete de um agendamento. `forcar=false` não reenvia o que já foi enviado |
 | `POST` | `/api/disparos/executar?data=AAAA-MM-DD` | Executa agora a rotina diária para a data informada (padrão: hoje). Mesma lógica do agendador |
 | `POST` | `/api/mensagens` | Envia uma mensagem avulsa `{"telefone", "texto"}` (200 enviado, 502 falha na Evolution, 400 inválido) |

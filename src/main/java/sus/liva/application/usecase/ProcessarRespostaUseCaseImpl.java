@@ -4,6 +4,7 @@ import sus.liva.application.port.in.ProcessarRespostaUseCase;
 import sus.liva.application.port.in.ResultadoResposta;
 import sus.liva.application.port.out.AgendamentoRepositoryPort;
 import sus.liva.application.port.out.EnviadorMensagemPort;
+import sus.liva.application.port.out.MensagemRecebidaPort;
 import sus.liva.application.port.out.MensagemSaida;
 import sus.liva.application.port.out.PacienteRepositoryPort;
 import sus.liva.application.port.out.RegistroMensagemPort;
@@ -13,12 +14,14 @@ import sus.liva.domain.model.Telefone;
 import sus.liva.domain.model.agendamento.Agendamento;
 import sus.liva.domain.model.agendamento.RespostaPaciente;
 import sus.liva.domain.model.agendamento.TipoLembrete;
+import sus.liva.domain.model.mensagem.MensagemRecebida;
 import sus.liva.domain.model.mensagem.RegistroMensagem;
 import sus.liva.domain.model.paciente.Paciente;
 
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -26,6 +29,7 @@ public class ProcessarRespostaUseCaseImpl implements ProcessarRespostaUseCase {
     private static final Duration INTERVALO_ENTRE_ORIENTACOES = Duration.ofMinutes(5);
 
     private final RegistroMensagemPort registros;
+    private final MensagemRecebidaPort recebidas;
     private final AgendamentoRepositoryPort agendamentos;
     private final PacienteRepositoryPort pacientes;
     private final EnviadorMensagemPort enviador;
@@ -33,10 +37,12 @@ public class ProcessarRespostaUseCaseImpl implements ProcessarRespostaUseCase {
     private final TransacaoPort transacao;
     private final Clock clock;
 
-    public ProcessarRespostaUseCaseImpl(RegistroMensagemPort registros, AgendamentoRepositoryPort agendamentos,
-                                        PacienteRepositoryPort pacientes, EnviadorMensagemPort enviador,
-                                        ModeloMensagens modelos, TransacaoPort transacao, Clock clock) {
+    public ProcessarRespostaUseCaseImpl(RegistroMensagemPort registros, MensagemRecebidaPort recebidas,
+                                        AgendamentoRepositoryPort agendamentos, PacienteRepositoryPort pacientes,
+                                        EnviadorMensagemPort enviador, ModeloMensagens modelos,
+                                        TransacaoPort transacao, Clock clock) {
         this.registros = registros;
+        this.recebidas = recebidas;
         this.agendamentos = agendamentos;
         this.pacientes = pacientes;
         this.enviador = enviador;
@@ -56,15 +62,26 @@ public class ProcessarRespostaUseCaseImpl implements ProcessarRespostaUseCase {
         if (idMensagem != null && registros.enviadaPelaLiva(idMensagem))
             return ResultadoResposta.ignorada("Mensagem enviada pela própria Liva");
 
+        Instant recebidaEm = Instant.now(clock);
         Optional<RespostaPaciente> resposta = RespostaPaciente.interpretar(texto);
-        if (resposta.isEmpty()) return orientar(remetente);
+        ResultadoResposta resultado = resposta.isEmpty() ? orientar(remetente) : responder(remetente, resposta.get());
+        recebidas.salvarRecebida(new MensagemRecebida(vinculo(remetente, resultado), remetente,
+                Objects.requireNonNullElse(texto, ""), idMensagem, resposta.orElse(null), recebidaEm));
+        return resultado;
+    }
 
-        Aplicacao aplicacao = transacao.executar(() -> aplicar(remetente, resposta.get()));
+    private UUID vinculo(Telefone remetente, ResultadoResposta resultado) {
+        if (resultado.agendamentoId() != null) return resultado.agendamentoId();
+        return registros.ultimoEnvio(remetente, TipoLembrete.PEDIDO_CONFIRMACAO).map(RegistroMensagem::agendamentoId).orElse(null);
+    }
+
+    private ResultadoResposta responder(Telefone remetente, RespostaPaciente resposta) {
+        Aplicacao aplicacao = transacao.executar(() -> aplicar(remetente, resposta));
         if (aplicacao.ignorada() != null) return aplicacao.ignorada();
 
         Agendamento a = aplicacao.agendamento();
         boolean retornoEnviado = pacientes.buscarPaciente(a.getPacienteId())
-                .map(p -> enviar(a.getId(), aplicacao.destino(), modelos.retornoResposta(resposta.get(), p, a)))
+                .map(p -> enviar(a.getId(), aplicacao.destino(), modelos.retornoResposta(resposta, p, a)))
                 .orElse(false);
         return ResultadoResposta.aplicada(a.getId(), a.getStatus(), retornoEnviado);
     }

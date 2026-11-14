@@ -8,13 +8,16 @@ import sus.liva.application.port.out.MensagemSaida;
 import sus.liva.application.port.out.ResultadoEnvio;
 import sus.liva.domain.model.Telefone;
 import sus.liva.domain.model.agendamento.Agendamento;
+import sus.liva.domain.model.agendamento.RespostaPaciente;
 import sus.liva.domain.model.agendamento.StatusAgendamento;
 import sus.liva.domain.model.agendamento.TipoAtendimento;
 import sus.liva.domain.model.agendamento.TipoLembrete;
+import sus.liva.domain.model.mensagem.MensagemRecebida;
 import sus.liva.domain.model.mensagem.RegistroMensagem;
 import sus.liva.domain.model.paciente.Paciente;
 import sus.liva.domain.model.paciente.Sexo;
 import sus.liva.infrastructure.adapter.out.memoria.AgendamentoMemoriaAdapter;
+import sus.liva.infrastructure.adapter.out.memoria.MensagemRecebidaMemoriaAdapter;
 import sus.liva.infrastructure.adapter.out.memoria.PacienteMemoriaAdapter;
 import sus.liva.infrastructure.adapter.out.memoria.RegistroMensagemMemoriaAdapter;
 import sus.liva.infrastructure.adapter.out.memoria.TransacaoFake;
@@ -53,6 +56,7 @@ class ProcessarRespostaUseCaseImplTest {
     }
 
     private final RegistroMensagemMemoriaAdapter registros = new RegistroMensagemMemoriaAdapter();
+    private final MensagemRecebidaMemoriaAdapter recebidas = new MensagemRecebidaMemoriaAdapter();
     private final AgendamentoMemoriaAdapter agendamentos = new AgendamentoMemoriaAdapter();
     private final PacienteMemoriaAdapter pacientes = new PacienteMemoriaAdapter();
     private final EnviadorFake enviador = new EnviadorFake();
@@ -74,7 +78,7 @@ class ProcessarRespostaUseCaseImplTest {
         }
     };
     private final ProcessarRespostaUseCaseImpl useCase =
-            new ProcessarRespostaUseCaseImpl(registros, agendamentos, pacientes, enviador, new ModeloMensagens(), transacao, relogio);
+            new ProcessarRespostaUseCaseImpl(registros, recebidas, agendamentos, pacientes, enviador, new ModeloMensagens(), transacao, relogio);
 
     @BeforeEach
     void setUp() {
@@ -83,6 +87,38 @@ class ProcessarRespostaUseCaseImplTest {
                 "UBS Centro", TipoAtendimento.CONSULTA, LocalDateTime.now().plusDays(2), PACIENTE_ID, AGENDAMENTO_ID));
         registros.salvarRegistro(new RegistroMensagem(AGENDAMENTO_ID, TELEFONE_PACIENTE, TipoLembrete.PEDIDO_CONFIRMACAO,
                 "pedido", true, "id-1", null, Instant.now()));
+    }
+
+    @Test
+    void guardaARespostaDoPacienteVinculadaAoAgendamento() {
+        useCase.processar(TELEFONE_PACIENTE, "Sim, vou", "msg-1");
+
+        assertThat(recebidas.todas()).containsExactly(new MensagemRecebida(AGENDAMENTO_ID, TELEFONE_PACIENTE,
+                "Sim, vou", "msg-1", RespostaPaciente.CONFIRMAR, agora));
+    }
+
+    @Test
+    void guardaRespostaNaoReconhecidaSemInterpretacao() {
+        useCase.processar(TELEFONE_PACIENTE, "talvez", "msg-2");
+
+        MensagemRecebida recebida = recebidas.todas().getFirst();
+        assertThat(recebida.agendamentoId()).isEqualTo(AGENDAMENTO_ID);
+        assertThat(recebida.resposta()).isNull();
+    }
+
+    @Test
+    void guardaRespostaRepetidaNoMesmoAgendamento() {
+        useCase.processar(TELEFONE_PACIENTE, "1");
+        useCase.processar(TELEFONE_PACIENTE, "1");
+
+        assertThat(recebidas.recebidasDoAgendamento(AGENDAMENTO_ID)).hasSize(2);
+    }
+
+    @Test
+    void naoGuardaEcoDaPropriaLiva() {
+        useCase.processar(TELEFONE_PACIENTE, "pedido", "id-1");
+
+        assertThat(recebidas.todas()).isEmpty();
     }
 
     @Test

@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import sus.liva.application.port.in.AgendarAtendimentoUseCase;
 import sus.liva.application.port.in.ConsultarAgendamentoUseCase;
+import sus.liva.application.port.in.ConsultarHistoricoUseCase;
 import sus.liva.application.port.in.DispararLembreteUseCase;
 import sus.liva.application.port.in.DispararLembretesDoDiaUseCase;
 import sus.liva.application.port.in.EnviarMensagemUseCase;
@@ -12,11 +13,13 @@ import sus.liva.application.port.in.ListarAgendamentosUseCase;
 import sus.liva.application.port.in.ProcessarRespostaUseCase;
 import sus.liva.application.port.out.AgendamentoRepositoryPort;
 import sus.liva.application.port.out.EnviadorMensagemPort;
+import sus.liva.application.port.out.MensagemRecebidaPort;
 import sus.liva.application.port.out.PacienteRepositoryPort;
 import sus.liva.application.port.out.RegistroMensagemPort;
 import sus.liva.application.port.out.TransacaoPort;
 import sus.liva.application.usecase.AgendarAtendimentoUseCaseImpl;
 import sus.liva.application.usecase.ConsultarAgendamentoUseCaseImpl;
+import sus.liva.application.usecase.ConsultarHistoricoUseCaseImpl;
 import sus.liva.application.usecase.DispararLembreteUseCaseImpl;
 import sus.liva.application.usecase.DispararLembretesDoDiaUseCaseImpl;
 import sus.liva.application.usecase.EnviarMensagemUseCaseImpl;
@@ -65,13 +68,21 @@ public class UseCaseConfig {
 
     @Bean
     public ProcessarRespostaUseCase processarRespostaUseCase(RegistroMensagemPort registros,
+                                                             MensagemRecebidaPort recebidas,
                                                              AgendamentoRepositoryPort agendamentos,
                                                              PacienteRepositoryPort pacientes,
                                                              EnviadorMensagemPort enviador,
                                                              ModeloMensagens modelos,
                                                              TransacaoPort transacao,
                                                              Clock clock) {
-        return new ProcessarRespostaUseCaseImpl(registros, agendamentos, pacientes, enviador, modelos, transacao, clock);
+        return new ProcessarRespostaUseCaseImpl(registros, recebidas, agendamentos, pacientes, enviador, modelos, transacao, clock);
+    }
+
+    @Bean
+    public ConsultarHistoricoUseCase consultarHistoricoUseCase(AgendamentoRepositoryPort agendamentos,
+                                                               RegistroMensagemPort registros,
+                                                               MensagemRecebidaPort recebidas) {
+        return new ConsultarHistoricoUseCaseImpl(agendamentos, registros, recebidas);
     }
 
     @Bean
