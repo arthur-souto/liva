@@ -1,0 +1,49 @@
+.acoes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-4);
+}
+
+.lista {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.linha {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espaco-3);
+  padding: var(--espaco-3) 0;
+  border-bottom: 1px solid var(--cor-borda);
+}
+
+.linha:last-child {
+  border-bottom: none;
+}
+
+.textos {
+  flex: 1 1 14rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.rotulo {
+  font-weight: var(--peso-semi);
+  color: var(--cor-titulo);
+}
+
+.descricao {
+  font-size: var(--texto-sm);
+  color: var(--cor-texto-suave);
+}
+
+.confirmacao {
+  display: flex;
+  gap: var(--espaco-2);
+}

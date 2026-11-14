@@ -1,0 +1,121 @@
+.pagina {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-6);
+}
+
+.grade {
+  display: grid;
+  gap: var(--espaco-6);
+}
+
+.calendario {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-4);
+}
+
+.topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espaco-3);
+}
+
+.mes {
+  font-size: var(--texto-xl);
+  font-weight: var(--peso-forte);
+  text-transform: capitalize;
+}
+
+.navegacao {
+  display: flex;
+  gap: var(--espaco-2);
+}
+
+.seta {
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-pilula);
+  background: var(--cor-superficie);
+  color: var(--cor-titulo);
+  transition: background var(--transicao);
+}
+
+.seta:hover {
+  background: var(--cor-superficie-suave);
+}
+
+.semana,
+.dias {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: var(--espaco-1);
+  text-align: center;
+}
+
+.semana {
+  font-size: var(--texto-xs);
+  color: var(--cor-texto-suave);
+  text-transform: uppercase;
+  letter-spacing: var(--espacamento-rotulo);
+}
+
+.dia {
+  position: relative;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: var(--raio-md);
+  background: transparent;
+  font-weight: var(--peso-medio);
+  transition: background var(--transicao), color var(--transicao);
+}
+
+.dia:hover {
+  background: var(--cor-superficie-suave);
+}
+
+.hoje {
+  background: var(--cor-primaria-suave);
+  color: var(--cor-titulo);
+  font-weight: var(--peso-forte);
+}
+
+.selecionado,
+.selecionado:hover {
+  background: var(--cor-primaria);
+  color: var(--cor-texto-invertido);
+}
+
+.ponto {
+  position: absolute;
+  bottom: 18%;
+  width: 5px;
+  height: 5px;
+  border-radius: var(--raio-pilula);
+  background: var(--cor-destaque);
+}
+
+.secao {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-4);
+  min-width: 0;
+}
+
+.tituloDia {
+  font-size: var(--texto-lg);
+  font-weight: var(--peso-semi);
+}
+
+@media (min-width: 960px) {
+  .grade {
+    grid-template-columns: minmax(22rem, 1fr) minmax(0, 1.2fr);
+    align-items: start;
+  }
+}

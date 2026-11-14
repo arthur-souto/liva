@@ -1,0 +1,61 @@
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-1);
+  min-width: 0;
+}
+
+.rotulo {
+  display: flex;
+  align-items: baseline;
+  gap: var(--espaco-2);
+  font-size: var(--texto-xs);
+  font-weight: var(--peso-semi);
+  letter-spacing: var(--espacamento-rotulo);
+  text-transform: uppercase;
+  color: var(--cor-texto-suave);
+}
+
+.opcional {
+  font-weight: var(--peso-normal);
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.entrada {
+  width: 100%;
+  min-height: 3rem;
+  padding: var(--espaco-2) var(--espaco-4);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-md);
+  background: var(--cor-superficie);
+  font-size: var(--texto-base);
+  transition: border-color var(--transicao);
+}
+
+.entrada::placeholder {
+  color: var(--cor-cinza-300);
+}
+
+.entrada:hover {
+  border-color: var(--cor-borda-forte);
+}
+
+.entrada:focus-visible {
+  border-color: var(--cor-foco);
+}
+
+.invalida {
+  border-color: var(--cor-perigo);
+}
+
+.dica {
+  font-size: var(--texto-xs);
+  color: var(--cor-texto-suave);
+}
+
+.erro {
+  font-size: var(--texto-xs);
+  font-weight: var(--peso-medio);
+  color: var(--cor-perigo);
+}

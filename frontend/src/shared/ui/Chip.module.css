@@ -1,0 +1,44 @@
+.chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--espaco-2);
+  min-height: 2.5rem;
+  padding: var(--espaco-2) var(--espaco-4);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-md);
+  background: var(--cor-superficie);
+  color: var(--cor-texto);
+  font-size: var(--texto-sm);
+  font-weight: var(--peso-medio);
+  white-space: nowrap;
+  transition:
+    background var(--transicao),
+    border-color var(--transicao),
+    color var(--transicao);
+}
+
+.chip:hover:not(:disabled) {
+  border-color: var(--cor-borda-forte);
+}
+
+.chip:disabled {
+  opacity: 0.45;
+}
+
+.marca {
+  background: var(--cor-primaria);
+  border-color: var(--cor-primaria);
+  color: var(--cor-texto-invertido);
+}
+
+.marca:hover:not(:disabled) {
+  border-color: var(--cor-primaria);
+}
+
+.realce {
+  background: var(--cor-sucesso-fundo);
+  border-color: var(--cor-sucesso);
+  color: var(--cor-sucesso);
+  font-weight: var(--peso-semi);
+}

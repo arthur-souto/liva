@@ -1,0 +1,85 @@
+.etapas {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.etapa {
+  position: relative;
+  display: flex;
+  gap: var(--espaco-3);
+  padding-bottom: var(--espaco-5);
+}
+
+.etapa:last-child {
+  padding-bottom: 0;
+}
+
+.etapa:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  top: 1.75rem;
+  bottom: var(--espaco-1);
+  left: calc(0.875rem - 1px);
+  width: 2px;
+  background: var(--cor-borda);
+}
+
+.feita:not(:last-child)::after {
+  background: var(--cor-primaria);
+}
+
+.marcador {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 2px solid var(--cor-borda-forte);
+  border-radius: var(--raio-pilula);
+  background: var(--cor-superficie);
+  font-size: var(--texto-xs);
+  font-weight: var(--peso-forte);
+  color: var(--cor-texto-suave);
+}
+
+.feita .marcador {
+  border-color: var(--cor-primaria);
+  background: var(--cor-primaria);
+  color: var(--cor-texto-invertido);
+}
+
+.atual .marcador {
+  border-color: var(--cor-destaque);
+  color: var(--cor-destaque);
+}
+
+.texto {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-top: 2px;
+}
+
+.titulo {
+  font-weight: var(--peso-semi);
+  color: var(--cor-titulo);
+}
+
+.descricao {
+  font-size: var(--texto-sm);
+  color: var(--cor-texto-suave);
+}
+
+.citacao {
+  margin-top: var(--espaco-1);
+  padding: var(--espaco-2) var(--espaco-3);
+  border-left: 3px solid var(--cor-secundaria);
+  border-radius: var(--raio-sm);
+  background: var(--cor-superficie-suave);
+  font-size: var(--texto-sm);
+  color: var(--cor-texto);
+  overflow-wrap: anywhere;
+}

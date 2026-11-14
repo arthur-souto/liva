@@ -1,0 +1,45 @@
+.etiqueta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espaco-1);
+  padding: 2px var(--espaco-2);
+  border-radius: var(--raio-pilula);
+  font-size: var(--texto-xs);
+  font-weight: var(--peso-semi);
+  white-space: nowrap;
+}
+
+.sucesso {
+  background: var(--cor-sucesso-fundo);
+  color: var(--cor-sucesso);
+}
+
+.alerta {
+  background: var(--cor-alerta-fundo);
+  color: var(--cor-alerta);
+}
+
+.perigo {
+  background: var(--cor-perigo-fundo);
+  color: var(--cor-perigo);
+}
+
+.info {
+  background: var(--cor-info-fundo);
+  color: var(--cor-info);
+}
+
+.neutro {
+  background: var(--cor-neutro-fundo);
+  color: var(--cor-neutro);
+}
+
+.marca {
+  background: var(--cor-primaria-suave);
+  color: var(--cor-primaria);
+}
+
+.destaque {
+  background: var(--cor-destaque-suave);
+  color: var(--cor-vermelho-800);
+}

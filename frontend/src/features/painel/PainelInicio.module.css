@@ -1,0 +1,230 @@
+.pagina {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-6);
+}
+
+.grade {
+  display: grid;
+  gap: var(--espaco-6);
+}
+
+.lateral,
+.principal,
+.secao {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-4);
+  min-width: 0;
+}
+
+.tituloSecao {
+  font-size: var(--texto-lg);
+  font-weight: var(--peso-semi);
+}
+
+.proximo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-2);
+  background:
+    radial-gradient(circle at 115% -10%, var(--cor-roxo-500) 0 38%, transparent 38.5%),
+    var(--cor-primaria);
+}
+
+.proximoTopo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espaco-3);
+}
+
+.proximoRotulo {
+  font-size: var(--texto-sm);
+  color: var(--cor-roxo-200);
+}
+
+.proximoNome {
+  font-size: var(--texto-xl);
+  font-weight: var(--peso-semi);
+}
+
+.proximoUnidade {
+  font-size: var(--texto-sm);
+  color: var(--cor-roxo-200);
+}
+
+.proximoQuando {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espaco-4);
+  margin-top: var(--espaco-1);
+  font-size: var(--texto-sm);
+}
+
+.proximoQuando span {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espaco-2);
+}
+
+.proximoLink {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: var(--espaco-3);
+  padding: var(--espaco-3) var(--espaco-4);
+  border-radius: var(--raio-lg);
+  background: rgb(255 255 255 / 0.12);
+  font-size: var(--texto-sm);
+  font-weight: var(--peso-semi);
+  transition: background var(--transicao);
+}
+
+.proximoLink:hover {
+  background: rgb(255 255 255 / 0.2);
+}
+
+.resumo {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--espaco-3);
+}
+
+.contador {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: var(--espaco-4);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-xl);
+  background: var(--cor-superficie);
+  box-shadow: var(--sombra-cartao);
+  text-align: left;
+  transition:
+    border-color var(--transicao),
+    transform var(--transicao);
+}
+
+.contador:hover {
+  transform: translateY(-1px);
+}
+
+.contador strong {
+  font-size: var(--texto-2xl);
+  font-weight: var(--peso-semi);
+  line-height: 1.1;
+}
+
+.contador span {
+  font-size: var(--texto-sm);
+  color: var(--cor-texto-suave);
+}
+
+.AGUARDANDO_RESPOSTA strong {
+  color: var(--cor-alerta);
+}
+
+.CONFIRMADO strong {
+  color: var(--cor-sucesso);
+}
+
+.REAGENDADO strong {
+  color: var(--cor-vermelho-800);
+}
+
+.CANCELADO strong {
+  color: var(--cor-perigo);
+}
+
+.contadorAtivo {
+  border-color: var(--cor-primaria);
+  box-shadow: var(--sombra-foco);
+}
+
+.acoes {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--espaco-3);
+}
+
+.atalho {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--espaco-3);
+  padding: var(--espaco-4);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-xl);
+  background: var(--cor-superficie);
+  box-shadow: var(--sombra-cartao);
+  color: var(--cor-titulo);
+  font-weight: var(--peso-semi);
+  text-align: left;
+  transition: border-color var(--transicao);
+}
+
+.atalho:hover:not(:disabled) {
+  border-color: var(--cor-roxo-200);
+}
+
+.atalho:disabled {
+  opacity: 0.6;
+}
+
+.topoLista {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--espaco-3);
+}
+
+.periodos {
+  display: flex;
+  gap: var(--espaco-2);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.datas {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--espaco-3);
+}
+
+.filtroAtivo {
+  align-self: flex-start;
+}
+
+@media (min-width: 960px) {
+  .grade {
+    grid-template-columns: minmax(20rem, 24rem) 1fr;
+    align-items: start;
+  }
+
+  .lateral {
+    position: sticky;
+    top: var(--espaco-10);
+  }
+}
+
+.topoAcoes {
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-4);
+}
+
+.verTodos {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espaco-1);
+  font-size: var(--texto-sm);
+  font-weight: var(--peso-semi);
+  color: var(--cor-link);
+}
+
+.verTodos:hover {
+  text-decoration: underline;
+}

@@ -1,0 +1,32 @@
+.cartao {
+  border-radius: var(--raio-xl);
+  list-style: none;
+}
+
+.padrao {
+  background: var(--cor-superficie);
+  border: 1px solid var(--cor-borda);
+  box-shadow: var(--sombra-cartao);
+}
+
+.suave {
+  background: var(--cor-superficie-destaque);
+}
+
+.destaque {
+  background: var(--cor-primaria);
+  color: var(--cor-texto-invertido);
+  box-shadow: var(--sombra-elevada);
+}
+
+.compacto {
+  padding: var(--espaco-3) var(--espaco-4);
+}
+
+.normal {
+  padding: var(--espaco-4) var(--espaco-5);
+}
+
+.amplo {
+  padding: var(--espaco-6);
+}

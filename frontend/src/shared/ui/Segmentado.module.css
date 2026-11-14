@@ -1,0 +1,33 @@
+.grupo {
+  display: flex;
+  gap: var(--espaco-1);
+  padding: var(--espaco-1);
+  border-radius: var(--raio-lg);
+  background: var(--cor-superficie-destaque);
+}
+
+.opcao {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--espaco-2);
+  min-height: 2.5rem;
+  padding: var(--espaco-2) var(--espaco-3);
+  border: none;
+  border-radius: var(--raio-md);
+  background: transparent;
+  color: var(--cor-secundaria);
+  font-size: var(--texto-sm);
+  font-weight: var(--peso-medio);
+  transition:
+    background var(--transicao),
+    color var(--transicao);
+}
+
+.ativa {
+  background: var(--cor-superficie);
+  color: var(--cor-primaria);
+  font-weight: var(--peso-semi);
+  box-shadow: var(--sombra-cartao);
+}

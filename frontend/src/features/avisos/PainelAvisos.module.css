@@ -1,0 +1,138 @@
+.pagina {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-5);
+  max-width: 48rem;
+}
+
+.hero {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-2);
+  background:
+    radial-gradient(circle at 110% -20%, var(--cor-roxo-500) 0 40%, transparent 40.5%),
+    var(--cor-primaria);
+  color: var(--cor-texto-invertido);
+}
+
+.heroTitulo {
+  font-family: var(--fonte-marca);
+  font-weight: var(--peso-marca);
+  font-size: var(--texto-2xl);
+  line-height: var(--altura-linha-titulo);
+}
+
+.heroTexto {
+  font-size: var(--texto-sm);
+  color: var(--cor-roxo-200);
+}
+
+.grupos {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-6);
+}
+
+.grupo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-3);
+}
+
+.dia {
+  font-size: var(--texto-xs);
+  font-weight: var(--peso-semi);
+  letter-spacing: var(--espacamento-rotulo);
+  text-transform: uppercase;
+  color: var(--cor-texto-suave);
+}
+
+.lista {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.aviso {
+  display: flex;
+  gap: var(--espaco-3);
+}
+
+.iconeAviso {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: var(--raio-md);
+}
+
+.CANCELADO {
+  background: var(--cor-perigo-fundo);
+  color: var(--cor-perigo);
+}
+
+.REAGENDADO {
+  background: var(--cor-destaque-suave);
+  color: var(--cor-destaque);
+}
+
+.AGUARDANDO_RESPOSTA {
+  background: var(--cor-alerta-fundo);
+  color: var(--cor-alerta);
+}
+
+.corpo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-1);
+  min-width: 0;
+  flex: 1;
+}
+
+.linhaTopo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espaco-2);
+}
+
+.nome {
+  font-weight: var(--peso-semi);
+  color: var(--cor-titulo);
+}
+
+.meta {
+  font-size: var(--texto-sm);
+  color: var(--cor-texto-suave);
+}
+
+.acao {
+  font-size: var(--texto-sm);
+  font-weight: var(--peso-semi);
+  color: var(--cor-texto);
+}
+
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espaco-2) var(--espaco-4);
+  margin-top: var(--espaco-1);
+}
+
+.link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espaco-1);
+  font-size: var(--texto-sm);
+  font-weight: var(--peso-semi);
+  color: var(--cor-link);
+}
+
+.link:hover {
+  text-decoration: underline;
+}

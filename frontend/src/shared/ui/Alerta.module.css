@@ -1,0 +1,46 @@
+.caixa {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--espaco-3);
+  padding: var(--espaco-3) var(--espaco-4);
+  border-radius: var(--raio-lg);
+  font-size: var(--texto-sm);
+}
+
+.icone {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.conteudo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-1);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.titulo {
+  font-weight: var(--peso-semi);
+}
+
+.sucesso {
+  background: var(--cor-sucesso-fundo);
+  color: var(--cor-sucesso);
+}
+
+.alerta {
+  background: var(--cor-alerta-fundo);
+  color: var(--cor-alerta);
+}
+
+.perigo {
+  background: var(--cor-perigo-fundo);
+  color: var(--cor-perigo);
+}
+
+.info {
+  background: var(--cor-info-fundo);
+  color: var(--cor-info);
+}

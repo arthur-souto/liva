@@ -1,0 +1,40 @@
+.logo {
+  display: inline-flex;
+  font-family: var(--fonte-marca);
+  font-weight: var(--peso-marca);
+  color: var(--cor-primaria);
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.invertido {
+  color: var(--cor-texto-invertido);
+}
+
+.pequeno {
+  font-size: var(--texto-xl);
+}
+
+.medio {
+  font-size: var(--texto-2xl);
+}
+
+.grande {
+  font-size: var(--texto-3xl);
+}
+
+.i {
+  position: relative;
+}
+
+.i::before {
+  content: "";
+  position: absolute;
+  top: -0.06em;
+  left: 50%;
+  width: 0.24em;
+  height: 0.24em;
+  border-radius: var(--raio-pilula);
+  background: var(--cor-destaque);
+  transform: translateX(-50%);
+}

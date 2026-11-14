@@ -1,0 +1,39 @@
+.pagina {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-5);
+  max-width: 56rem;
+}
+
+.filtros {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-4);
+}
+
+.atalhos,
+.status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espaco-2);
+}
+
+.campos {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--espaco-3);
+}
+
+.busca {
+  grid-column: 1 / -1;
+}
+
+@media (min-width: 960px) {
+  .campos {
+    grid-template-columns: 11rem 11rem 1fr;
+  }
+
+  .busca {
+    grid-column: auto;
+  }
+}

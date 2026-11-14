@@ -1,0 +1,105 @@
+:root {
+  --cor-roxo-950: #24093a;
+  --cor-roxo-900: #2f0f4a;
+  --cor-roxo-800: #3b1a5a;
+  --cor-roxo-700: #52296f;
+  --cor-roxo-500: #7b4a93;
+  --cor-roxo-300: #c2abd9;
+  --cor-roxo-200: #dccdeb;
+  --cor-roxo-100: #ece3f5;
+  --cor-roxo-50: #f6f1fa;
+  --cor-laranja-500: #f7893b;
+  --cor-laranja-100: #fde8d7;
+  --cor-creme: #faf7f6;
+  --cor-branco: #ffffff;
+  --cor-cinza-900: #2b2233;
+  --cor-cinza-600: #5f5869;
+  --cor-cinza-500: #77707f;
+  --cor-cinza-300: #cfc9d6;
+  --cor-cinza-200: #e7e2eb;
+  --cor-cinza-100: #f2eff4;
+  --cor-verde-700: #0d7a69;
+  --cor-verde-100: #d6f2eb;
+  --cor-amarelo-700: #8a5a00;
+  --cor-amarelo-100: #fcf0cc;
+  --cor-vermelho-800: #8f1d2c;
+  --cor-vermelho-700: #b42335;
+  --cor-vermelho-100: #fbe2e5;
+  --cor-azul-700: #2457a6;
+  --cor-azul-100: #dfeafb;
+
+  --cor-fundo: var(--cor-creme);
+  --cor-superficie: var(--cor-branco);
+  --cor-superficie-suave: var(--cor-roxo-50);
+  --cor-superficie-destaque: var(--cor-roxo-100);
+  --cor-titulo: var(--cor-roxo-800);
+  --cor-texto: var(--cor-cinza-900);
+  --cor-texto-suave: var(--cor-cinza-500);
+  --cor-texto-invertido: var(--cor-branco);
+  --cor-borda: var(--cor-cinza-200);
+  --cor-borda-forte: var(--cor-cinza-300);
+  --cor-primaria: var(--cor-roxo-800);
+  --cor-primaria-hover: var(--cor-roxo-900);
+  --cor-primaria-suave: var(--cor-roxo-100);
+  --cor-secundaria: var(--cor-roxo-500);
+  --cor-destaque: var(--cor-laranja-500);
+  --cor-destaque-suave: var(--cor-laranja-100);
+  --cor-link: var(--cor-verde-700);
+  --cor-foco: var(--cor-roxo-500);
+  --cor-sucesso: var(--cor-verde-700);
+  --cor-sucesso-fundo: var(--cor-verde-100);
+  --cor-alerta: var(--cor-amarelo-700);
+  --cor-alerta-fundo: var(--cor-amarelo-100);
+  --cor-perigo: var(--cor-vermelho-700);
+  --cor-perigo-fundo: var(--cor-vermelho-100);
+  --cor-info: var(--cor-azul-700);
+  --cor-info-fundo: var(--cor-azul-100);
+  --cor-neutro: var(--cor-cinza-600);
+  --cor-neutro-fundo: var(--cor-cinza-100);
+  --cor-sobreposicao: rgb(36 9 58 / 0.4);
+
+  --fonte-base: var(--fonte-inter), system-ui, -apple-system, "Segoe UI", sans-serif;
+  --fonte-marca: var(--fonte-nunito), var(--fonte-base);
+
+  --texto-xs: 0.75rem;
+  --texto-sm: 0.875rem;
+  --texto-base: 1rem;
+  --texto-lg: 1.125rem;
+  --texto-xl: 1.375rem;
+  --texto-2xl: 1.75rem;
+  --texto-3xl: 2.125rem;
+  --peso-normal: 400;
+  --peso-medio: 500;
+  --peso-semi: 600;
+  --peso-forte: 700;
+  --peso-marca: 800;
+  --altura-linha: 1.5;
+  --altura-linha-titulo: 1.2;
+  --espacamento-rotulo: 0.06em;
+
+  --espaco-1: 0.25rem;
+  --espaco-2: 0.5rem;
+  --espaco-3: 0.75rem;
+  --espaco-4: 1rem;
+  --espaco-5: 1.25rem;
+  --espaco-6: 1.5rem;
+  --espaco-8: 2rem;
+  --espaco-10: 2.5rem;
+  --espaco-12: 3rem;
+
+  --raio-sm: 8px;
+  --raio-md: 12px;
+  --raio-lg: 16px;
+  --raio-xl: 22px;
+  --raio-pilula: 999px;
+
+  --sombra-cartao: 0 1px 2px rgb(59 26 90 / 0.05), 0 6px 18px rgb(59 26 90 / 0.06);
+  --sombra-elevada: 0 10px 30px rgb(59 26 90 / 0.16);
+  --sombra-foco: 0 0 0 3px rgb(123 74 147 / 0.35);
+
+  --transicao: 160ms ease;
+  --largura-conteudo: 72rem;
+  --largura-barra-lateral: 15.5rem;
+  --altura-navegacao-inferior: 4.5rem;
+  --camada-navegacao: 20;
+}
