@@ -3,12 +3,15 @@ BEGIN;
 
 CREATE TEMP TABLE rosa_consultas AS SELECT id FROM agendamentos WHERE paciente_id = 'a9e5e000-0000-4000-8000-000000000001';
 CREATE TEMP TABLE rosa_vagas AS SELECT id FROM vagas_liberadas WHERE agendamento_origem_id IN (SELECT id FROM rosa_consultas);
+CREATE TEMP TABLE rosa_entradas AS SELECT id FROM entradas_fila
+    WHERE encaminhamento_id IN (SELECT id FROM encaminhamentos WHERE paciente_id = 'a9e5e000-0000-4000-8000-000000000001');
 
-DELETE FROM ofertas_de_vaga WHERE vaga_id IN (SELECT id FROM rosa_vagas) OR paciente_id = 'a9e5e000-0000-4000-8000-000000000001'
+DELETE FROM ofertas_de_vaga WHERE vaga_id IN (SELECT id FROM rosa_vagas) OR entrada_id IN (SELECT id FROM rosa_entradas) OR paciente_id = 'a9e5e000-0000-4000-8000-000000000001'
     OR consulta_nova_id IN (SELECT id FROM rosa_consultas) OR consulta_anterior_id IN (SELECT id FROM rosa_consultas);
-DELETE FROM movimentacoes_fila WHERE vaga_id IN (SELECT id FROM rosa_vagas) OR agendamento_id IN (SELECT id FROM rosa_consultas)
+DELETE FROM movimentacoes_fila WHERE vaga_id IN (SELECT id FROM rosa_vagas) OR entrada_id IN (SELECT id FROM rosa_entradas) OR agendamento_id IN (SELECT id FROM rosa_consultas)
     OR paciente_id = 'a9e5e000-0000-4000-8000-000000000001';
 DELETE FROM vagas_liberadas WHERE id IN (SELECT id FROM rosa_vagas);
+DELETE FROM entradas_fila WHERE id IN (SELECT id FROM rosa_entradas);
 DELETE FROM registros_mensagem WHERE agendamento_id IN (SELECT id FROM rosa_consultas);
 DELETE FROM mensagens_recebidas WHERE agendamento_id IN (SELECT id FROM rosa_consultas);
 DELETE FROM confirmacoes_de_presenca WHERE agendamento_id IN (SELECT id FROM rosa_consultas);

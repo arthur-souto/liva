@@ -458,6 +458,11 @@ Criados pelo `db/demo/R__dados_demo.sql`. As senhas estão gravadas só como has
 | `ortopedia@liva.demo` | Especialista em Ortopedia (Dra. Ana Ribeiro) | Roberto Santos confirmado para hoje às 14:00 |
 | `cardiologia@liva.demo` | Especialista em Cardiologia (Dr. Carlos Lima) | Francisco Lima em consulta agora; Carla Nunes em 3 dias; Maria aguardando agendamento |
 | `plantao@liva.demo` | Plantão / pronto atendimento (Dra. Júlia Costa) | Luiza Martins, emergência, aguardando recebimento |
+| `neurologia@liva.demo` | Especialista em Neurologia (Dr. Rafael Souza) | Agenda de terça a quinta, pronta para receber encaminhamentos |
+| `dermatologia@liva.demo` | Especialista em Dermatologia (Dra. Mariana Alves) | Agenda segunda, quarta e sexta |
+| `ginecologia@liva.demo` | Especialista em Ginecologia (Dra. Helena Prado) | Agenda segunda, terça e quinta |
+| `pediatria@liva.demo` | Especialista em Pediatria (Dr. Tiago Martins) | Agenda segunda, quarta e sexta |
+| CPF `158.813.998-03` | Paciente Rosa Oliveira, criada por `scripts/preparar-apresentacao.sh` | Duas faltas, risco alto em "Ligar primeiro" e uma consulta de hoje para registrar a falta |
 | `12345678909` | Paciente (Maria da Silva) | Um atendimento encerrado com ortopedia e um com cardiologia liberado para agendar no portal |
 
 As datas são relativas ao dia em que o banco foi criado. Todos os pacientes de demonstração usam o mesmo telefone, então lembretes automáticos só vão para esse número.
