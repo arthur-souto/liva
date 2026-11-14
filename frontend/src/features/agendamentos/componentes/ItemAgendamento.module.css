@@ -79,7 +79,7 @@
 .acao {
   font-size: var(--texto-xs);
   font-weight: var(--peso-semi);
-  color: var(--cor-vermelho-800);
+  color: var(--cor-destaque-texto);
 }
 
 @media (min-width: 640px) {

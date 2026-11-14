@@ -3,6 +3,8 @@ import { Inter, Nunito } from "next/font/google";
 import type { ReactNode } from "react";
 import "@/shared/styles/token.css";
 import "@/shared/styles/base.css";
+import { Libras } from "@/shared/libras/Libras";
+import { SCRIPT_DO_TEMA } from "@/shared/tema/tema";
 import { Estrutura } from "@/shared/ui/Estrutura";
 
 const inter = Inter({ subsets: ["latin"], variable: "--fonte-inter", display: "swap" });
@@ -15,9 +17,13 @@ export const metadata: Metadata = {
 
 export default function LayoutRaiz({ children }: { children: ReactNode }) {
   return (
-    <html lang="pt-BR" className={`${inter.variable} ${nunito.variable}`}>
+    <html lang="pt-BR" className={`${inter.variable} ${nunito.variable}`} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: SCRIPT_DO_TEMA }} />
+      </head>
       <body suppressHydrationWarning>
         <Estrutura>{children}</Estrutura>
+        <Libras />
       </body>
     </html>
   );

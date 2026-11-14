@@ -27,7 +27,7 @@
 }
 
 .etapa[data-estado="feito"]:not(:last-child)::after {
-  background: var(--cor-verde-700);
+  background: var(--cor-sucesso);
 }
 
 .marcador {
@@ -40,17 +40,17 @@
   border: 2px solid var(--cor-borda-forte);
   border-radius: 999px;
   background: var(--cor-superficie);
-  color: var(--cor-branco);
+  color: var(--cor-superficie);
 }
 
 .etapa[data-estado="feito"] .marcador {
-  border-color: var(--cor-verde-700);
-  background: var(--cor-verde-700);
+  border-color: var(--cor-sucesso);
+  background: var(--cor-sucesso);
 }
 
 .etapa[data-estado="atual"] .marcador {
   border-color: var(--cor-primaria);
-  box-shadow: 0 0 0 4px var(--cor-roxo-100);
+  box-shadow: 0 0 0 4px var(--cor-primaria-suave);
 }
 
 .etapa[data-estado="atual"] .marcador::before {
@@ -62,8 +62,8 @@
 }
 
 .etapa[data-estado="cancelado"] .marcador {
-  border-color: var(--cor-vermelho-700);
-  background: var(--cor-vermelho-700);
+  border-color: var(--cor-perigo);
+  background: var(--cor-perigo);
 }
 
 .textos {
@@ -90,8 +90,8 @@
   align-self: flex-start;
   padding: 0 var(--espaco-2);
   border-radius: 999px;
-  background: var(--cor-roxo-100);
-  color: var(--cor-primaria);
+  background: var(--cor-primaria-suave);
+  color: var(--cor-titulo);
   font-weight: var(--peso-semi);
 }
 

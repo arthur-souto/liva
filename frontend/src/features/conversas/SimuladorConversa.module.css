@@ -49,6 +49,10 @@
   color: var(--cor-roxo-200);
 }
 
+:global(:root[data-tema="escuro"]) .subChat {
+  color: var(--cor-texto-invertido);
+}
+
 .mensagens {
   display: flex;
   flex-direction: column;

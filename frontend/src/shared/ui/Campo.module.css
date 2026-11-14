@@ -34,7 +34,7 @@
 }
 
 .entrada::placeholder {
-  color: var(--cor-cinza-300);
+  color: var(--cor-texto-placeholder);
 }
 
 .entrada:hover {

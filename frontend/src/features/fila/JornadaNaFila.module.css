@@ -210,8 +210,8 @@
 }
 
 .atras {
-  background: var(--cor-cinza-200);
-  color: var(--cor-cinza-500);
+  background: var(--cor-trilho);
+  color: var(--cor-texto-suave);
 }
 
 .multiplo {
@@ -315,7 +315,7 @@
   position: relative;
   height: 0.375rem;
   border-radius: var(--raio-xl);
-  background: var(--cor-cinza-100);
+  background: var(--cor-trilho);
 }
 
 .eixoPercorrido {

@@ -131,7 +131,7 @@
 }
 
 .REAGENDADO strong {
-  color: var(--cor-vermelho-800);
+  color: var(--cor-destaque-texto);
 }
 
 .CANCELADO strong {

@@ -7,7 +7,7 @@
 .linha {
   height: 4.5rem;
   border-radius: var(--raio-xl);
-  background: linear-gradient(90deg, var(--cor-cinza-100), var(--cor-superficie-suave), var(--cor-cinza-100));
+  background: linear-gradient(90deg, var(--cor-trilho), var(--cor-superficie-suave), var(--cor-trilho));
   background-size: 200% 100%;
   animation: brilho 1.2s ease-in-out infinite;
 }

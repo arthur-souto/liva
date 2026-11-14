@@ -25,6 +25,7 @@ import { useConsulta } from "@/shared/hooks/useConsulta";
 import { classes } from "@/shared/lib/classes";
 import { inicioDoPapel, rotaPermitida } from "@/shared/sessao/acesso";
 import { rotaPublica, usuarioAtual } from "@/shared/sessao/sessao";
+import { AlternarTema } from "@/shared/tema/AlternarTema";
 import { Logo } from "./Logo";
 import { UsuarioDaSessao } from "./UsuarioDaSessao";
 import estilos from "./Estrutura.module.css";
@@ -85,7 +86,15 @@ function salvarRecolhido(valor: boolean): void {
 
 export function Estrutura({ children }: { children: ReactNode }) {
   const caminho = usePathname();
-  if (rotaPublica(caminho)) return <main className={estilos.publica}>{children}</main>;
+  if (rotaPublica(caminho))
+    return (
+      <main className={estilos.publica}>
+        <div className={estilos.temaPublico}>
+          <AlternarTema />
+        </div>
+        {children}
+      </main>
+    );
   return <EstruturaDaEquipe caminho={caminho}>{children}</EstruturaDaEquipe>;
 }
 
@@ -153,6 +162,7 @@ function EstruturaDaEquipe({ caminho, children }: { caminho: string; children: R
           <Logo />
         </Link>
         <div className={estilos.direita}>
+          <AlternarTema />
           <UsuarioDaSessao />
         </div>
       </header>

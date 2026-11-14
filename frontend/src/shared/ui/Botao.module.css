@@ -60,7 +60,7 @@
 }
 
 .secundario:hover:not(:disabled) {
-  background: var(--cor-roxo-200);
+  background: var(--cor-primaria-suave-hover);
 }
 
 .contorno {

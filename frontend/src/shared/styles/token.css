@@ -1,4 +1,5 @@
 :root {
+  color-scheme: light;
   --cor-roxo-950: #24093a;
   --cor-roxo-900: #2f0f4a;
   --cor-roxo-800: #3b1a5a;
@@ -57,6 +58,10 @@
   --cor-neutro: var(--cor-cinza-600);
   --cor-neutro-fundo: var(--cor-cinza-100);
   --cor-sobreposicao: rgb(36 9 58 / 0.4);
+  --cor-destaque-texto: var(--cor-vermelho-800);
+  --cor-primaria-suave-hover: var(--cor-roxo-200);
+  --cor-trilho: var(--cor-cinza-100);
+  --cor-texto-placeholder: var(--cor-cinza-300);
 
   --ilustra-pele-clara: #f2c7a5;
   --ilustra-pele-media: #c68a5e;
@@ -120,4 +125,53 @@
   --camada-navegacao: 20;
   --camada-cabecalho: 30;
   --camada-gaveta: 40;
+}
+
+:root[data-tema="escuro"] {
+  color-scheme: dark;
+
+  --cor-fundo: #15101b;
+  --cor-superficie: #1e1726;
+  --cor-superficie-suave: #271e31;
+  --cor-superficie-destaque: #33263f;
+  --cor-titulo: #e6d8f3;
+  --cor-texto: #ece8f0;
+  --cor-texto-suave: #a59cae;
+  --cor-texto-invertido: #ffffff;
+  --cor-borda: #3a2f45;
+  --cor-borda-forte: #4d4159;
+  --cor-primaria: #9867bd;
+  --cor-primaria-hover: #a678c8;
+  --cor-primaria-suave: #33263f;
+  --cor-primaria-suave-hover: #403050;
+  --cor-secundaria: #b48fd0;
+  --cor-destaque-suave: #3d2a1c;
+  --cor-destaque-texto: #f5a3ae;
+  --cor-link: #4fc7b1;
+  --cor-foco: #c4a3e0;
+  --cor-sucesso: #4fc7a0;
+  --cor-sucesso-fundo: #12352d;
+  --cor-alerta: #e8b64a;
+  --cor-alerta-fundo: #3a2e10;
+  --cor-perigo: #f07a8a;
+  --cor-perigo-fundo: #42161d;
+  --cor-info: #7fb0f5;
+  --cor-info-fundo: #172a47;
+  --cor-neutro: #b3abbc;
+  --cor-neutro-fundo: #2a2331;
+  --cor-trilho: #2a2331;
+  --cor-texto-placeholder: #6f6679;
+  --cor-sobreposicao: rgb(0 0 0 / 0.6);
+
+  --ilustra-cabelo: #120d17;
+  --ilustra-mensagem: #1d4a3f;
+
+  --grafico-compareceu: #3fbf8f;
+  --grafico-faltou: #f07a8a;
+  --grafico-cancelou: #b48fd0;
+  --grafico-grade: #3a2f45;
+  --grafico-sistolica: #b48fd0;
+
+  --sombra-cartao: 0 1px 1px rgb(0 0 0 / 0.5), 0 0 0 1px rgb(255 255 255 / 0.06);
+  --sombra-elevada: 0 8px 16px rgb(0 0 0 / 0.5), 0 0 0 1px rgb(255 255 255 / 0.08);
 }

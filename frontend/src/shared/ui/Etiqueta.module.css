@@ -41,5 +41,5 @@
 
 .destaque {
   background: var(--cor-destaque-suave);
-  color: var(--cor-vermelho-800);
+  color: var(--cor-destaque-texto);
 }
