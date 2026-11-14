@@ -13,6 +13,10 @@
   padding: var(--espaco-6) var(--espaco-4) calc(var(--altura-navegacao-inferior) + var(--espaco-8));
 }
 
+.publica {
+  min-height: 100dvh;
+}
+
 .faixaOffline {
   margin-bottom: var(--espaco-4);
   padding: var(--espaco-2) var(--espaco-4);
@@ -133,6 +137,10 @@
   }
 
   .navInferior {
+    display: none;
+  }
+
+  .sessaoMovel {
     display: none;
   }
 

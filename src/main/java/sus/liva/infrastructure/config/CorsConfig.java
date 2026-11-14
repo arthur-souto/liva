@@ -23,7 +23,7 @@ public class CorsConfig {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(Arrays.stream(origens).map(String::trim).filter(o -> !o.isEmpty()).toList());
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        config.setAllowedHeaders(List.of(HttpHeaders.CONTENT_TYPE, HttpHeaders.ACCEPT, ChaveApiFiltro.CABECALHO));
+        config.setAllowedHeaders(List.of(HttpHeaders.CONTENT_TYPE, HttpHeaders.ACCEPT, HttpHeaders.AUTHORIZATION, "Idempotency-Key", ChaveApiFiltro.CABECALHO));
         config.setExposedHeaders(List.of(HttpHeaders.LOCATION));
         config.setAllowCredentials(false);
         config.setMaxAge(Duration.ofHours(1));

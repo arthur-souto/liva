@@ -13,7 +13,7 @@ Next.js 16 (App Router) + React 19 + TypeScript, organizado por feature, com o d
    cp .env.example .env.local
    ```
 
-   Preencha `LIVA_API_KEY` com o mesmo valor de `API_KEY` do `.env` do backend.
+   Só é preciso `LIVA_API_URL`. A API key não é mais usada pelo front: cada pessoa entra com o próprio usuário (veja "Usuários de demonstração" no README da raiz).
 3. Instale e rode:
 
    ```bash
@@ -21,19 +21,23 @@ Next.js 16 (App Router) + React 19 + TypeScript, organizado por feature, com o d
    npm run dev
    ```
 
-4. Abra http://localhost:3000.
+4. Abra http://localhost:3000 e entre com um usuário.
 
 | Script | O que faz |
 |---|---|
 | `npm run dev` | Servidor de desenvolvimento na porta 3000 |
 | `npm run typecheck` | Checagem de tipos |
 
-## Por que existe um proxy
+## Sessão e proxy (BFF)
 
-O navegador nunca vê a chave da API. Toda chamada do front vai para `/api/liva/*`, um Route Handler do Next que roda no servidor, adiciona o cabeçalho `X-API-Key` a partir de `LIVA_API_KEY` e repassa para `LIVA_API_URL`.
+O navegador nunca vê o token da API.
 
-- `LIVA_API_KEY` não tem o prefixo `NEXT_PUBLIC_`, então nunca entra no bundle do navegador.
-- O webhook da Evolution (`/api/webhooks/**`) não é exposto pelo proxy.
+- `/api/sessao/entrar` (e `/api/sessao/portal/ativar`) chama o backend e guarda o token no cookie httpOnly `liva_sessao`. O corpo devolvido traz só os dados do usuário.
+- Toda chamada do front vai para `/api/liva/*`, um Route Handler que lê o cookie, envia `Authorization: Bearer` e repassa para `LIVA_API_URL`.
+- Escritas vindas de outra origem são recusadas (403). `/api/auth/**` e o webhook da Evolution não são expostos pelo proxy.
+- Um `401` do backend apaga o cookie, e a tela volta para `/entrar`.
+- `src/proxy.ts` redireciona quem está sem sessão para `/entrar?volta=...`.
+- `DELETE /api/sessao` encerra a sessão.
 - `/api/liva-health` consulta `/actuator/health` para o indicador de status do menu.
 
 ## Estrutura
@@ -48,9 +52,11 @@ src/
     conversas/         simulador de respostas do paciente e envio avulso
     avisos/            cancelamentos, remarcações e quem ainda não respondeu
     agendamentos/      lista com status e resposta, detalhe, tipos, API e disparo manual
+    acesso/            tela de entrada
   shared/
     styles/token.css   cores, tipografia, espaços, raios e sombras
     api/               cliente HTTP e erros padronizados do backend
+    sessao/            cookie de sessão (servidor), usuário atual e papéis (cliente)
     ui/                componentes do design system
     lib/, hooks/       datas, telefone, CPF, consultas com atualização automática
 ```

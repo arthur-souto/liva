@@ -6,7 +6,9 @@ import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { useConsulta } from "@/shared/hooks/useConsulta";
 import { classes } from "@/shared/lib/classes";
+import { rotaPublica } from "@/shared/sessao/sessao";
 import { Logo } from "./Logo";
+import { UsuarioDaSessao } from "./UsuarioDaSessao";
 import estilos from "./Estrutura.module.css";
 
 const ITENS = [
@@ -31,6 +33,11 @@ function ativo(caminho: string, href: string): boolean {
 
 export function Estrutura({ children }: { children: ReactNode }) {
   const caminho = usePathname();
+  if (rotaPublica(caminho)) return <main className={estilos.publica}>{children}</main>;
+  return <EstruturaDaEquipe caminho={caminho}>{children}</EstruturaDaEquipe>;
+}
+
+function EstruturaDaEquipe({ caminho, children }: { caminho: string; children: ReactNode }) {
   const saude = useConsulta(consultarSaude, "saude", 30000);
   const online = saude.dados === true;
   const offline = saude.dados === false || Boolean(saude.erro);
@@ -62,9 +69,13 @@ export function Estrutura({ children }: { children: ReactNode }) {
           <span className={estilos.ponto} aria-hidden="true" />
           {online ? "API Liva online" : offline ? "API Liva offline" : "Verificando API"}
         </p>
+        <UsuarioDaSessao />
       </aside>
 
       <main className={estilos.conteudo}>
+        <div className={estilos.sessaoMovel}>
+          <UsuarioDaSessao compacto />
+        </div>
         {offline && (
           <p className={estilos.faixaOffline} role="alert">
             API Liva offline. Confira se ela está rodando em LIVA_API_URL.

@@ -6,7 +6,9 @@ import org.springframework.context.annotation.Configuration;
 import sus.liva.application.port.in.AgendaDeConsultasUseCase;
 import sus.liva.application.port.in.AgendarAtendimentoUseCase;
 import sus.liva.application.port.in.AtendimentoEspecializadoUseCase;
+import sus.liva.application.port.in.AutenticacaoUseCase;
 import sus.liva.application.port.in.CadastroDePacienteUseCase;
+import sus.liva.application.port.in.CatalogoUseCase;
 import sus.liva.application.port.in.ConsultarAgendamentoUseCase;
 import sus.liva.application.port.in.ConsultarHistoricoUseCase;
 import sus.liva.application.port.in.DispararLembreteUseCase;
@@ -19,6 +21,10 @@ import sus.liva.application.port.in.ProcessarRespostaUseCase;
 import sus.liva.application.port.in.TriagemUseCase;
 import sus.liva.application.port.out.AgendamentoRepositoryPort;
 import sus.liva.application.port.out.AuditoriaPort;
+import sus.liva.application.port.out.CifradorPort;
+import sus.liva.application.port.out.CodigoDoPortalPort;
+import sus.liva.application.port.out.ContaDeAcessoPort;
+import sus.liva.application.port.out.EmissorDeTokenPort;
 import sus.liva.application.port.out.EncaminhamentoRepositoryPort;
 import sus.liva.application.port.out.EnviadorMensagemPort;
 import sus.liva.application.port.out.EvolucaoClinicaPort;
@@ -31,7 +37,9 @@ import sus.liva.application.port.out.TriagemRepositoryPort;
 import sus.liva.application.usecase.AgendaDeConsultasUseCaseImpl;
 import sus.liva.application.usecase.AgendarAtendimentoUseCaseImpl;
 import sus.liva.application.usecase.AtendimentoEspecializadoUseCaseImpl;
+import sus.liva.application.usecase.AutenticacaoUseCaseImpl;
 import sus.liva.application.usecase.CadastroDePacienteUseCaseImpl;
+import sus.liva.application.usecase.CatalogoUseCaseImpl;
 import sus.liva.application.usecase.ConsultarAgendamentoUseCaseImpl;
 import sus.liva.application.usecase.ConsultarHistoricoUseCaseImpl;
 import sus.liva.application.usecase.DispararLembreteUseCaseImpl;
@@ -177,5 +185,20 @@ public class UseCaseConfig {
     public ListarAgendamentosUseCase listarAgendamentosUseCase(AgendamentoRepositoryPort agendamentos,
                                                                PacienteRepositoryPort pacientes) {
         return new ListarAgendamentosUseCaseImpl(agendamentos, pacientes);
+    }
+
+    @Bean
+    public AutenticacaoUseCase autenticacaoUseCase(ContaDeAcessoPort contas, CodigoDoPortalPort codigos,
+                                                   PacienteRepositoryPort pacientes, TriagemRepositoryPort triagens,
+                                                   CifradorPort cifrador, EmissorDeTokenPort emissor,
+                                                   EnviadorMensagemPort enviador, TransacaoPort transacao,
+                                                   AuditoriaPort auditoria, Clock clock) {
+        return new AutenticacaoUseCaseImpl(contas, codigos, pacientes, triagens, cifrador, emissor, enviador, transacao,
+                auditoria, clock);
+    }
+
+    @Bean
+    public CatalogoUseCase catalogoUseCase(ProfissionalRepositoryPort profissionais) {
+        return new CatalogoUseCaseImpl(profissionais);
     }
 }

@@ -70,7 +70,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest(properties = {"confirmasus.whatsapp.provedor=console", "confirmasus.disparo-diario.cron=-",
-        "confirmasus.seguranca.api-key=chave-de-teste"})
+        "confirmasus.seguranca.api-key=chave-de-teste",
+        "confirmasus.seguranca.jwt-segredo=segredo-de-teste-com-pelo-menos-32-caracteres"})
 @Import({TestcontainersConfig.class, FluxoAssistencialIntegracaoTest.RelogioConfig.class})
 class FluxoAssistencialIntegracaoTest {
 

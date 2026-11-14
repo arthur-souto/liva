@@ -34,7 +34,7 @@ export class FalhaApi extends Error {
 
 export function mensagemDeErro(erro: unknown): string {
   if (erro instanceof FalhaApi) {
-    if (erro.codigo === "NAO_AUTORIZADO") return "Chave de API inválida. Confira LIVA_API_KEY no .env.local do front.";
+    if (erro.codigo === "NAO_AUTORIZADO") return "Sua sessão expirou. Entre novamente.";
     return erro.message;
   }
   return "Algo deu errado. Tente novamente.";

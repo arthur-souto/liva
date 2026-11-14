@@ -155,7 +155,9 @@ Toda a configuração vem do arquivo `.env` na raiz do projeto. Ele é lido **ta
 
 | Variável | Usada por | Descrição |
 |---|---|---|
-| `API_KEY` | Liva | Chave exigida no header `X-API-Key` em todas as rotas `/api/**` (exceto o webhook). **Obrigatória**: sem ela a Liva não sobe. Gere com `openssl rand -hex 32` |
+| `API_KEY` | Liva | Chave do header `X-API-Key` para as rotas de sistema (`/api/agendamentos`, `/api/mensagens`, `/api/disparos`, `/api/teste`). **Obrigatória**: sem ela a Liva não sobe. Gere com `openssl rand -hex 32` |
+| `JWT_SEGREDO` | Liva | Segredo HS256 dos tokens de sessão (mínimo 32 caracteres). **Obrigatório**. Gere com `openssl rand -hex 32` |
+| `DEMO_SENHA` | Liva | Senha dos usuários de demonstração (veja abaixo). Vazia: os usuários não são criados |
 | `CORS_ORIGENS_PERMITIDAS` | Liva | Origens do front-end que podem chamar a API pelo navegador, separadas por vírgula. Padrão `http://localhost:3000` |
 | `WHATSAPP_PROVEDOR` | Liva | `evolution` envia de verdade; `console` só escreve a mensagem no log (padrão) |
 | `EVOLUTION_URL` | Liva | URL da Evolution. Padrão `http://localhost:8080` |
@@ -336,6 +338,30 @@ Com `WHATSAPP_PROVEDOR=console`, nada é enviado: as mensagens aparecem no log d
 
 Também há `GET /actuator/health` (sem chave) para conferir se a Liva e o banco estão de pé.
 
+Fluxo assistencial (exige `Authorization: Bearer`; a permissão por papel está em [Segurança](#segurança)):
+
+| Método | Rota | Descrição |
+|---|---|---|
+| `POST` | `/api/auth/entrar` | `{"login", "senha"}` → token, validade e usuário |
+| `POST` | `/api/auth/portal/codigo` | `{"documento", "dataNascimento"}`: envia o código do portal pelo WhatsApp (sempre 202) |
+| `POST` | `/api/auth/portal/ativar` | `{"documento", "dataNascimento", "codigo", "senha"}` → token do paciente |
+| `GET` | `/api/auth/eu` | Usuário da sessão |
+| `POST` / `GET` | `/api/pacientes` · `?termo=` | Cadastro (409 se CPF/CNS já existir) e pesquisa por nome, CPF ou CNS |
+| `GET` / `PUT` | `/api/pacientes/{id}` | Cadastro; o `PUT` envia `versao` (409 se outra pessoa alterou) |
+| `GET` | `/api/pacientes/{id}/historico` | Um ramo por triagem; dados clínicos só para quem participa |
+| `POST` / `GET` | `/api/triagens` · `/api/triagens/fila` | Chegada do paciente e fila |
+| `GET` | `/api/triagens/{id}` | Triagem com encaminhamentos, consultas, retificações e evoluções |
+| `POST` | `/api/triagens/{id}/iniciar` · `/finalizar` · `/cancelar` · `/encerrar` · `/retificacoes` · `/encaminhamentos` | Ciclo da triagem |
+| `PUT` | `/api/triagens/{id}/avaliacao` | Queixa, sinais vitais e prioridade (com `versao`) |
+| `GET` | `/api/encaminhamentos/recebidos` | Encaminhamentos da especialidade do especialista |
+| `POST` | `/api/encaminhamentos/{id}/receber` · `/retorno` · `/concluir` · `/cancelar` | Plantão, retorno, alta e cancelamento |
+| `GET` | `/api/encaminhamentos/{id}/horarios?inicio=&fim=` | Horários livres (até 31 dias) |
+| `POST` | `/api/encaminhamentos/{id}/consultas` | Agenda a consulta; header `Idempotency-Key` opcional (409 se o horário acabou de ser reservado) |
+| `GET` | `/api/consultas/agenda?inicio=&fim=` | Agenda do especialista |
+| `POST` | `/api/consultas/{id}/iniciar` · `/finalizar` · `/evolucoes` · `/falta` · `/remarcar` · `/cancelar` | Atendimento e mudanças na consulta (com `versao`) |
+| `GET` | `/api/portal/historico` | Histórico do paciente logado |
+| `GET` | `/api/catalogo/especialidades` · `/api/catalogo/especialistas?especialidade=` | Catálogo para os encaminhamentos |
+
 ### Erros
 
 Todo erro, de qualquer rota, segue o mesmo formato:
@@ -366,11 +392,46 @@ Quem monta a resposta: `GlobalExceptionHandler` (erros dentro dos controllers), 
 
 ### Segurança
 
-- Toda rota `/api/**` exige o header `X-API-Key` com o valor de `API_KEY`; sem ele, `401` com `codigo: NAO_AUTORIZADO`. A comparação é em tempo constante.
-- O webhook (`/api/webhooks/**`) não usa a chave: é chamado pela Evolution e é protegido pelo `?token=WEBHOOK_TOKEN`.
-- O Swagger (`/swagger-ui.html`, `/v3/api-docs`) fica aberto para leitura, mas as chamadas feitas por ele também precisam da chave (botão **Authorize**).
-- **CORS**: só as origens de `CORS_ORIGENS_PERMITIDAS` podem chamar a API pelo navegador (`CorsConfig`). O CORS roda antes da verificação da chave, então o preflight (`OPTIONS`) passa sem `X-API-Key` e o front consegue ler as respostas de erro, inclusive o 401. Headers aceitos: `Content-Type`, `Accept`, `X-API-Key`; o `Location` é exposto ao front.
-- A verificação é um filtro de servlet (`ChaveApiFiltro`, em `adapter/in/web/seguranca`), sem Spring Security: há um único cliente (o sistema da unidade/equipe), então uma chave compartilhada basta para o MVP.
+- **Spring Security, sem sessão no servidor.** As pessoas entram em `POST /api/auth/entrar` e recebem um JWT (HS256, `JWT_SEGREDO`).
+  - O token traz o usuário, o papel e o vínculo com profissional ou paciente.
+  - Ele vale 8 h para a equipe e 2 h para o paciente.
+  - Rotas do fluxo assistencial exigem `Authorization: Bearer <token>`. Sem ele, `401`.
+- **Papéis:** `ADMINISTRADOR`, `RECEPCAO`, `CLINICO_GERAL`, `ESPECIALISTA` e `PACIENTE`.
+  - A regra fina de cada operação fica nos casos de uso, via `Ator`, e a negação é `403`.
+  - Exemplos: o especialista só lê ramos em que atua, e o paciente só vê o que é dele.
+- **Senhas:** BCrypt. Após 5 senhas erradas, o acesso fica bloqueado por 15 min.
+- **Portal do paciente:**
+  - Liberado só após a primeira triagem concluída.
+  - Primeiro acesso: `POST /api/auth/portal/codigo` com CPF/CNS **e** data de nascimento. Um código de 6 dígitos vai pelo WhatsApp cadastrado, vale 10 min e aceita 5 tentativas.
+  - A resposta é sempre a mesma, para não revelar quem é paciente.
+  - Com o código, `POST /api/auth/portal/ativar` define a senha. O mesmo fluxo serve para "esqueci a senha".
+  - Depois disso, o paciente entra com o CPF/CNS e a senha.
+- **A `API_KEY` vale só para as rotas de sistema** (`/api/agendamentos`, `/api/mensagens`, `/api/disparos`, `/api/teste`): scripts, `curl` e Swagger.
+  - Essas rotas também aceitam o token de `ADMINISTRADOR` ou `RECEPCAO`.
+  - A chave não abre nenhuma rota clínica.
+- **Webhook:** `/api/webhooks/**` é protegido pelo `?token=WEBHOOK_TOKEN`.
+- **Front (BFF):**
+  - O navegador nunca vê o token: o Next guarda o token no cookie httpOnly `liva_sessao` (`SameSite=Lax`, `Secure` em produção).
+  - O proxy `/api/liva/**` repassa o token como `Bearer`.
+  - O proxy recusa escrita vinda de outra origem e não expõe `/api/auth/**` nem `/api/webhooks/**`.
+  - `src/proxy.ts` manda quem está sem sessão para `/entrar`.
+- **Auditoria:** login, ativação do portal e toda leitura ou alteração clínica são gravados na tabela `auditoria`.
+- **CORS:** só as origens de `CORS_ORIGENS_PERMITIDAS` são aceitas. Na prática, o front chama a API pelo servidor do Next.
+
+#### Usuários de demonstração
+
+Com `DEMO_SENHA` definida no `.env`, a Liva cria na subida (todos com essa senha):
+
+| Login | Papel |
+|---|---|
+| `admin@liva.demo` | Administração |
+| `recepcao@liva.demo` | Recepção |
+| `clinico@liva.demo` | Clínico geral (Dr. Paulo Mendes) |
+| `ortopedia@liva.demo` | Especialista em Ortopedia (Dra. Ana Ribeiro) |
+| `cardiologia@liva.demo` | Especialista em Cardiologia (Dr. Carlos Lima) |
+| `plantao@liva.demo` | Plantão / pronto atendimento (Dra. Júlia Costa) |
+
+Ortopedia e Cardiologia atendem de segunda a sexta, das 08:00 às 12:00 e das 13:30 às 17:00, em horários de 30 min.
 
 ---
 
@@ -471,6 +532,7 @@ Os testes de persistência e o `LivaApplicationTests` sobem um Postgres temporá
 | `DisparoDiarioAgendadorTest` | Agendador usa a data do fuso configurado e não propaga falhas |
 | `LivaApplicationTests` | Contexto Spring sobe com Flyway, validação do schema e agendador registrado |
 | `TriagemTest`, `EncaminhamentoTest`, `ConsultaTest`, `DisponibilidadeTest` | Máquinas de estado da triagem, do encaminhamento e da consulta; transições inválidas; geração de horários |
+| `SegurancaIntegracaoTest` | Spring Security real com MockMvc: 401 sem token, token adulterado, API key só nas rotas de sistema, permissões por papel, bloqueio após 5 senhas erradas, portal sem código antes da triagem, fluxo completo pela API (cadastro → triagem → encaminhamento → código pelo WhatsApp → ativação → código não reutilizável → horários → agendamento idempotente → agenda do especialista → cancelamento com versão) |
 | `FluxoAssistencialIntegracaoTest` | No Postgres real, com relógio controlado: cadastro e CPF duplicado (inclusive simultâneo), conflito de versão, portal só após a primeira triagem finalizada, fila única por paciente, fluxo completo até a alta com retorno, caso grave ao plantão, segunda triagem como ramo independente, acessos negados, mesmo horário disputado por 5 pacientes ao mesmo tempo (só um reserva), idempotência, rollback da remarcação, resposta pelo WhatsApp liberando o encaminhamento, falta |
 
 ---

@@ -1,3 +1,4 @@
+import { irParaEntrada } from "@/shared/sessao/sessao";
 import { type ErroApi, FalhaApi } from "./erro";
 
 const BASE = "/api/liva";
@@ -44,6 +45,7 @@ export async function requisitar<T>(caminho: string, opcoes: Opcoes = {}): Promi
   } catch {
     throw erroLocal(0, "SEM_CONEXAO", "Não foi possível conectar à API.", caminho);
   }
+  if (resposta.status === 401) irParaEntrada();
   if (!resposta.ok) throw await lerErro(resposta, caminho);
   return (await resposta.json()) as T;
 }

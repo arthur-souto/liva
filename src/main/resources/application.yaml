@@ -31,6 +31,7 @@ management:
 confirmasus:
   seguranca:
     api-key: ${API_KEY:}
+    jwt-segredo: ${JWT_SEGREDO:}
   cors:
     origens-permitidas: ${CORS_ORIGENS_PERMITIDAS:http://localhost:3000}
   fuso: ${FUSO_HORARIO:America/Sao_Paulo}
@@ -41,6 +42,7 @@ confirmasus:
     provedor: ${WHATSAPP_PROVEDOR:console}
   demo:
     telefone: "51993953661"
+    senha: ${DEMO_SENHA:}
   atendimento-teste:
     habilitado: ${ATENDIMENTO_TESTE_HABILITADO:true}
   webhook:

@@ -16,7 +16,9 @@ final class Restricoes {
             "uk_triagem_aberta_por_paciente", "Este paciente já está na fila ou em triagem.",
             "uk_agendamentos_idempotencia", "Esta solicitação de agendamento já foi processada.",
             "fk_consulta_do_ramo", "A consulta precisa pertencer à mesma triagem e ao mesmo paciente do encaminhamento.",
-            "fk_encaminhamento_triagem_do_paciente", "O encaminhamento precisa pertencer à triagem do mesmo paciente.");
+            "fk_encaminhamento_triagem_do_paciente", "O encaminhamento precisa pertencer à triagem do mesmo paciente.",
+            "uk_usuarios_login", "Já existe um usuário com este login.",
+            "uk_usuarios_paciente", "Este paciente já possui acesso ao portal.");
 
     private Restricoes() {
     }

@@ -19,6 +19,7 @@ import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 import sus.liva.application.exception.AcessoNegadoException;
 import sus.liva.application.exception.ConflitoException;
+import sus.liva.application.exception.NaoAutenticadoException;
 import sus.liva.application.exception.NaoEncontradoException;
 import sus.liva.infrastructure.adapter.in.web.erro.CodigoErro;
 import sus.liva.infrastructure.adapter.in.web.erro.ErroResposta;
@@ -58,6 +59,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(NaoEncontradoException.class)
     public ResponseEntity<ErroResposta> naoEncontrado(NaoEncontradoException e, HttpServletRequest request) {
         return ErroResposta.resposta(CodigoErro.NAO_ENCONTRADO, e.getMessage(), request.getRequestURI());
+    }
+
+    @ExceptionHandler(NaoAutenticadoException.class)
+    public ResponseEntity<ErroResposta> naoAutenticado(NaoAutenticadoException e, HttpServletRequest request) {
+        return ErroResposta.resposta(CodigoErro.NAO_AUTORIZADO, e.getMessage(), request.getRequestURI());
     }
 
     @ExceptionHandler(AcessoNegadoException.class)
