@@ -69,6 +69,8 @@
   --grafico-faltou: var(--cor-vermelho-700);
   --grafico-cancelou: var(--cor-roxo-500);
   --grafico-grade: var(--cor-cinza-200);
+  --grafico-sistolica: var(--cor-roxo-500);
+  --grafico-diastolica: var(--cor-laranja-500);
 
   --fonte-base: var(--fonte-inter), system-ui, -apple-system, "Segoe UI", sans-serif;
   --fonte-marca: var(--fonte-nunito), var(--fonte-base);

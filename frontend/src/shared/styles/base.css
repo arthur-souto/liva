@@ -76,3 +76,37 @@ button:disabled {
     animation-duration: 0ms !important;
   }
 }
+
+[data-so-impressao] {
+  display: none;
+}
+
+@media print {
+  body[data-imprimindo] * {
+    visibility: hidden;
+  }
+
+  body[data-imprimindo] *:not([data-imprimir], [data-imprimir] *, :has([data-imprimir])) {
+    display: none;
+  }
+
+  body[data-imprimindo] [data-imprimir],
+  body[data-imprimindo] [data-imprimir] * {
+    visibility: visible;
+  }
+
+  body[data-imprimindo] [data-imprimir] {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+  }
+
+  body[data-imprimindo] [data-imprimir] [data-so-impressao] {
+    display: flex;
+  }
+
+  body[data-imprimindo] [data-imprimir] button {
+    display: none;
+  }
+}

@@ -152,6 +152,7 @@ export type ResumoDaTriagem = {
   prioridade: Prioridade | null;
   queixaPrincipal: string | null;
   profissionalId: string | null;
+  sinaisVitais: SinaisVitais | null;
 };
 
 export type ResumoDoEncaminhamento = {

@@ -9,6 +9,7 @@ import { Etiqueta } from "@/shared/ui/Etiqueta";
 import { NATUREZAS, PRIORIDADES, STATUS_DA_CONSULTA, STATUS_DA_TRIAGEM, STATUS_DO_ENCAMINHAMENTO, nomeDaEspecialidade } from "../rotulos";
 import type { Consulta, RamoDoHistorico, StatusConsulta } from "../tipos";
 import { DetalhesDoAtendimento } from "./DetalhesDoAtendimento";
+import { LinhaDoTempo } from "./LinhaDoTempo";
 import estilos from "./HistoricoDeRamos.module.css";
 
 const CANCELAVEIS: StatusConsulta[] = ["AGENDADO", "AGUARDANDO_RESPOSTA", "CONFIRMADO"];
@@ -70,6 +71,7 @@ export function HistoricoDeRamos({ ramos, linkParaAgendar, aoCancelar, canceland
                 )}
               </div>
               {e.desfecho && <p className={estilos.meta}>Desfecho: {e.desfecho}</p>}
+              {comDetalhes && <LinhaDoTempo chegadaEm={ramo.triagem.chegadaEm} encaminhamento={e} consultas={ramo.consultas} />}
               <ul className={estilos.consultas}>
                 {ramo.consultas
                   .filter((c) => c.encaminhamentoId === e.id)

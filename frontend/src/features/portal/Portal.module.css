@@ -111,3 +111,29 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
+
+.acoesDaSecao {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espaco-3);
+}
+
+.ultimo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-4);
+}
+
+.cabecalhoImpressao {
+  flex-direction: column;
+  gap: var(--espaco-1);
+  padding-bottom: var(--espaco-3);
+  border-bottom: 1px solid var(--cor-borda-forte);
+  font-size: var(--texto-sm);
+}
+
+.cabecalhoImpressao strong {
+  font-size: var(--texto-lg);
+  color: var(--cor-titulo);
+}

@@ -187,7 +187,8 @@ public class HistoricoDoPacienteUseCaseImpl implements HistoricoDoPacienteUseCas
         List<Agendamento> consultas = todas.stream().filter(c -> ids.contains(c.getEncaminhamentoId())).toList();
         boolean clinico = acesso.podeLerClinico(ator, t.getPacienteId(), doRamo, consultas);
         ResumoDaTriagem resumo = new ResumoDaTriagem(t.getId(), t.getStatus(), t.getChegadaEm(), t.getFinalizadaEm(),
-                t.getPrioridade(), clinico ? t.getAvaliacao().queixaPrincipal() : null, t.getProfissionalId());
+                t.getPrioridade(), clinico ? t.getAvaliacao().queixaPrincipal() : null, t.getProfissionalId(),
+                clinico ? t.getSinaisVitais() : null);
         List<ResumoDoEncaminhamento> resumos = doRamo.stream()
                 .map(e -> new ResumoDoEncaminhamento(e.getId(), e.getEspecialidade(), e.getModalidade(), e.getPrioridade(),
                         e.getStatus(), e.getCriadoEm(), e.getProfissionalDestinoId(),

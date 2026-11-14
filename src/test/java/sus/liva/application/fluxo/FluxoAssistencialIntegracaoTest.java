@@ -323,7 +323,11 @@ class FluxoAssistencialIntegracaoTest {
         assertThat(visaoDoOrtopedista.ramos()).filteredOn(RamoDoHistorico::acessoClinico)
                 .extracting(r -> r.triagem().id()).containsExactly(primeira.getId());
         assertThat(visaoDoOrtopedista.ramos()).filteredOn(r -> !r.acessoClinico())
-                .allSatisfy(r -> assertThat(r.triagem().queixaPrincipal()).isNull());
+                .allSatisfy(r -> {
+                    assertThat(r.triagem().queixaPrincipal()).isNull();
+                    assertThat(r.triagem().sinaisVitais()).isNull();
+                });
+        assertThat(historico.historico(portal, paciente).ramos()).allSatisfy(r -> assertThat(r.triagem().sinaisVitais().saturacao()).isEqualTo(98));
         assertThatThrownBy(() -> triagens.detalhar(ortopedia, segunda.getId())).isInstanceOf(AcessoNegadoException.class);
     }
 

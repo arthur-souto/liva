@@ -1,0 +1,118 @@
+.sinais {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-4);
+}
+
+.grade {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr));
+  gap: var(--espaco-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cartao {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-3);
+  min-width: 0;
+  padding: var(--espaco-4);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-lg);
+  background: var(--cor-superficie);
+}
+
+.topo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--espaco-2);
+}
+
+.topo h3 {
+  font-size: var(--texto-sm);
+}
+
+.valor {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-size: var(--texto-lg);
+  font-weight: var(--peso-semi);
+  color: var(--cor-titulo);
+  font-variant-numeric: tabular-nums;
+}
+
+.valor small {
+  font-size: var(--texto-xs);
+  font-weight: var(--peso-normal);
+  color: var(--cor-texto-suave);
+}
+
+.linha {
+  fill: none;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.ponto {
+  stroke: var(--cor-superficie);
+  stroke-width: 2;
+}
+
+.rotuloDireto {
+  fill: var(--cor-texto);
+  font-size: 11px;
+  font-weight: var(--peso-semi);
+  dominant-baseline: middle;
+  font-variant-numeric: tabular-nums;
+}
+
+.amostra {
+  display: inline-block;
+  flex-shrink: 0;
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: 2px;
+}
+
+.aviso {
+  font-size: var(--texto-xs);
+  color: var(--cor-texto-suave);
+}
+
+.tabela summary {
+  cursor: pointer;
+  color: var(--cor-link);
+  font-size: var(--texto-sm);
+  font-weight: var(--peso-semi);
+}
+
+.rolagem {
+  margin-top: var(--espaco-3);
+  overflow-x: auto;
+}
+
+.tabela table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--texto-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.tabela th,
+.tabela td {
+  padding: var(--espaco-2);
+  border-bottom: 1px solid var(--cor-borda);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.tabela thead th {
+  color: var(--cor-texto-suave);
+  font-weight: var(--peso-semi);
+}

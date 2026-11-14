@@ -2,7 +2,6 @@
 
 import { ArrowRight, CalendarCheck, CalendarPlus, CalendarX, ClipboardList, Inbox, ListOrdered } from "lucide-react";
 import Link from "next/link";
-import { DetalhesDoAtendimento } from "@/features/assistencial/componentes/DetalhesDoAtendimento";
 import { PRIORIDADES, nomeDaEspecialidade } from "@/features/assistencial/rotulos";
 import { CartaoDeOferta } from "@/features/fila/CartaoDeOferta";
 import { useMinhaFila } from "@/features/fila/useMinhaFila";
@@ -19,6 +18,7 @@ import { Etiqueta } from "@/shared/ui/Etiqueta";
 import { PessoaAcenando, PessoasDeMaosDadas } from "@/shared/ui/Ilustracoes";
 import { Secao } from "@/shared/ui/Secao";
 import { CartaoDeConsulta } from "./CartaoDeConsulta";
+import { UltimoAtendimento } from "./UltimoAtendimento";
 import { consultasDoHistorico, paraAgendar, separar } from "./consultas";
 import { useNomesDosProfissionais, usePortal } from "./usePortal";
 import estilos from "./Portal.module.css";
@@ -128,19 +128,7 @@ export function MeuPortal() {
         </Secao>
       )}
 
-      {ultimo && (
-        <Secao
-          titulo="Seu último atendimento"
-          descricao={`O que a equipe registrou a partir da triagem de ${formatarInstante(ultimo.triagem.chegadaEm)}.`}
-          acoes={
-            <Link href="/portal/historico" className={estilos.link}>
-              Histórico completo <ArrowRight size={16} aria-hidden="true" />
-            </Link>
-          }
-        >
-          <DetalhesDoAtendimento triagemId={ultimo.triagem.id} />
-        </Secao>
-      )}
+      {ultimo && <UltimoAtendimento ramo={ultimo} nome={nome} />}
 
       {h && (
         <div className={estilos.atalhos}>

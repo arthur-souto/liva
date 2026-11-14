@@ -1,0 +1,116 @@
+.linha {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.etapa {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-2);
+  padding-right: var(--espaco-2);
+  min-width: 0;
+}
+
+.etapa:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  top: 0.6875rem;
+  left: 1.5rem;
+  right: 0.25rem;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--cor-borda);
+}
+
+.etapa[data-estado="feito"]:not(:last-child)::after {
+  background: var(--cor-verde-700);
+}
+
+.marcador {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 1.375rem;
+  height: 1.375rem;
+  border: 2px solid var(--cor-borda-forte);
+  border-radius: 999px;
+  background: var(--cor-superficie);
+  color: var(--cor-branco);
+}
+
+.etapa[data-estado="feito"] .marcador {
+  border-color: var(--cor-verde-700);
+  background: var(--cor-verde-700);
+}
+
+.etapa[data-estado="atual"] .marcador {
+  border-color: var(--cor-primaria);
+  box-shadow: 0 0 0 4px var(--cor-roxo-100);
+}
+
+.etapa[data-estado="atual"] .marcador::before {
+  content: "";
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: var(--cor-primaria);
+}
+
+.etapa[data-estado="cancelado"] .marcador {
+  border-color: var(--cor-vermelho-700);
+  background: var(--cor-vermelho-700);
+}
+
+.textos {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: var(--texto-xs);
+  color: var(--cor-texto-suave);
+  overflow-wrap: anywhere;
+}
+
+.textos strong {
+  font-size: var(--texto-sm);
+  font-weight: var(--peso-semi);
+  color: var(--cor-titulo);
+}
+
+.etapa[data-estado="futuro"] .textos strong {
+  color: var(--cor-texto-suave);
+  font-weight: var(--peso-normal);
+}
+
+.agora {
+  align-self: flex-start;
+  padding: 0 var(--espaco-2);
+  border-radius: 999px;
+  background: var(--cor-roxo-100);
+  color: var(--cor-primaria);
+  font-weight: var(--peso-semi);
+}
+
+@media (max-width: 40rem) {
+  .linha {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .etapa {
+    flex-direction: row;
+    padding: 0 0 var(--espaco-3);
+  }
+
+  .etapa:not(:last-child)::after {
+    top: 1.5rem;
+    bottom: 0.125rem;
+    left: 0.625rem;
+    right: auto;
+    width: 2px;
+    height: auto;
+  }
+}
