@@ -59,6 +59,7 @@ public class Agendamento {
             throw new IllegalArgumentException("O profissional escolhido não atende a especialidade do encaminhamento");
         if (encaminhamento.getProfissionalDestinoId() != null && !encaminhamento.getProfissionalDestinoId().equals(profissional.id()))
             throw new IllegalArgumentException("Este encaminhamento é destinado a outro profissional");
+
         return new Agendamento(id, encaminhamento.getPacienteId(), inicio, TipoAtendimento.CONSULTA, profissional.unidade(),
                 profissional.endereco(), null, StatusAgendamento.AGENDADO, encaminhamento.getTriagemId(),
                 encaminhamento.getId(), profissional.id(), duracaoMinutos, natureza, chaveIdempotencia, null);

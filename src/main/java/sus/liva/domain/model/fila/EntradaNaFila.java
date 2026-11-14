@@ -57,6 +57,7 @@ public class EntradaNaFila {
         if (status != StatusEntrada.AGUARDANDO)
             throw new IllegalStateException("Só é possível pausar quem está aguardando. Situação atual: " + status);
         if (justificativa == null || justificativa.isBlank()) throw new IllegalArgumentException("Informe o motivo da pausa");
+
         status = StatusEntrada.PAUSADA;
         motivo = justificativa.trim();
         atualizadaEm = em;
@@ -65,6 +66,7 @@ public class EntradaNaFila {
     public void retomar(Instant em) {
         if (status != StatusEntrada.PAUSADA)
             throw new IllegalStateException("Só é possível retomar uma entrada pausada. Situação atual: " + status);
+
         status = StatusEntrada.AGUARDANDO;
         motivo = null;
         atualizadaEm = em;
@@ -73,6 +75,7 @@ public class EntradaNaFila {
     public void vagaObtida(Instant em) {
         if (status != StatusEntrada.AGUARDANDO)
             throw new IllegalStateException("A entrada não está aguardando vaga. Situação atual: " + status);
+
         status = StatusEntrada.ATENDIDA;
         motivo = "Vaga obtida pela fila";
         atualizadaEm = em;

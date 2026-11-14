@@ -90,9 +90,11 @@ class PrevencaoDeFaltasIntegracaoTest {
         clinico = Ator.profissional(UUID.randomUUID(), Papel.CLINICO_GERAL, clinicoGeral.id());
         especialidade = novaEspecialidade();
         especialista = profissional(TipoProfissional.ESPECIALISTA, especialidade);
+
         for (DayOfWeek dia : DayOfWeek.values())
             profissionais.salvarDisponibilidade(new Disponibilidade(UUID.randomUUID(), especialista.id(), dia,
                     LocalTime.of(7, 0), LocalTime.of(19, 0), 30));
+
         especialistaAtor = Ator.profissional(UUID.randomUUID(), Papel.ESPECIALISTA, especialista.id());
     }
 
@@ -100,6 +102,7 @@ class PrevencaoDeFaltasIntegracaoTest {
     void depoisDaFaltaAPessoaRecebeLinkParaRemarcarEOMotivoRespondidoPeloWhatsAppFicaRegistrado() {
         Paciente ana = paciente();
         Agendamento consulta = agendar(ana, SEGUNDA.atTime(9, 0));
+
         relogio.em(SEGUNDA.atTime(10, 0));
 
         atendimento.registrarFalta(especialistaAtor, consulta.getId(), versao(consulta.getId()));
@@ -118,6 +121,7 @@ class PrevencaoDeFaltasIntegracaoTest {
         assertThat(textosEnviados(consulta.getId())).anyMatch(t -> t.contains("Anotamos: esqueci da consulta"));
 
         ResultadoResposta depois = processarResposta.processar(Telefone.de(ana.telefone()), "2", "motivo-repetido-" + consulta.getId());
+
         assertThat(depois.motivo()).isNotEqualTo("Motivo da ausência registrado");
         assertThat(motivo(consulta.getId())).containsEntry("motivo", "ESQUECI");
     }
@@ -126,6 +130,7 @@ class PrevencaoDeFaltasIntegracaoTest {
     void quemCancelaPeloPedidoDeConfirmacaoTambemEhPerguntadoSobreOMotivo() {
         Paciente bruno = paciente();
         Agendamento consulta = agendar(bruno, SEGUNDA.atTime(16, 0));
+
         dispararLembrete.disparar(consulta.getId(), TipoLembrete.PEDIDO_CONFIRMACAO, true);
 
         processarResposta.processar(Telefone.de(bruno.telefone()), "2", "cancelar-" + consulta.getId());
@@ -134,11 +139,13 @@ class PrevencaoDeFaltasIntegracaoTest {
         assertThat(motivo(consulta.getId())).containsEntry("ocorrencia", "CANCELAMENTO").containsEntry("motivo", null);
 
         ResultadoResposta naoEntendida = processarResposta.processar(Telefone.de(bruno.telefone()), "tá complicado", "motivo-" + consulta.getId());
+
         assertThat(naoEntendida.motivo()).isEqualTo("Motivo da ausência não reconhecido");
         assertThat(motivo(consulta.getId())).containsEntry("motivo", null);
         assertThat(textosEnviados(consulta.getId())).anyMatch(t -> t.startsWith("Não entendi. Responda só com o número do motivo"));
 
         processarResposta.processar(Telefone.de(bruno.telefone()), "Sem dinheiro pro ônibus", "motivo-2-" + consulta.getId());
+
         assertThat(motivo(consulta.getId())).containsEntry("motivo", "TRANSPORTE").containsEntry("canal", "WHATSAPP");
     }
 
@@ -147,6 +154,7 @@ class PrevencaoDeFaltasIntegracaoTest {
         Paciente carla = paciente();
         Encaminhamento daCarla = encaminhamento(carla.id());
         Agendamento faltou = agenda.agendar(recepcao, daCarla.getId(), especialista.id(), SEGUNDA.atTime(9, 30), null);
+
         relogio.em(SEGUNDA.atTime(11, 0));
         atendimento.registrarFalta(especialistaAtor, faltou.getId(), versao(faltou.getId()));
         Agendamento proxima = agenda.agendar(recepcao, daCarla.getId(), especialista.id(), SEGUNDA.plusDays(2).atTime(10, 0), null);
@@ -154,6 +162,7 @@ class PrevencaoDeFaltasIntegracaoTest {
 
         Paciente davi = paciente();
         Agendamento confirmada = agendar(davi, SEGUNDA.plusDays(2).atTime(11, 0));
+
         dispararLembrete.disparar(confirmada.getId(), TipoLembrete.PEDIDO_CONFIRMACAO, true);
         processarResposta.processar(Telefone.de(davi.telefone()), "1", "confirmar-" + confirmada.getId());
 
@@ -161,6 +170,7 @@ class PrevencaoDeFaltasIntegracaoTest {
 
         ConsultaEmRisco daCarla2 = painel.emRisco().stream().filter(c -> c.agendamentoId().equals(proxima.getId())).findFirst().orElseThrow();
         ConsultaEmRisco doDavi = painel.emRisco().stream().filter(c -> c.agendamentoId().equals(confirmada.getId())).findFirst().orElseThrow();
+
         assertThat(daCarla2.risco().nivel()).isEqualTo(NivelDeRisco.ALTO);
         assertThat(daCarla2.risco().fatores()).contains("Faltou 1 vez nos últimos 12 meses", "Não respondeu ao pedido de confirmação",
                 "Primeira consulta na unidade");
@@ -185,6 +195,7 @@ class PrevencaoDeFaltasIntegracaoTest {
 
         relogio.em(SEGUNDA.plusWeeks(1).atTime(8, 0));
         PainelDeFaltas semanaSeguinte = prevencao.painel(recepcao, 4);
+
         assertThat(semanaSeguinte.semanas().getLast().inicio()).isEqualTo(SEGUNDA);
         assertThat(semanaSeguinte.semanas().getLast().faltaram()).isGreaterThanOrEqualTo(1);
     }
@@ -201,22 +212,29 @@ class PrevencaoDeFaltasIntegracaoTest {
         prevencao.registrarLigacao(recepcao, doFabio.getId(), ResultadoDaLigacao.NAO_ATENDEU);
 
         assertThat(status(daElisa.getId())).isEqualTo("CONFIRMADO");
+
         ConsultaEmRisco confirmada = emRisco(daElisa.getId());
+
         assertThat(confirmada.risco().fatores()).contains("Confirmou presença");
         assertThat(confirmada.ultimaLigacao().resultado()).isEqualTo(ResultadoDaLigacao.CONFIRMOU);
+
         ConsultaEmRisco naoAtendeu = emRisco(doFabio.getId());
+
         assertThat(naoAtendeu.risco().pontos()).isEqualTo(antes + 10);
         assertThat(naoAtendeu.risco().fatores()).contains("Não atendeu a ligação da unidade");
 
         relogio.em(SEGUNDA.atTime(8, 30));
         prevencao.registrarLigacao(recepcao, daElisa.getId(), ResultadoDaLigacao.CONFIRMOU);
         prevencao.registrarLigacao(recepcao, doFabio.getId(), ResultadoDaLigacao.VAI_REMARCAR);
+
         assertThat(emRisco(doFabio.getId()).ultimaLigacao().resultado()).isEqualTo(ResultadoDaLigacao.VAI_REMARCAR);
         assertThat(emRisco(doFabio.getId()).risco().fatores()).doesNotContain("Não atendeu a ligação da unidade");
 
         assertThatThrownBy(() -> prevencao.registrarLigacao(especialistaAtor, doFabio.getId(), ResultadoDaLigacao.CONFIRMOU))
                 .isInstanceOf(AcessoNegadoException.class);
+
         relogio.em(SEGUNDA.plusDays(4).atTime(8, 0));
+
         assertThatThrownBy(() -> prevencao.registrarLigacao(recepcao, doFabio.getId(), ResultadoDaLigacao.CONFIRMOU))
                 .isInstanceOf(IllegalStateException.class);
     }
@@ -251,6 +269,7 @@ class PrevencaoDeFaltasIntegracaoTest {
                 new NovoEncaminhamento(especialidade, null, Modalidade.ELETIVO, Prioridade.POUCO_URGENTE, "Acompanhamento"));
         Triagem avaliada = triagens.registrarAvaliacao(clinico, t.getId(), new AvaliacaoClinica("Dor persistente", null, null, null, null),
                 new SinaisVitais(120, 80, 78, 16, new BigDecimal("36.7"), 98), Prioridade.POUCO_URGENTE, null, t.getVersao());
+
         triagens.finalizar(clinico, t.getId(), avaliada.getVersao());
         return e;
     }

@@ -137,6 +137,7 @@ public class AusenciaPostgresAdapter implements AusenciaRepositoryPort {
                     contagem.put(MotivoDeAusencia.valueOf(rs.getString("motivo")),
                             new long[]{rs.getLong("faltas"), rs.getLong("cancelamentos")});
                 });
+
         return Arrays.stream(MotivoDeAusencia.values())
                 .map(m -> {
                     long[] c = contagem.getOrDefault(m, new long[2]);
@@ -212,6 +213,7 @@ public class AusenciaPostgresAdapter implements AusenciaRepositoryPort {
                             : new LigacaoRegistrada(rs.getObject("ligacao_id", UUID.class), rs.getObject("id", UUID.class),
                                     ResultadoDaLigacao.valueOf(rs.getString("ligacao_resultado")),
                                     rs.getObject("ligacao_usuario", UUID.class), instante(rs, "ligacao_em"));
+
                     return new ConsultaComSinais(rs.getObject("id", UUID.class), rs.getObject("paciente_id", UUID.class),
                             rs.getString("nome"), rs.getString("telefone"), dataHora, rs.getString("especialidade"),
                             rs.getString("profissional"), rs.getString("unidade"), status, sinais, ligacao);

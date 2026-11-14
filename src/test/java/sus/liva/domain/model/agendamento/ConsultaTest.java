@@ -19,6 +19,7 @@ class ConsultaTest {
 
     private static final Instant AGORA = Instant.parse("2026-11-14T12:00:00Z");
     private static final LocalDateTime HORARIO = LocalDateTime.of(2026, 11, 20, 9, 0);
+
     private final Profissional ortopedista = especialista("ORTOPEDIA");
     private final Encaminhamento encaminhamento = encaminhamento();
 
@@ -30,6 +31,7 @@ class ConsultaTest {
     private static Encaminhamento encaminhamento() {
         UUID clinico = UUID.randomUUID();
         Triagem t = Triagem.registrarChegada(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), AGORA);
+
         t.iniciar(clinico, AGORA);
         return Encaminhamento.aPartirDe(UUID.randomUUID(), t, "ORTOPEDIA", null, Modalidade.ELETIVO,
                 Prioridade.POUCO_URGENTE, "Joelho", clinico, AGORA);
@@ -55,13 +57,16 @@ class ConsultaTest {
     @Test
     void transicoesDaConsulta() {
         Agendamento c = Agendamento.consulta(UUID.randomUUID(), encaminhamento, ortopedista, HORARIO, 30, NaturezaConsulta.INICIAL, null);
+
         assertThatThrownBy(c::finalizarAtendimento).isInstanceOf(IllegalStateException.class);
 
         c.iniciarAtendimento();
+
         assertThatThrownBy(c::cancelar).isInstanceOf(IllegalStateException.class);
         assertThatThrownBy(c::registrarFalta).isInstanceOf(IllegalStateException.class);
 
         c.finalizarAtendimento();
+
         assertThat(c.getStatus()).isEqualTo(StatusAgendamento.COMPARECEU);
         assertThat(c.getStatus().ocupaAgenda()).isFalse();
         assertThatThrownBy(c::iniciarAtendimento).isInstanceOf(IllegalStateException.class);

@@ -66,12 +66,14 @@ class AgendarAtendimentoUseCaseImplTest {
         AtendimentoAgendado agendado = useCase.agendar(novo("(51) 99395-3661", FORA_DO_PRAZO));
 
         Agendamento agendamento = agendado.agendamento();
+
         assertThat(agendado.pacienteNovo()).isTrue();
         assertThat(agendamento.getStatus()).isEqualTo(StatusAgendamento.AGENDADO);
         assertThat(agendamento.getTipo()).isEqualTo(TipoAtendimento.EXAME);
         assertThat(agendamentos.buscarAgendamento(agendamento.getId())).isPresent();
 
         Paciente paciente = pacientes.buscarPaciente(agendamento.getPacienteId()).orElseThrow();
+
         assertThat(paciente.nomeCompleto()).isEqualTo("Maria");
         assertThat(paciente.telefone()).isEqualTo(Telefone.de("51993953661"));
         assertThat(paciente.consentimento()).isTrue();
@@ -132,7 +134,9 @@ class AgendarAtendimentoUseCaseImplTest {
         assertThat(segundo.pacienteNovo()).isFalse();
         assertThat(segundo.agendamento().getPacienteId()).isEqualTo(primeiro.agendamento().getPacienteId());
         assertThat(pacientes.total()).isEqualTo(1);
+
         Paciente paciente = pacientes.buscarPaciente(primeiro.agendamento().getPacienteId()).orElseThrow();
+
         assertThat(paciente.cpf()).isEqualTo(CPF);
         assertThat(paciente.nomeCompleto()).isEqualTo("Maria");
         assertThat(paciente.telefone()).isEqualTo(Telefone.de("11987654321"));
@@ -171,6 +175,7 @@ class AgendarAtendimentoUseCaseImplTest {
         useCase.agendar(novo("Maria", CPF, "51993953661", "João", "11987654321", FORA_DO_PRAZO));
 
         Paciente paciente = pacientes.buscarPaciente(primeiro.agendamento().getPacienteId()).orElseThrow();
+
         assertThat(paciente.nomeCuidador()).isEqualTo("João");
         assertThat(paciente.telefoneCuidador()).isEqualTo(Telefone.de("11987654321"));
     }
@@ -205,6 +210,7 @@ class AgendarAtendimentoUseCaseImplTest {
         AtendimentoAgendado agendado = useCase.agendar(novo("Maria", null, "51993953661", "João", "11987654321", FORA_DO_PRAZO));
 
         Paciente paciente = pacientes.buscarPaciente(agendado.agendamento().getPacienteId()).orElseThrow();
+
         assertThat(paciente.temCuidador()).isTrue();
         assertThat(paciente.nomeCuidador()).isEqualTo("João");
         assertThat(paciente.telefoneCuidador()).isEqualTo(Telefone.de("11987654321"));

@@ -84,11 +84,13 @@ public class AgendaDeConsultasUseCaseImpl implements AgendaDeConsultasUseCase {
     @Override
     public List<HorarioDisponivel> horariosDisponiveis(Ator ator, UUID encaminhamentoId, LocalDate inicio, LocalDate fim) {
         Permissoes.exigir(ator, Papel.PACIENTE, Papel.CUIDADOR, Papel.RECEPCAO);
+
         Encaminhamento encaminhamento = encaminhamentos.buscarEncaminhamento(encaminhamentoId)
                 .orElseThrow(() -> new NaoEncontradoException("Encaminhamento não encontrado: " + encaminhamentoId));
         Permissoes.exigirPacienteProprio(ator, encaminhamento.getPacienteId());
         if (!encaminhamento.permiteAgendamento() && !encaminhamento.permiteRemarcacao())
             throw new IllegalStateException("Este encaminhamento não está liberado para agendamento. Status atual: " + encaminhamento.getStatus());
+
         LocalDateTime agora = LocalDateTime.now(clock);
         LocalDate de = inicio.isBefore(agora.toLocalDate()) ? agora.toLocalDate() : inicio;
         if (fim.isBefore(de)) throw new IllegalArgumentException("A data final deve ser igual ou posterior à inicial");
@@ -104,6 +106,7 @@ public class AgendaDeConsultasUseCaseImpl implements AgendaDeConsultasUseCase {
             List<VagaLiberada> emOferta = fila == null ? List.of()
                     : fila.vagasEmOfertaParaOutros(profissional.id(), de.atStartOfDay(), fim.plusDays(1).atStartOfDay(),
                     encaminhamento.getPacienteId());
+
             for (Disponibilidade d : profissionais.disponibilidadesDe(profissional.id()))
                 for (LocalDate dia = de; !dia.isAfter(fim); dia = dia.plusDays(1))
                     for (LocalDateTime horario : d.horariosEm(dia)) {
@@ -113,6 +116,7 @@ public class AgendaDeConsultasUseCaseImpl implements AgendaDeConsultasUseCase {
                             livres.add(new HorarioDisponivel(profissional.id(), profissional.nome(), horario, termino));
                     }
         }
+
         livres.sort(Comparator.comparing(HorarioDisponivel::inicio).thenComparing(HorarioDisponivel::nomeProfissional));
         return livres;
     }
@@ -120,9 +124,11 @@ public class AgendaDeConsultasUseCaseImpl implements AgendaDeConsultasUseCase {
     @Override
     public boolean possuiAgenda(Ator ator, UUID encaminhamentoId) {
         Permissoes.exigir(ator, Papel.PACIENTE, Papel.CUIDADOR, Papel.RECEPCAO);
+
         Encaminhamento encaminhamento = encaminhamentos.buscarEncaminhamento(encaminhamentoId)
                 .orElseThrow(() -> new NaoEncontradoException("Encaminhamento não encontrado: " + encaminhamentoId));
         Permissoes.exigirPacienteProprio(ator, encaminhamento.getPacienteId());
+
         return candidatos(encaminhamento).stream().anyMatch(p -> !profissionais.disponibilidadesDe(p.id()).isEmpty());
     }
 
@@ -131,6 +137,7 @@ public class AgendaDeConsultasUseCaseImpl implements AgendaDeConsultasUseCase {
         Permissoes.exigir(ator, Papel.PACIENTE, Papel.CUIDADOR, Papel.RECEPCAO);
         if (chaveIdempotencia != null && !chaveIdempotencia.matches(FORMATO_CHAVE))
             throw new IllegalArgumentException("Chave de idempotência inválida");
+
         Optional<Agendamento> repetido = repetido(chaveIdempotencia, encaminhamentoId);
         if (repetido.isPresent()) return repetido.get();
         exigirFuturo(inicio);
@@ -138,17 +145,21 @@ public class AgendaDeConsultasUseCaseImpl implements AgendaDeConsultasUseCase {
         Reserva reserva = transacao.executar(() -> {
             Encaminhamento e = encaminhamentoParaAtualizar(encaminhamentoId);
             Permissoes.exigirPacienteProprio(ator, e.getPacienteId());
+
             Optional<Agendamento> concorrente = repetido(chaveIdempotencia, encaminhamentoId);
             if (concorrente.isPresent()) return new Reserva(concorrente.get(), false);
             if (triagens.buscarTriagem(e.getTriagemId()).filter(t -> t.getStatus() == StatusTriagem.FINALIZADA).isEmpty())
                 throw new IllegalStateException("A triagem deste encaminhamento não permite novos agendamentos");
+
             Profissional profissional = profissional(profissionalId);
             int duracao = duracaoNaAgenda(profissional, inicio);
             exigirForaDeOferta(profissional, inicio, duracao, e.getPacienteId());
+
             boolean jaAtendido = agendamentos.consultasDoEncaminhamento(e.getId()).stream()
                     .anyMatch(c -> c.getStatus() == StatusAgendamento.COMPARECEU);
             Agendamento consulta = Agendamento.consulta(UUID.randomUUID(), e, profissional, inicio, duracao,
                     jaAtendido ? NaturezaConsulta.RETORNO : NaturezaConsulta.INICIAL, chaveIdempotencia);
+
             e.consultaAgendada();
             encaminhamentos.salvarEncaminhamento(e);
             agendamentos.salvarAgendamento(consulta);
@@ -159,6 +170,7 @@ public class AgendaDeConsultasUseCaseImpl implements AgendaDeConsultasUseCase {
             auditor.registrar(ator, "AGENDAR_CONSULTA", "CONSULTA", reserva.consulta().getId(), reserva.consulta().getPacienteId());
             notificar(reserva.consulta().getId());
         }
+
         return agendamentos.buscarAgendamento(reserva.consulta().getId()).orElseThrow();
     }
 
@@ -166,16 +178,19 @@ public class AgendaDeConsultasUseCaseImpl implements AgendaDeConsultasUseCase {
     public Agendamento remarcar(Ator ator, UUID consultaId, UUID profissionalId, LocalDateTime inicio, long versao) {
         Permissoes.exigir(ator, Papel.PACIENTE, Papel.CUIDADOR, Papel.RECEPCAO);
         exigirFuturo(inicio);
+
         Remarcacao remarcacao = transacao.executar(() -> {
             Agendamento atual = consultaParaAtualizar(consultaId, versao);
             Permissoes.exigirPacienteProprio(ator, atual.getPacienteId());
             if (!atual.doEncaminhamento())
                 throw new IllegalArgumentException("Somente consultas de encaminhamento são remarcadas por aqui");
             if (ator.agePeloPaciente()) limite.exigirDisponivel(atual.getPacienteId());
+
             Encaminhamento e = encaminhamentoParaAtualizar(atual.getEncaminhamentoId());
             Profissional profissional = profissional(profissionalId);
             int duracao = duracaoNaAgenda(profissional, inicio);
             exigirForaDeOferta(profissional, inicio, duracao, atual.getPacienteId());
+
             atual.cancelar();
             agendamentos.salvarAgendamento(atual);
             Agendamento remarcada = Agendamento.consulta(UUID.randomUUID(), e, profissional, inicio, duracao, atual.getNatureza(), null);
@@ -184,6 +199,7 @@ public class AgendaDeConsultasUseCaseImpl implements AgendaDeConsultasUseCase {
                     ator.agePeloPaciente() ? LimiteDeRemarcacoes.PORTAL : LimiteDeRemarcacoes.RECEPCAO);
             return new Remarcacao(atual, remarcada);
         });
+
         Agendamento nova = remarcacao.nova();
         auditor.registrar(ator, "REMARCAR_CONSULTA", "CONSULTA", nova.getId(), nova.getPacienteId());
         notificacao.notificar(nova.getId(), nova.getPacienteId(), p -> modelos.consultaRemarcada(p, remarcacao.anterior(), nova));
@@ -193,19 +209,24 @@ public class AgendaDeConsultasUseCaseImpl implements AgendaDeConsultasUseCase {
     @Override
     public Agendamento cancelar(Ator ator, UUID consultaId, long versao) {
         Permissoes.exigir(ator, Papel.PACIENTE, Papel.CUIDADOR, Papel.RECEPCAO, Papel.ESPECIALISTA);
+
         Agendamento cancelada = transacao.executar(() -> {
             Agendamento atual = consultaParaAtualizar(consultaId, versao);
             Permissoes.exigirPacienteProprio(ator, atual.getPacienteId());
             if (ator.eh(Papel.ESPECIALISTA) && !atual.doProfissional(ator.profissionalId())) throw Permissoes.negado();
+
             atual.cancelar();
             agendamentos.salvarAgendamento(atual);
+
             if (atual.doEncaminhamento()) {
                 Encaminhamento e = encaminhamentoParaAtualizar(atual.getEncaminhamentoId());
                 e.consultaDesmarcada();
                 encaminhamentos.salvarEncaminhamento(e);
             }
+
             return atual;
         });
+
         auditor.registrar(ator, "CANCELAR_CONSULTA", "CONSULTA", consultaId, cancelada.getPacienteId());
         notificacao.notificar(consultaId, cancelada.getPacienteId(), p -> modelos.consultaCancelada(p, cancelada));
         return agendamentos.buscarAgendamento(consultaId).orElseThrow();
@@ -238,9 +259,11 @@ public class AgendaDeConsultasUseCaseImpl implements AgendaDeConsultasUseCase {
 
     private Optional<Agendamento> repetido(String chave, UUID encaminhamentoId) {
         if (chave == null) return Optional.empty();
+
         Optional<Agendamento> existente = agendamentos.buscarPorChaveIdempotencia(chave);
         if (existente.isPresent() && !encaminhamentoId.equals(existente.get().getEncaminhamentoId()))
             throw new ConflitoException("Esta chave de idempotência já foi usada em outro agendamento");
+
         return existente;
     }
 

@@ -48,17 +48,23 @@ public class NotificacaoAoPaciente {
         try {
             Optional<Paciente> paciente = pacientes.buscarPaciente(pacienteId).filter(Paciente::consentimento);
             if (paciente.isEmpty()) return false;
+
             Paciente p = paciente.get();
             Set<String> avisados = new HashSet<>();
+
             avisados.add(p.telefone().chaveComparacao());
+
             boolean enviada = enviar(agendamentoId, p.telefone(), paraPaciente.apply(p));
             String mensagem = paraAcompanhantes.apply(p);
+
             if (p.temCuidador() && avisados.add(p.telefoneCuidador().chaveComparacao()))
                 enviar(agendamentoId, p.telefoneCuidador(), modelos.paraCuidador(p, mensagem));
+
             for (CuidadorVinculado vinculado : cuidadores.cuidadoresDoPaciente(p.id()))
                 if (avisados.add(vinculado.cuidador().telefone().chaveComparacao()))
                     enviada |= enviar(agendamentoId, vinculado.cuidador().telefone(),
                             modelos.paraPessoaDeConfianca(vinculado.cuidador().nome(), p, mensagem));
+
             return enviada;
         } catch (RuntimeException e) {
             LOG.log(System.Logger.Level.WARNING, "Falha ao notificar o paciente " + pacienteId + " pelo WhatsApp", e);

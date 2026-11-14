@@ -42,6 +42,7 @@ class EncaminhamentoTest {
     @Test
     void soPodeSerAgendadoDepoisDeLiberado() {
         Encaminhamento e = eletivo();
+
         assertThat(e.permiteAgendamento()).isFalse();
         assertThatThrownBy(e::consultaAgendada).isInstanceOf(IllegalStateException.class);
 
@@ -61,14 +62,17 @@ class EncaminhamentoTest {
         e.consultaAgendada();
         e.consultaIniciada();
         e.consultaFinalizada(true);
+
         assertThat(e.permiteAgendamento()).isTrue();
 
         e.consultaAgendada();
         e.consultaIniciada();
         e.consultaFinalizada(false);
+
         assertThat(e.getStatus()).isEqualTo(StatusEncaminhamento.EM_ATENDIMENTO);
 
         e.concluir("Alta ortopédica", AGORA);
+
         assertThat(e.getStatus()).isEqualTo(StatusEncaminhamento.CONCLUIDO);
         assertThatThrownBy(e::autorizarRetorno).isInstanceOf(IllegalStateException.class);
     }
@@ -81,10 +85,12 @@ class EncaminhamentoTest {
         Encaminhamento imediato = Encaminhamento.aPartirDe(UUID.randomUUID(), triagem, "PRONTO_ATENDIMENTO", null,
                 Modalidade.IMEDIATO, Prioridade.EMERGENCIA, "Fratura exposta", CLINICO, AGORA);
         imediato.liberarParaAgendamento();
+
         assertThat(imediato.permiteAgendamento()).isFalse();
 
         UUID plantonista = UUID.randomUUID();
         imediato.receberNoPlantao(plantonista, AGORA);
+
         assertThat(imediato.getStatus()).isEqualTo(StatusEncaminhamento.EM_ATENDIMENTO);
         assertThat(imediato.destinadoA(plantonista)).isTrue();
         assertThatThrownBy(() -> imediato.receberNoPlantao(plantonista, AGORA)).isInstanceOf(IllegalStateException.class);

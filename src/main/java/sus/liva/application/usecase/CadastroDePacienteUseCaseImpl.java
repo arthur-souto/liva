@@ -47,9 +47,11 @@ public class CadastroDePacienteUseCaseImpl implements CadastroDePacienteUseCase 
     @Override
     public CadastroDePaciente cadastrar(Ator ator, DadosCadastrais dados) {
         Permissoes.exigir(ator, Papel.RECEPCAO, Papel.ADMINISTRADOR);
+
         Paciente paciente = montar(UUID.randomUUID(), dados);
         if (paciente.cpf() == null && paciente.cartaoSus() == null)
             throw new IllegalArgumentException("Informe o CPF ou o Cartão SUS para identificar o paciente");
+
         recusarDuplicado(paciente, null);
         CadastroDePaciente cadastro = pacientes.cadastrar(paciente, ator.usuarioId(), Instant.now(clock));
         auditor.registrar(ator, "CADASTRAR_PACIENTE", "PACIENTE", paciente.id(), paciente.id());
@@ -59,14 +61,17 @@ public class CadastroDePacienteUseCaseImpl implements CadastroDePacienteUseCase 
     @Override
     public CadastroDePaciente atualizar(Ator ator, UUID pacienteId, DadosCadastrais dados, long versao) {
         Permissoes.exigir(ator, Papel.RECEPCAO, Papel.ADMINISTRADOR);
+
         CadastroDePaciente atual = existente(pacienteId);
         if (atual.versao() != versao)
             throw new ConflitoException("O cadastro foi alterado por outra pessoa. Recarregue antes de continuar.");
+
         Paciente paciente = montar(pacienteId, dados);
         if (paciente.cpf() == null && paciente.cartaoSus() == null)
             throw new IllegalArgumentException("Informe o CPF ou o Cartão SUS para identificar o paciente");
         if (atual.paciente().cpf() != null && paciente.cpf() == null)
             throw new IllegalArgumentException("O CPF já registrado não pode ser removido");
+
         recusarDuplicado(paciente, pacienteId);
         CadastroDePaciente cadastro = pacientes.atualizarCadastro(paciente, versao, ator.usuarioId(), Instant.now(clock));
         auditor.registrar(ator, "ATUALIZAR_PACIENTE", "PACIENTE", pacienteId, pacienteId);
@@ -77,6 +82,7 @@ public class CadastroDePacienteUseCaseImpl implements CadastroDePacienteUseCase 
     public CadastroDePaciente buscar(Ator ator, UUID pacienteId) {
         Permissoes.exigir(ator, Papel.RECEPCAO, Papel.ADMINISTRADOR, Papel.CLINICO_GERAL, Papel.ESPECIALISTA, Papel.PACIENTE);
         Permissoes.exigirPacienteProprio(ator, pacienteId);
+
         CadastroDePaciente cadastro = existente(pacienteId);
         auditor.registrar(ator, "CONSULTAR_PACIENTE", "PACIENTE", pacienteId, pacienteId);
         return cadastro;
@@ -91,12 +97,15 @@ public class CadastroDePacienteUseCaseImpl implements CadastroDePacienteUseCase 
     @Override
     public Pagina<CadastroDePaciente> pesquisar(Ator ator, String termo, PedidoDePagina pedido) {
         Permissoes.exigir(ator, Papel.RECEPCAO, Papel.ADMINISTRADOR, Papel.CLINICO_GERAL);
+
         String limpo = termo == null ? "" : termo.trim();
         if (limpo.isEmpty()) return pacientes.cadastrosRecentes(pedido);
+
         String digitos = limpo.replaceAll("[\\s.\\-/]", "");
         if (digitos.matches("\\d{11}|\\d{15}")) return pacientes.pesquisarCadastros(null, digitos, pedido);
         if (limpo.length() < MINIMO_NOME)
             throw new IllegalArgumentException("Digite ao menos " + MINIMO_NOME + " letras do nome, o CPF ou o Cartão SUS");
+
         return pacientes.pesquisarCadastros(limpo, null, pedido);
     }
 
@@ -109,6 +118,7 @@ public class CadastroDePacienteUseCaseImpl implements CadastroDePacienteUseCase 
         Optional<Paciente> porCpf = paciente.cpf() == null ? Optional.empty() : pacientes.buscarPorCpf(paciente.cpf());
         if (porCpf.filter(p -> !p.id().equals(proprio)).isPresent())
             throw new ConflitoException("Já existe um paciente cadastrado com este CPF.");
+
         Optional<Paciente> porCns = paciente.cartaoSus() == null ? Optional.empty() : pacientes.buscarPorCartaoSus(paciente.cartaoSus());
         if (porCns.filter(p -> !p.id().equals(proprio)).isPresent())
             throw new ConflitoException("Já existe um paciente cadastrado com este Cartão SUS.");
@@ -118,8 +128,10 @@ public class CadastroDePacienteUseCaseImpl implements CadastroDePacienteUseCase 
         exigir(d.nomeCompleto(), "Nome completo é obrigatório");
         if (d.dataNascimento() != null && d.dataNascimento().isAfter(LocalDate.now(clock)))
             throw new IllegalArgumentException("Data de nascimento não pode estar no futuro");
+
         Telefone telefoneCuidador = vazio(d.telefoneCuidador()) ? null : telefone(d.telefoneCuidador(), "Telefone do cuidador");
         if (telefoneCuidador != null) exigir(d.nomeCuidador(), "Nome do cuidador é obrigatório quando há telefone do cuidador");
+
         Telefone telefoneEmergencia = vazio(d.contatoEmergenciaTelefone()) ? null
                 : telefone(d.contatoEmergenciaTelefone(), "Telefone de emergência");
         return new Paciente(id, d.nomeCompleto().trim(), opcional(d.nomeSocial()),

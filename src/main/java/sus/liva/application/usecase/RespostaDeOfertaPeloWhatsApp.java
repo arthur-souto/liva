@@ -48,24 +48,29 @@ public class RespostaDeOfertaPeloWhatsApp {
     public Optional<ResultadoResposta> responder(Telefone remetente, String texto) {
         Optional<RespostaAOferta> resposta = RespostaAOferta.interpretar(texto);
         if (resposta.isEmpty()) return Optional.empty();
+
         Map<UUID, Paciente> doTelefone = assistente.pacientesDoTelefone(remetente).stream()
                 .collect(Collectors.toMap(Paciente::id, Function.identity(), (a, b) -> a));
         if (doTelefone.isEmpty()) return Optional.empty();
 
         Instant agora = Instant.now(clock);
         List<OfertaDeVaga> ativas = fila.ofertasAtivasDosPacientes(doTelefone.keySet()).stream().filter(o -> !o.vencida(agora)).toList();
+
         if (ativas.isEmpty()) {
             Optional<OfertaDeVaga> recente = fila.ultimaOfertaDosPacientes(doTelefone.keySet(), agora.minus(OFERTAS_RECENTES));
             if (recente.isEmpty()) return Optional.empty();
+
             Paciente p = doTelefone.get(recente.get().getPacienteId());
             if (recente.get().getConsultaNovaId() != null)
                 return Optional.of(ResultadoResposta.ignorada("A vaga já foi garantida anteriormente"));
+
             avisar(remetente, modelos.ofertaIndisponivel(p));
             return Optional.of(ResultadoResposta.ignorada("Oferta de vaga encerrada"));
         }
 
         OfertaDeVaga oferta = ativas.getFirst();
         Paciente paciente = doTelefone.get(oferta.getPacienteId());
+
         if (resposta.get() == RespostaAOferta.RECUSAR) {
             ReservaDeVaga.Resultado r = reserva.recusar(oferta.getId(), assistente.ator(remetente, paciente), CanalDeResposta.WHATSAPP);
             avisar(remetente, r.desfecho() == ReservaDeVaga.Desfecho.RECUSADA ? modelos.ofertaRecusada(paciente)
@@ -73,8 +78,10 @@ public class RespostaDeOfertaPeloWhatsApp {
             ofertarEmSeguida();
             return Optional.of(ResultadoResposta.ignorada("Oferta de vaga recusada pelo WhatsApp"));
         }
+
         ReservaDeVaga.Resultado r = reserva.aceitar(oferta.getId(), assistente.ator(remetente, paciente), CanalDeResposta.WHATSAPP);
         if (r.garantiuAVaga()) return Optional.of(ResultadoResposta.aplicada(r.nova().getId(), r.nova().getStatus(), true));
+
         avisar(remetente, modelos.ofertaIndisponivel(paciente));
         ofertarEmSeguida();
         return Optional.of(ResultadoResposta.ignorada(r.motivo()));

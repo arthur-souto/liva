@@ -49,6 +49,7 @@ class EvolutionEnviadorAdapterTest {
         ResultadoEnvio resultado = adapter.enviar(mensagem);
 
         assertThat(resultado).isEqualTo(ResultadoEnvio.ok("ABC123"));
+
         servidor.verify();
     }
 

@@ -702,6 +702,7 @@ public class FilaDeEsperaPostgresAdapter implements FilaDeEsperaRepositoryPort {
                 .query(OFERTA_PARA_PACIENTE)
                 .list().stream()
                 .collect(Collectors.toMap(OfertaParaPaciente::entradaId, Function.identity(), (a, b) -> a));
+
         return new Pagina<>(itens.stream().map(p -> new PacienteNaFila(p.pacienteId(), p.nomePaciente(), p.posicao(),
                 ofertas.get(p.posicao().entradaId()))).toList(), numero, pedido.tamanho(), total);
     }

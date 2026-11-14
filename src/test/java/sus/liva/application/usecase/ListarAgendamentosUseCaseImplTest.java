@@ -33,8 +33,10 @@ class ListarAgendamentosUseCaseImplTest {
     @Test
     void listaOPeriodoEmOrdemComOPaciente() {
         pacientes.salvarPaciente(maria);
+
         Agendamento tarde = salvar(StatusAgendamento.CONFIRMADO, DIA.atTime(15, 0), maria.id());
         Agendamento manha = salvar(StatusAgendamento.AGENDADO, DIA.atTime(8, 0), maria.id());
+
         salvar(StatusAgendamento.AGENDADO, DIA.plusDays(1).atTime(8, 0), maria.id());
 
         List<AgendamentoDetalhado> lista = useCase.listar(DIA, DIA, Set.of());

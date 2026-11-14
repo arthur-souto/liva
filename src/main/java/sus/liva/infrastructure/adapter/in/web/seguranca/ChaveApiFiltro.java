@@ -56,6 +56,7 @@ public class ChaveApiFiltro extends OncePerRequestFilter {
             chain.doFilter(request, response);
             return;
         }
+
         response.setStatus(HttpStatus.UNAUTHORIZED.value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setCharacterEncoding(StandardCharsets.UTF_8.name());

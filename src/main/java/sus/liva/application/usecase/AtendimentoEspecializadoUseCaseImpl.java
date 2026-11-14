@@ -61,10 +61,12 @@ public class AtendimentoEspecializadoUseCaseImpl implements AtendimentoEspeciali
     @Override
     public List<ConsultaDaAgenda> agenda(Ator ator, LocalDate inicio, LocalDate fim) {
         Permissoes.exigir(ator, Papel.ESPECIALISTA);
+
         UUID profissional = Permissoes.profissional(ator);
         if (fim.isBefore(inicio)) throw new IllegalArgumentException("A data final deve ser igual ou posterior à inicial");
         if (ChronoUnit.DAYS.between(inicio, fim) >= MAXIMO_DE_DIAS)
             throw new IllegalArgumentException("Consulte no máximo " + MAXIMO_DE_DIAS + " dias por vez");
+
         return agendamentos.consultasDoProfissional(profissional, inicio.atStartOfDay(), fim.plusDays(1).atStartOfDay()).stream()
                 .filter(Agendamento::doEncaminhamento)
                 .map(c -> new ConsultaDaAgenda(c,
@@ -97,11 +99,13 @@ public class AtendimentoEspecializadoUseCaseImpl implements AtendimentoEspeciali
     public EvolucaoClinica registrarEvolucao(Ator ator, UUID consultaId, String texto) {
         Permissoes.exigir(ator, Papel.ESPECIALISTA);
         if (ValidacaoCadastral.vazio(texto)) throw new IllegalArgumentException("Escreva a evolução clínica");
+
         Agendamento consulta = agendamentos.buscarAgendamento(consultaId)
                 .orElseThrow(() -> new NaoEncontradoException("Consulta não encontrada: " + consultaId));
         if (!consulta.doProfissional(ator.profissionalId())) throw Permissoes.negado();
         if (consulta.getStatus() != StatusAgendamento.EM_ANDAMENTO && consulta.getStatus() != StatusAgendamento.COMPARECEU)
             throw new IllegalStateException("Evoluções só podem ser registradas em consultas em andamento ou realizadas");
+
         EvolucaoClinica evolucao = new EvolucaoClinica(consultaId, ator.profissionalId(), texto.trim(), Instant.now(clock));
         evolucoes.salvarEvolucao(evolucao);
         auditor.registrar(ator, "REGISTRAR_EVOLUCAO", "CONSULTA", consultaId, consulta.getPacienteId());
@@ -116,12 +120,14 @@ public class AtendimentoEspecializadoUseCaseImpl implements AtendimentoEspeciali
             c.registrarFalta();
             e.consultaDesmarcada();
         });
+
         if (motivos != null) motivos.aposFalta(faltou);
         return faltou;
     }
 
     private Agendamento alterar(Ator ator, UUID consultaId, long versao, String acao, BiConsumer<Agendamento, Encaminhamento> alteracao) {
         Permissoes.exigir(ator, Papel.ESPECIALISTA);
+
         UUID profissional = Permissoes.profissional(ator);
         Agendamento alterada = transacao.executar(() -> {
             Agendamento c = agendamentos.buscarAgendamentoParaAtualizar(consultaId)
@@ -129,6 +135,7 @@ public class AtendimentoEspecializadoUseCaseImpl implements AtendimentoEspeciali
             if (!c.doProfissional(profissional)) throw Permissoes.negado();
             if (c.getVersao() != null && c.getVersao() != versao)
                 throw new ConflitoException("A consulta foi alterada por outra pessoa. Recarregue antes de continuar.");
+
             Encaminhamento e = encaminhamentos.buscarEncaminhamentoParaAtualizar(c.getEncaminhamentoId())
                     .orElseThrow(() -> new NaoEncontradoException("Encaminhamento da consulta não encontrado"));
             alteracao.accept(c, e);
@@ -136,6 +143,7 @@ public class AtendimentoEspecializadoUseCaseImpl implements AtendimentoEspeciali
             encaminhamentos.salvarEncaminhamento(e);
             return c;
         });
+
         auditor.registrar(ator, acao, "CONSULTA", consultaId, alterada.getPacienteId());
         return agendamentos.buscarAgendamento(consultaId).orElseThrow();
     }

@@ -21,6 +21,7 @@ class DisparoDiarioAgendadorTest {
     void usaADataDoFusoConfiguradoENaoADoServidor() {
         List<LocalDate> chamadas = new ArrayList<>();
         Clock duasDaManhaUtc = Clock.fixed(Instant.parse("2026-11-14T02:00:00Z"), SAO_PAULO);
+
         DisparoDiarioAgendador agendador = new DisparoDiarioAgendador(dia -> {
             chamadas.add(dia);
             return 0;

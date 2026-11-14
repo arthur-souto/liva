@@ -50,6 +50,7 @@ public class DispararLembreteUseCaseImpl implements DispararLembreteUseCase {
 
         String texto = modelos.montar(tipo, p, a);
         List<RegistroMensagem> envios = new ArrayList<>();
+
         envios.add(enviar(a, p.telefone(), tipo, texto));
 
         if (p.temCuidador())
@@ -59,6 +60,7 @@ public class DispararLembreteUseCaseImpl implements DispararLembreteUseCase {
             a.aguardarResposta();
             agendamentos.salvarAgendamento(a);
         }
+
         return ResultadoDisparo.enviado(envios);
     }
 
@@ -66,6 +68,7 @@ public class DispararLembreteUseCaseImpl implements DispararLembreteUseCase {
         ResultadoEnvio r = enviador.enviar(new MensagemSaida(a.getId(), destino, tipo, texto));
         RegistroMensagem reg = new RegistroMensagem(a.getId(), destino, tipo, texto,
                 r.sucesso(), r.idExterno(), r.erro(), Instant.now());
+
         registros.salvarRegistro(reg);
         return reg;
     }

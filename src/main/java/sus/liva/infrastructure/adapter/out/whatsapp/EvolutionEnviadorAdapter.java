@@ -66,6 +66,7 @@ public class EvolutionEnviadorAdapter implements EnviadorMensagemPort {
         String status = "HTTP " + resposta.getStatusCode().value();
         if (corpo == null || corpo.isBlank())
             return ResultadoEnvio.falha(status + ": Evolution respondeu sem corpo");
+
         try {
             JsonNode id = JSON.readTree(corpo).path("key").path("id");
             return ResultadoEnvio.ok(id.isValueNode() ? id.asString() : null);

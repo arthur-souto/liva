@@ -59,6 +59,7 @@ public class PrevencaoDeFaltasUseCaseImpl implements PrevencaoDeFaltasUseCase {
     @Override
     public PainelDeFaltas painel(Ator ator, int semanas) {
         Permissoes.exigir(ator, Papel.ADMINISTRADOR, Papel.RECEPCAO);
+
         int quantidade = Math.max(MINIMO_DE_SEMANAS, Math.min(MAXIMO_DE_SEMANAS, semanas));
         Instant agora = Instant.now(clock);
         LocalDateTime agoraLocal = LocalDateTime.now(clock);
@@ -72,6 +73,7 @@ public class PrevencaoDeFaltasUseCaseImpl implements PrevencaoDeFaltasUseCase {
                         .thenComparing(ConsultaEmRisco::dataHora))
                 .limit(LIMITE_EM_RISCO)
                 .toList();
+
         return new PainelDeFaltas(agora, ausencias.semanas(primeira, quantidade), ausencias.motivos(desdeMotivos),
                 ausencias.porEspecialidade(primeira.atStartOfDay(), agoraLocal), emRisco,
                 ausencias.perguntasFeitas(desdeMotivos), ausencias.perguntasRespondidas(desdeMotivos));
@@ -80,14 +82,17 @@ public class PrevencaoDeFaltasUseCaseImpl implements PrevencaoDeFaltasUseCase {
     @Override
     public void registrarMotivo(Ator ator, UUID agendamentoId, MotivoDeAusencia motivo) {
         Permissoes.exigir(ator, Papel.PACIENTE, Papel.CUIDADOR, Papel.RECEPCAO, Papel.ADMINISTRADOR);
+
         Agendamento a = agendamentos.buscarAgendamento(agendamentoId)
                 .orElseThrow(() -> new NaoEncontradoException("Consulta não encontrada: " + agendamentoId));
         Permissoes.exigirPacienteProprio(ator, a.getPacienteId());
+
         OcorrenciaDeAusencia ocorrencia = switch (a.getStatus()) {
             case FALTOU -> OcorrenciaDeAusencia.FALTA;
             case CANCELADO, REAGENDADO -> OcorrenciaDeAusencia.CANCELAMENTO;
             default -> throw new IllegalStateException("Só é possível informar o motivo de uma consulta cancelada ou com falta");
         };
+
         Optional<MotivoRegistrado> anterior = ausencias.buscarMotivo(agendamentoId);
         ausencias.salvarMotivo(new MotivoRegistrado(agendamentoId, a.getPacienteId(), ocorrencia, motivo,
                 ator.agePeloPaciente() ? CanalDoMotivo.PORTAL : CanalDoMotivo.EQUIPE,
@@ -98,11 +103,13 @@ public class PrevencaoDeFaltasUseCaseImpl implements PrevencaoDeFaltasUseCase {
     @Override
     public void registrarLigacao(Ator ator, UUID agendamentoId, ResultadoDaLigacao resultado) {
         Permissoes.exigir(ator, Papel.ADMINISTRADOR, Papel.RECEPCAO);
+
         Agendamento a = agendamentos.buscarAgendamento(agendamentoId)
                 .orElseThrow(() -> new NaoEncontradoException("Consulta não encontrada: " + agendamentoId));
         if (!a.getStatus().ocupaAgenda() || a.getStatus() == StatusAgendamento.EM_ANDAMENTO
                 || !a.getDataHora().isAfter(LocalDateTime.now(clock)))
             throw new IllegalStateException("Só é possível registrar a ligação de uma consulta que ainda vai acontecer");
+
         if (resultado == ResultadoDaLigacao.CONFIRMOU && a.getStatus() != StatusAgendamento.CONFIRMADO)
             fila.confirmarPresenca(ator, agendamentoId);
         ausencias.salvarLigacao(new LigacaoRegistrada(UUID.randomUUID(), agendamentoId, resultado, ator.usuarioId(), Instant.now(clock)));

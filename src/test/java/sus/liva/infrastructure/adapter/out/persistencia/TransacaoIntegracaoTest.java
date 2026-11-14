@@ -72,6 +72,7 @@ class TransacaoIntegracaoTest {
     void aplicaSomenteUmaDeDuasRespostasSimultaneas() throws Exception {
         String telefone = telefoneAleatorio();
         Agendamento agendamento = agendarAtendimento.agendar(novo(telefone, "UBS Centro")).agendamento();
+
         dispararLembrete.disparar(agendamento.getId(), TipoLembrete.PEDIDO_CONFIRMACAO, true);
 
         CountDownLatch largada = new CountDownLatch(1);
@@ -82,6 +83,7 @@ class TransacaoIntegracaoTest {
                         return processarResposta.processar(Telefone.de(telefone), texto);
                     }))
                     .toList();
+
             largada.countDown();
 
             List<ResultadoResposta> resultados = respostas.stream().map(f -> {
@@ -93,7 +95,9 @@ class TransacaoIntegracaoTest {
             }).toList();
 
             assertThat(resultados).filteredOn(ResultadoResposta::aplicada).hasSize(1);
+
             ResultadoResposta aplicada = resultados.stream().filter(ResultadoResposta::aplicada).findFirst().orElseThrow();
+
             assertThat(consultarAgendamento.consultar(agendamento.getId()).orElseThrow().getStatus())
                     .isEqualTo(aplicada.status())
                     .isIn(StatusAgendamento.CONFIRMADO, StatusAgendamento.CANCELADO);

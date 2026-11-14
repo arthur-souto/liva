@@ -56,6 +56,7 @@ public class Encaminhamento {
         if (prioridade == null) throw new IllegalArgumentException("Informe a prioridade do encaminhamento");
         if (modalidade == Modalidade.IMEDIATO && !prioridade.grave())
             throw new IllegalArgumentException("Encaminhamento imediato exige prioridade EMERGENCIA ou MUITO_URGENTE");
+
         return new Encaminhamento(id, triagem.getId(), triagem.getPacienteId(), especialidade, profissionalDestinoId,
                 modalidade, prioridade, justificativa.trim(), StatusEncaminhamento.PENDENTE, criadoPor, em, null, null,
                 null, null, null);
@@ -69,6 +70,7 @@ public class Encaminhamento {
     public void receberNoPlantao(UUID profissional, Instant em) {
         if (modalidade != Modalidade.IMEDIATO) throw new IllegalStateException("Somente encaminhamentos imediatos são recebidos pelo plantão");
         exigir(StatusEncaminhamento.PENDENTE, "receber");
+
         recebidoPor = profissional;
         recebidoEm = em;
         status = StatusEncaminhamento.EM_ATENDIMENTO;
@@ -112,6 +114,7 @@ public class Encaminhamento {
         if (status != StatusEncaminhamento.EM_ATENDIMENTO && status != StatusEncaminhamento.AGUARDANDO_AGENDAMENTO)
             throw new IllegalStateException("Não é possível concluir um encaminhamento com status " + status);
         if (resultado == null || resultado.isBlank()) throw new IllegalArgumentException("Informe o desfecho do acompanhamento");
+
         desfecho = resultado.trim();
         encerradoEm = em;
         status = StatusEncaminhamento.CONCLUIDO;
@@ -121,6 +124,7 @@ public class Encaminhamento {
         if (status != StatusEncaminhamento.PENDENTE && status != StatusEncaminhamento.AGUARDANDO_AGENDAMENTO)
             throw new IllegalStateException("Não é possível cancelar um encaminhamento com status " + status);
         if (motivo == null || motivo.isBlank()) throw new IllegalArgumentException("Informe o motivo do cancelamento");
+
         desfecho = "Cancelado: " + motivo.trim();
         encerradoEm = em;
         status = StatusEncaminhamento.CANCELADO;

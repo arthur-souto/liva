@@ -25,8 +25,10 @@ public enum RespostaPaciente {
 
     public static Optional<RespostaPaciente> interpretar(String texto) {
         if (texto == null) return Optional.empty();
+
         String normalizado = normalizar(texto);
         if (normalizado.isEmpty()) return Optional.empty();
+
         String primeiro = normalizado.split(" ")[0];
         for (RespostaPaciente r : values())
             if (r.numero.equals(primeiro) || r.palavras.contains(normalizado)) return Optional.of(r);

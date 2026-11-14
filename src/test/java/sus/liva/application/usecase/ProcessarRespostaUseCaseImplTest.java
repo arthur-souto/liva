@@ -103,6 +103,7 @@ class ProcessarRespostaUseCaseImplTest {
         useCase.processar(TELEFONE_PACIENTE, "talvez", "msg-2");
 
         MensagemRecebida recebida = recebidas.todas().getFirst();
+
         assertThat(recebida.agendamentoId()).isEqualTo(AGENDAMENTO_ID);
         assertThat(recebida.resposta()).isNull();
     }
@@ -136,7 +137,9 @@ class ProcessarRespostaUseCaseImplTest {
         useCase.processar(Telefone.de("555193953661"), "1");
 
         assertThat(enviador.enviadas).hasSize(1);
+
         MensagemSaida retorno = enviador.enviadas.getFirst();
+
         assertThat(retorno.destino()).isEqualTo(TELEFONE_PACIENTE);
         assertThat(retorno.agendamentoId()).isEqualTo(AGENDAMENTO_ID);
         assertThat(retorno.texto()).contains("Maria da Silva").contains("presença está confirmada").contains("UBS Centro");

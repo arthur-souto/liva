@@ -50,6 +50,7 @@ public class Triagem {
 
     public void iniciar(UUID profissional, Instant em) {
         exigirStatus(StatusTriagem.AGUARDANDO_ATENDIMENTO, "iniciar");
+
         profissionalId = profissional;
         iniciadaEm = em;
         status = StatusTriagem.EM_ANDAMENTO;
@@ -60,6 +61,7 @@ public class Triagem {
         exigirResponsavelEmAndamento(profissional);
         if (novaPrioridade != null && novaPrioridade.grave() && vazio(justificativa))
             throw new IllegalArgumentException("Prioridade " + novaPrioridade + " exige justificativa clínica");
+
         avaliacao = novaAvaliacao;
         sinaisVitais = sinais;
         prioridade = novaPrioridade;
@@ -71,6 +73,7 @@ public class Triagem {
         if (avaliacao == null || vazio(avaliacao.queixaPrincipal()))
             throw new IllegalStateException("Registre a queixa principal antes de finalizar a triagem");
         if (prioridade == null) throw new IllegalStateException("Classifique a prioridade antes de finalizar a triagem");
+
         finalizadaEm = em;
         status = StatusTriagem.FINALIZADA;
     }
@@ -78,6 +81,7 @@ public class Triagem {
     public void cancelar(String motivo, Instant em) {
         if (!status.aberta()) throw new IllegalStateException("Somente triagens abertas podem ser canceladas. Status atual: " + status);
         if (vazio(motivo)) throw new IllegalArgumentException("Informe o motivo do cancelamento");
+
         motivoCancelamento = motivo.trim();
         canceladaEm = em;
         status = StatusTriagem.CANCELADA;

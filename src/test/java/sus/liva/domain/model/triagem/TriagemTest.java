@@ -41,9 +41,11 @@ class TriagemTest {
     @Test
     void naoFinalizaSemQueixaOuPrioridade() {
         Triagem t = emAndamento();
+
         assertThatThrownBy(() -> t.finalizar(CLINICO, AGORA)).hasMessageContaining("queixa principal");
 
         t.registrarAvaliacao(CLINICO, AVALIACAO, SinaisVitais.naoColetados(), null, null);
+
         assertThatThrownBy(() -> t.finalizar(CLINICO, AGORA)).hasMessageContaining("prioridade");
     }
 
@@ -72,7 +74,9 @@ class TriagemTest {
         assertThatThrownBy(() -> t.registrarAvaliacao(CLINICO, AVALIACAO, SinaisVitais.naoColetados(), Prioridade.NAO_URGENTE, null))
                 .isInstanceOf(IllegalStateException.class);
         assertThatThrownBy(() -> t.cancelar("engano", AGORA)).isInstanceOf(IllegalStateException.class);
+
         Retificacao r = t.retificar(CLINICO, "Dor no joelho esquerdo", "lateralidade", AGORA);
+
         assertThat(r.texto()).isEqualTo("Dor no joelho esquerdo");
         assertThat(t.getAvaliacao()).isEqualTo(AVALIACAO);
     }

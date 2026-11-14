@@ -94,6 +94,7 @@ public class ProcessarFilaUseCaseImpl implements ProcessarFilaUseCase {
         int expiradas = etapa("expirar ofertas", this::expirarOfertas);
         int avisos = etapa("enviar avisos finais", this::enviarAvisosFinais);
         int prazos = etapa("tratar prazos de confirmação", this::tratarPrazosVencidos);
+
         vagas += etapa("registrar vagas", this::registrarVagas);
         int ofertas = etapa("ofertar vagas", this::ofertarVagas);
         etapa("reenviar ofertas", this::reenviarOfertas);
@@ -104,6 +105,7 @@ public class ProcessarFilaUseCaseImpl implements ProcessarFilaUseCase {
         return transacao.executar(() -> {
             Instant agora = Instant.now(clock);
             List<EntradaNaFila> novas = fila.incluirEntradasPendentes(pacienteId, agora);
+
             novas.forEach(e -> diario.daEntrada(EventoDaFila.ENTROU_NA_FILA, e,
                     "Encaminhamento liberado para agendamento (" + e.getNatureza().name().toLowerCase() + ")", null));
             fila.reativarEntradas(pacienteId, agora).forEach(e -> diario.daEntrada(EventoDaFila.RETOMADA, e,
@@ -138,12 +140,15 @@ public class ProcessarFilaUseCaseImpl implements ProcessarFilaUseCase {
                 LOG.log(System.Logger.Level.INFO, "Oferta concorrente descartada: " + e.getMessage());
                 continue;
             }
+
             if (passo instanceof Passo.Fim) break;
+
             if (passo instanceof Passo.Ofertou(OfertaDeVaga oferta)) {
                 ofertadas++;
                 enviar(oferta);
             }
         }
+
         return ofertadas;
     }
 
@@ -156,6 +161,7 @@ public class ProcessarFilaUseCaseImpl implements ProcessarFilaUseCase {
                 case SEM_CONFIRMACAO -> "Consulta liberada por falta de confirmação";
                 case ANTECIPACAO -> "Horário liberado por uma antecipação aceita";
             }));
+
             return vagas.size();
         });
     }
@@ -164,12 +170,14 @@ public class ProcessarFilaUseCaseImpl implements ProcessarFilaUseCase {
         return transacao.executar(() -> {
             Instant agora = Instant.now(clock);
             List<OfertaDeVaga> vencidas = fila.ofertasVencidasParaAtualizar(agora, LOTE);
+
             for (OfertaDeVaga o : vencidas) {
                 o.expirar(agora);
                 fila.salvarOferta(o);
                 diario.daOferta(EventoDaFila.OFERTA_EXPIRADA, o, null,
                         "Sem resposta no prazo. A pessoa continua na fila na mesma posição.", null);
             }
+
             return vencidas.size();
         });
     }
@@ -178,9 +186,11 @@ public class ProcessarFilaUseCaseImpl implements ProcessarFilaUseCase {
         LocalDateTime agora = LocalDateTime.now(clock);
         LocalDateTime de = agora.plus(politica.prazoDeConfirmacao());
         int enviados = 0;
+
         for (UUID id : fila.consultasParaAvisoFinal(de, de.plus(politica.avisoFinal()), LOTE)) {
             Instant tentativa = Instant.now(clock);
             if (!fila.reivindicar("AVISO_FINAL:" + id + ":" + tentativa.getEpochSecond() / REENVIO.toSeconds(), tentativa)) continue;
+
             try {
                 enviados += dispararLembrete.disparar(id, TipoLembrete.AVISO_FINAL_CONFIRMACAO, false).envios().stream()
                         .anyMatch(r -> r.sucesso()) ? 1 : 0;
@@ -188,12 +198,14 @@ public class ProcessarFilaUseCaseImpl implements ProcessarFilaUseCase {
                 LOG.log(System.Logger.Level.WARNING, "Falha ao enviar o aviso final da consulta " + id, e);
             }
         }
+
         return enviados;
     }
 
     private int tratarPrazosVencidos() {
         LocalDateTime agora = LocalDateTime.now(clock);
         int tratados = 0;
+
         for (UUID id : fila.consultasComPrazoVencido(agora, agora.plus(politica.prazoDeConfirmacao()), LOTE)) {
             boolean entregue = fila.pedidoDeConfirmacaoEntregue(id, politica.exigirEntrega());
             if (politica.liberaSemResposta(entregue)) {
@@ -206,11 +218,13 @@ public class ProcessarFilaUseCaseImpl implements ProcessarFilaUseCase {
                 tratados += transacao.executar(() -> manter(id, decisao)) ? 1 : 0;
             }
         }
+
         return tratados;
     }
 
     private boolean manter(UUID id, DecisaoSemResposta decisao) {
         if (!fila.registrarDecisao(id, decisao, Instant.now(clock), null, null)) return false;
+
         Agendamento a = agendamentos.buscarAgendamento(id).orElseThrow();
         if (decisao == DecisaoSemResposta.SEM_CONTATO)
             diario.daConsulta(EventoDaFila.SEM_CONTATO, id, a.getPacienteId(),
@@ -218,6 +232,7 @@ public class ProcessarFilaUseCaseImpl implements ProcessarFilaUseCase {
         else
             diario.daConsulta(EventoDaFila.PRAZO_SEM_RESPOSTA, id, a.getPacienteId(),
                     "Prazo de confirmação vencido sem resposta. A política da unidade mantém a consulta.", null);
+
         return true;
     }
 
@@ -225,13 +240,16 @@ public class ProcessarFilaUseCaseImpl implements ProcessarFilaUseCase {
         Agendamento a = agendamentos.buscarAgendamentoParaAtualizar(id).orElseThrow();
         if (!a.aguardandoResposta() || !a.getDataHora().isAfter(LocalDateTime.now(clock))) return Optional.empty();
         if (!fila.registrarDecisao(id, DecisaoSemResposta.LIBERADA, Instant.now(clock), null, null)) return Optional.empty();
+
         a.cancelar();
         agendamentos.salvarAgendamento(a);
+
         if (a.doEncaminhamento())
             encaminhamentos.buscarEncaminhamentoParaAtualizar(a.getEncaminhamentoId()).ifPresent(e -> {
                 e.consultaDesmarcada();
                 encaminhamentos.salvarEncaminhamento(e);
             });
+
         diario.daConsulta(EventoDaFila.CONSULTA_LIBERADA, id, a.getPacienteId(),
                 "Prazo de confirmação vencido com o pedido entregue e sem resposta. O encaminhamento segue válido e a pessoa continua na fila.",
                 null);
@@ -242,17 +260,20 @@ public class ProcessarFilaUseCaseImpl implements ProcessarFilaUseCase {
         Instant agora = Instant.now(clock);
         Optional<VagaLiberada> encontrada = fila.proximaVagaParaOfertar(agora);
         if (encontrada.isEmpty()) return new Passo.Fim();
+
         VagaLiberada v = encontrada.get();
         LocalDateTime agoraLocal = LocalDateTime.now(clock);
 
         if (!politica.aindaDaTempoDeOfertar(v.getInicio(), agoraLocal))
             return encerrar(v, "Horário próximo demais para ser oferecido", agora);
+
         if (fila.horarioOcupado(v.getProfissionalId(), v.getInicio(), v.getFim())) {
             v.indisponivel("O horário foi ocupado na agenda", agora);
             fila.salvarVaga(v);
             diario.daVaga(EventoDaFila.VAGA_INDISPONIVEL, v, v.getMotivo());
             return new Passo.Seguir();
         }
+
         boolean naAgenda = profissionais.buscarProfissional(v.getProfissionalId())
                 .filter(p -> p.atende(v.getEspecialidade()))
                 .map(p -> profissionais.disponibilidadesDe(p.id()).stream().anyMatch(d -> d.comporta(v.getInicio())))
@@ -263,6 +284,7 @@ public class ProcessarFilaUseCaseImpl implements ProcessarFilaUseCase {
             diario.daVaga(EventoDaFila.VAGA_INDISPONIVEL, v, v.getMotivo());
             return new Passo.Seguir();
         }
+
         if (fila.ofertasDaVaga(v.getId()) >= politica.ofertasPorVaga())
             return encerrar(v, "Limite de " + politica.ofertasPorVaga() + " ofertas atingido", agora);
 
@@ -272,9 +294,11 @@ public class ProcessarFilaUseCaseImpl implements ProcessarFilaUseCase {
             fila.salvarVaga(v);
             return new Passo.Seguir();
         }
+
         EntradaNaFila e = proxima.get();
         OfertaDeVaga oferta = OfertaDeVaga.nova(UUID.randomUUID(), v, e, fila.consultaQueOcupaAgenda(e.getEncaminhamentoId()).orElse(null),
                 agora, politica.expiracaoDaOferta(agora, v.getInicio(), clock.getZone()));
+
         fila.salvarOferta(oferta);
         diario.daOferta(EventoDaFila.OFERTA_CRIADA, oferta, null, "Próxima pessoa elegível pela prioridade e pela data de entrada", null);
         return new Passo.Ofertou(oferta);
@@ -290,6 +314,7 @@ public class ProcessarFilaUseCaseImpl implements ProcessarFilaUseCase {
     private int reenviarOfertas() {
         Instant agora = Instant.now(clock);
         List<OfertaDeVaga> pendentes = fila.ofertasSemEnvio(agora, agora.minus(ESPERA_PARA_RECUPERAR_ENVIO), agora.minus(REENVIO), LOTE);
+
         pendentes.forEach(this::enviar);
         return pendentes.size();
     }
@@ -297,6 +322,7 @@ public class ProcessarFilaUseCaseImpl implements ProcessarFilaUseCase {
     private void enviar(OfertaDeVaga oferta) {
         Instant agora = Instant.now(clock);
         if (!fila.reivindicarEnvio(oferta.getId(), agora, agora.minus(REENVIO))) return;
+
         try {
             VagaLiberada v = fila.buscarVaga(oferta.getVagaId()).orElseThrow();
             Profissional profissional = profissionais.buscarProfissional(v.getProfissionalId()).orElseThrow();
@@ -309,6 +335,7 @@ public class ProcessarFilaUseCaseImpl implements ProcessarFilaUseCase {
                             respondaAte, antecipaDe, links.gerar(p.id(), DESTINO_NO_PORTAL)),
                     p -> modelos.ofertaDeVaga(p, especialidade, profissional.nome(), v.getUnidade(), v.getEndereco(), v.getInicio(),
                             respondaAte, antecipaDe, urlDoPortal + DESTINO_NO_PORTAL));
+
             transacao.executar(() -> {
                 fila.ofertaParaAtualizar(oferta.getId()).filter(OfertaDeVaga::ativa).ifPresent(o -> {
                     if (enviada) {

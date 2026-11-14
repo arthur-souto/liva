@@ -75,22 +75,27 @@ public class AutenticacaoUseCaseImpl implements AutenticacaoUseCase {
     @Override
     public Sessao entrar(String login, String senha) {
         if (vazio(login) || vazio(senha)) throw new IllegalArgumentException("Informe o login e a senha");
+
         Optional<ContaDeAcesso> encontrada = conta(login);
         if (encontrada.isEmpty()) {
             cifrador.confere(senha, hashDeReferencia);
             throw new NaoAutenticadoException(CREDENCIAIS_INVALIDAS);
         }
+
         ContaDeAcesso conta = encontrada.get();
         Instant agora = Instant.now(clock);
         if (conta.bloqueadaEm(agora))
             throw new NaoAutenticadoException("Acesso bloqueado temporariamente por excesso de tentativas. Tente novamente mais tarde.");
+
         if (!cifrador.confere(senha, conta.senhaHash())) {
             contas.registrarFalha(conta.id(), LIMITE_DE_TENTATIVAS, agora.plus(BLOQUEIO));
             throw new NaoAutenticadoException(CREDENCIAIS_INVALIDAS);
         }
+
         if (!conta.ativo()) throw new NaoAutenticadoException(CREDENCIAIS_INVALIDAS);
         if (conta.papel() == Papel.PACIENTE && !triagens.possuiTriagemConcluida(conta.pacienteId()))
             throw new NaoAutenticadoException("O portal é liberado após a primeira triagem concluída");
+
         contas.registrarAcesso(conta.id());
         auditor.registrar(conta.ator(), "ENTRAR", "USUARIO", conta.id(), conta.pacienteId());
         return sessao(conta);
@@ -100,19 +105,23 @@ public class AutenticacaoUseCaseImpl implements AutenticacaoUseCase {
     public void solicitarCodigoDoPortal(String documento, LocalDate dataNascimento) {
         Optional<Paciente> encontrado = paciente(documento, dataNascimento);
         if (encontrado.isEmpty()) return;
+
         Paciente paciente = encontrado.get();
         if (!paciente.consentimento() || !triagens.possuiTriagemConcluida(paciente.id())) return;
 
         String codigo = "%06d".formatted(aleatorio.nextInt(1_000_000));
         Instant agora = Instant.now(clock);
+
         boolean emitido = transacao.executar(() -> {
             boolean recente = codigos.buscarParaAtualizar(paciente.id())
                     .filter(c -> c.enviadoEm().plus(INTERVALO_ENTRE_CODIGOS).isAfter(agora))
                     .isPresent();
             if (recente) return false;
+
             codigos.salvarCodigo(new CodigoDoPortal(paciente.id(), cifrador.cifrar(codigo), agora.plus(VALIDADE_DO_CODIGO), agora, 0));
             return true;
         });
+
         if (!emitido) return;
 
         ResultadoEnvio envio = enviador.enviar(new MensagemSaida(null, paciente.telefone(), null,
@@ -143,29 +152,35 @@ public class AutenticacaoUseCaseImpl implements AutenticacaoUseCase {
     public Sessao ativarPortal(String documento, LocalDate dataNascimento, String codigo, String senha) {
         exigirSenhaForte(senha);
         if (vazio(codigo) || !codigo.trim().matches("\\d{6}")) throw new IllegalArgumentException(CODIGO_INVALIDO);
+
         Paciente paciente = paciente(documento, dataNascimento).orElseThrow(() -> new IllegalArgumentException(CODIGO_INVALIDO));
         Instant agora = Instant.now(clock);
 
         Optional<ContaDeAcesso> ativada = transacao.executar(() -> {
             Optional<CodigoDoPortal> registro = codigos.buscarParaAtualizar(paciente.id());
             if (registro.isEmpty()) return Optional.empty();
+
             CodigoDoPortal atual = registro.get();
             if (!atual.expiraEm().isAfter(agora) || atual.tentativas() >= LIMITE_DE_TENTATIVAS) {
                 codigos.removerCodigo(paciente.id());
                 return Optional.empty();
             }
+
             if (!cifrador.confere(codigo.trim(), atual.codigoHash())) {
                 codigos.salvarCodigo(new CodigoDoPortal(atual.pacienteId(), atual.codigoHash(), atual.expiraEm(),
                         atual.enviadoEm(), atual.tentativas() + 1));
                 return Optional.empty();
             }
+
             if (!triagens.possuiTriagemConcluida(paciente.id())) return Optional.empty();
+
             codigos.removerCodigo(paciente.id());
             return Optional.of(contaDoPortal(paciente, cifrador.cifrar(senha), agora));
         });
 
         ContaDeAcesso conta = ativada.orElseThrow(() -> new IllegalArgumentException(CODIGO_INVALIDO));
         if (!conta.ativo()) throw new NaoAutenticadoException("Este acesso está desativado. Procure a recepção da unidade.");
+
         auditor.registrar(conta.ator(), "ATIVAR_PORTAL", "USUARIO", conta.id(), paciente.id());
         avisarAtivacao(paciente);
         return sessao(conta);
@@ -177,6 +192,7 @@ public class AutenticacaoUseCaseImpl implements AutenticacaoUseCase {
             contas.redefinirSenha(existente.get().id(), senhaHash);
             return existente.get();
         }
+
         ContaDeAcesso nova = new ContaDeAcesso(UUID.randomUUID(), paciente.cpf() != null ? paciente.cpf() : paciente.cartaoSus(),
                 paciente.nomeSocial() != null ? paciente.nomeSocial() : paciente.nomeCompleto(), senhaHash, Papel.PACIENTE,
                 null, paciente.id(), true, 0, null);
@@ -200,8 +216,10 @@ public class AutenticacaoUseCaseImpl implements AutenticacaoUseCase {
     private Optional<Paciente> paciente(String documento, LocalDate dataNascimento) {
         if (vazio(documento) || dataNascimento == null)
             throw new IllegalArgumentException("Informe o CPF ou Cartão SUS e a data de nascimento");
+
         String digitos = documento.replaceAll("[\\s.\\-/]", "");
         if (!digitos.matches("\\d{11}|\\d{15}")) throw new IllegalArgumentException("Informe um CPF (11 dígitos) ou Cartão SUS (15 dígitos)");
+
         return pacientePorDocumento(digitos).filter(p -> dataNascimento.equals(p.dataNascimento()));
     }
 

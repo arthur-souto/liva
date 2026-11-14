@@ -28,6 +28,7 @@ public class CatalogoUseCaseImpl implements CatalogoUseCase {
         if (ValidacaoCadastral.vazio(especialidade)) throw new IllegalArgumentException("Informe a especialidade");
         if (profissionais.buscarEspecialidade(especialidade).isEmpty())
             throw new IllegalArgumentException("Especialidade desconhecida: " + especialidade);
+
         return profissionais.especialistasDe(especialidade);
     }
 }

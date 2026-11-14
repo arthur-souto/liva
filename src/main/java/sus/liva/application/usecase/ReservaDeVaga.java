@@ -68,10 +68,12 @@ public class ReservaDeVaga {
         } catch (ConflitoException e) {
             resultado = transacao.executar(() -> descartar(ofertaId, ator, "O horário deixou de estar livre na agenda"));
         }
+
         if (resultado.desfecho() == Desfecho.ACEITA) {
             Resultado r = resultado;
             notificacao.notificar(r.nova().getId(), r.nova().getPacienteId(), p -> modelos.vagaConfirmada(p, r.nova(), r.anterior()));
         }
+
         return resultado;
     }
 
@@ -81,6 +83,7 @@ public class ReservaDeVaga {
             Instant agora = Instant.now(clock);
             if (!o.ativa()) return new Resultado(Desfecho.INDISPONIVEL, o, null, null, INDISPONIVEL);
             if (o.vencida(agora)) return expirar(o, ator);
+
             o.recusar(canal, agora);
             fila.salvarOferta(o);
             diario.daOferta(EventoDaFila.OFERTA_RECUSADA, o, null, "Recusada pelo " + canal.name().toLowerCase()
@@ -103,6 +106,7 @@ public class ReservaDeVaga {
         if (!v.aberta()) return cancelar(o, null, "A vaga já foi preenchida ou encerrada", ator);
         if (!e.podeReceberOferta()) return cancelar(o, null, "A entrada na fila não está aguardando vaga", ator);
         if (!v.getInicio().isAfter(agoraLocal)) return cancelar(o, v, "O horário já passou", ator);
+
         Optional<Profissional> profissional = profissionais.buscarProfissional(v.getProfissionalId())
                 .filter(p -> p.atende(v.getEspecialidade()))
                 .filter(p -> profissionais.disponibilidadesDe(p.id()).stream().anyMatch(d -> d.comporta(v.getInicio())));
@@ -118,6 +122,7 @@ public class ReservaDeVaga {
             return cancelar(o, null, "A consulta atual já é antes deste horário", ator);
         if (fila.pacienteOcupado(o.getPacienteId(), v.getInicio(), v.getFim(), atual == null ? null : atual.getId()))
             return cancelar(o, null, "A pessoa já tem outra consulta neste horário", ator);
+
         Encaminhamento encaminhamento = encaminhamentos.buscarEncaminhamentoParaAtualizar(e.getEncaminhamentoId()).orElseThrow();
         if (atual == null && !encaminhamento.permiteAgendamento())
             return cancelar(o, null, "O encaminhamento não está aguardando agendamento", ator);
@@ -129,6 +134,7 @@ public class ReservaDeVaga {
             encaminhamento.consultaAgendada();
             encaminhamentos.salvarEncaminhamento(encaminhamento);
         }
+
         Agendamento nova = Agendamento.consulta(UUID.randomUUID(), encaminhamento, profissional.get(), v.getInicio(),
                 v.getDuracaoMinutos(), atual != null ? atual.getNatureza() : e.getNatureza(), "oferta-" + o.getId());
         nova.confirmarPresenca();
@@ -141,9 +147,11 @@ public class ReservaDeVaga {
         e.vagaObtida(agora);
         fila.salvarEntrada(e);
         diario.daOferta(EventoDaFila.OFERTA_ACEITA, o, nova.getId(), "Aceita pelo " + canal.name().toLowerCase(), ator);
+
         if (atual != null)
             diario.daOferta(EventoDaFila.CONSULTA_ANTECIPADA, o, atual.getId(),
                     "Consulta antecipada; o horário anterior foi liberado para a fila", ator);
+
         return new Resultado(Desfecho.ACEITA, o, nova, atual == null ? null : atual.getDataHora(), null);
     }
 
@@ -152,6 +160,7 @@ public class ReservaDeVaga {
         if (o.getStatus() == StatusOferta.ACEITA)
             return new Resultado(Desfecho.JA_ACEITA, o, agendamentos.buscarAgendamento(o.getConsultaNovaId()).orElse(null), null, null);
         if (!o.ativa()) return new Resultado(Desfecho.INDISPONIVEL, o, null, null, INDISPONIVEL);
+
         VagaLiberada v = fila.vagaParaAtualizar(o.getVagaId()).orElseThrow();
         return cancelar(o, v.aberta() && fila.horarioOcupado(v.getProfissionalId(), v.getInicio(), v.getFim()) ? v : null, motivo, ator);
     }
@@ -161,11 +170,13 @@ public class ReservaDeVaga {
         o.cancelar(motivo);
         fila.salvarOferta(o);
         diario.daOferta(EventoDaFila.OFERTA_CANCELADA, o, null, motivo, ator);
+
         if (vagaPerdida != null && vagaPerdida.aberta()) {
             vagaPerdida.indisponivel(motivo, agora);
             fila.salvarVaga(vagaPerdida);
             diario.daVaga(EventoDaFila.VAGA_INDISPONIVEL, vagaPerdida, motivo);
         }
+
         return new Resultado(Desfecho.INDISPONIVEL, o, null, null, INDISPONIVEL);
     }
 

@@ -66,9 +66,11 @@ public class AgendarAtendimentoUseCaseImpl implements AgendarAtendimentoUseCase 
         Telefone telefone = telefone(novo.telefone(), "Telefone do paciente");
         Telefone telefoneCuidador = vazio(novo.telefoneCuidador()) ? null : telefone(novo.telefoneCuidador(), "Telefone do cuidador");
         if (telefoneCuidador != null) exigir(novo.nomeCuidador(), "Nome do cuidador é obrigatório quando há telefone do cuidador");
+
         String nomeCuidador = telefoneCuidador == null ? null : novo.nomeCuidador().trim();
 
         UUID agendamentoId = UUID.randomUUID();
+
         Cadastro cadastro = transacao.executar(() -> {
             Optional<Paciente> existente = buscarExistente(cpf, telefone, nome);
             Paciente paciente = existente
@@ -78,6 +80,7 @@ public class AgendarAtendimentoUseCaseImpl implements AgendarAtendimentoUseCase 
             Agendamento agendamento = new Agendamento(StatusAgendamento.AGENDADO,
                     vazio(novo.preparo()) ? null : novo.preparo().trim(), novo.endereco().trim(), novo.unidade().trim(),
                     novo.tipo(), novo.dataHora(), paciente.id(), agendamentoId);
+
             pacientes.salvarPaciente(paciente);
             agendamentos.salvarAgendamento(agendamento);
             return new Cadastro(agendamento, existente.isEmpty());
@@ -89,6 +92,7 @@ public class AgendarAtendimentoUseCaseImpl implements AgendarAtendimentoUseCase 
                 : null;
 
         Agendamento atual = agendamentos.buscarAgendamento(agendamentoId).orElse(cadastro.agendamento());
+
         return new AtendimentoAgendado(atual, cadastro.pacienteNovo(), confirmacao, pedido);
     }
 

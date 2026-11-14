@@ -21,6 +21,7 @@ public class ErroPadraoController implements ErrorController {
                 : HttpStatus.INTERNAL_SERVER_ERROR;
         Object caminho = request.getAttribute(RequestDispatcher.ERROR_REQUEST_URI);
         String mensagem = status.is5xxServerError() ? "Erro interno. Consulte o log da Liva." : status.getReasonPhrase();
+
         return ErroResposta.resposta(status, mensagem, caminho == null ? null : caminho.toString());
     }
 }

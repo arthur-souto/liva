@@ -18,6 +18,7 @@ public record Pagina<T>(List<T> itens, int numero, int tamanho, long total) {
         int numero = Math.min(pedido.numero(), ultima);
         int inicio = Math.min((numero - 1) * pedido.tamanho(), todos.size());
         int fim = Math.min(inicio + pedido.tamanho(), todos.size());
+
         return new Pagina<>(List.copyOf(todos.subList(inicio, fim)), numero, pedido.tamanho(), todos.size());
     }
 }

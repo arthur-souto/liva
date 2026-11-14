@@ -57,6 +57,7 @@ public class ListarAgendamentosUseCaseImpl implements ListarAgendamentosUseCase 
                 .filter(d -> termo.isEmpty() || corresponde(d.paciente(), termo, digitos))
                 .toList();
         Map<StatusAgendamento, Long> porStatus = new LinkedHashMap<>();
+
         Arrays.stream(StatusAgendamento.values())
                 .forEach(s -> porStatus.put(s, doPeriodo.stream().filter(d -> d.agendamento().getStatus() == s).count()));
         List<AgendamentoDetalhado> filtrados = doPeriodo.stream()
@@ -67,10 +68,12 @@ public class ListarAgendamentosUseCaseImpl implements ListarAgendamentosUseCase 
 
     private static boolean corresponde(Paciente p, String termo, String digitos) {
         if (p == null) return false;
+
         boolean porNome = Stream.of(p.nomeCompleto(), p.nomeCuidador())
                 .anyMatch(nome -> nome != null && nome.toLowerCase().contains(termo));
         boolean porTelefone = !digitos.isEmpty() && Stream.of(p.telefone(), p.telefoneCuidador())
                 .anyMatch(t -> t != null && t.apenasDigitos().contains(digitos));
+
         return porNome || porTelefone;
     }
 }

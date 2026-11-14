@@ -50,6 +50,7 @@ public class EncaminhamentoUseCaseImpl implements EncaminhamentoUseCase {
     @Override
     public Encaminhamento receberNoPlantao(Ator ator, UUID encaminhamentoId) {
         Permissoes.exigir(ator, Papel.ESPECIALISTA);
+
         Profissional profissional = profissionalDo(ator);
         return alterar(ator, encaminhamentoId, "RECEBER_NO_PLANTAO", e -> {
             if (!e.destinadoA(profissional.id()) && !(e.getProfissionalDestinoId() == null && profissional.atende(e.getEspecialidade())))
@@ -89,6 +90,7 @@ public class EncaminhamentoUseCaseImpl implements EncaminhamentoUseCase {
     @Override
     public List<EncaminhamentoRecebido> recebidos(Ator ator) {
         Permissoes.exigir(ator, Papel.ESPECIALISTA);
+
         Profissional profissional = profissionalDo(ator);
         return encaminhamentos.encaminhamentosAbertosDaEspecialidade(profissional.especialidade()).stream()
                 .filter(e -> e.getProfissionalDestinoId() == null || e.destinadoA(profissional.id()))
@@ -106,6 +108,7 @@ public class EncaminhamentoUseCaseImpl implements EncaminhamentoUseCase {
             encaminhamentos.salvarEncaminhamento(e);
             return e;
         });
+
         auditor.registrar(ator, acao, "ENCAMINHAMENTO", encaminhamentoId, alterado.getPacienteId());
         return encaminhamentos.buscarEncaminhamento(encaminhamentoId).orElseThrow();
     }

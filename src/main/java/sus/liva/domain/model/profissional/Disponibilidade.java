@@ -19,6 +19,7 @@ public record Disponibilidade(
     public List<LocalDateTime> horariosEm(LocalDate data) {
         List<LocalDateTime> horarios = new ArrayList<>();
         if (data.getDayOfWeek() != diaSemana) return horarios;
+
         for (LocalTime h = inicio; !h.plusMinutes(duracaoMinutos).isAfter(fim) && !h.isBefore(inicio); h = h.plusMinutes(duracaoMinutos))
             horarios.add(data.atTime(h));
         return horarios;

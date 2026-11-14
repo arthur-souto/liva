@@ -89,11 +89,13 @@ public class PessoaDeConfiancaUseCaseImpl implements PessoaDeConfiancaUseCase {
         if (dados == null) throw new IllegalArgumentException("Informe os dados da pessoa de confiança");
         exigir(dados.nome(), "Nome da pessoa de confiança é obrigatório");
         if (vazio(dados.cpf())) throw new IllegalArgumentException("CPF da pessoa de confiança é obrigatório");
+
         String cpf = cpf(dados.cpf());
         Telefone telefone = telefone(dados.telefone(), "WhatsApp da pessoa de confiança");
         if (dados.parentesco() == null) throw new IllegalArgumentException("Informe o parentesco ou a relação com o paciente");
         if (!dados.autorizacaoRegistrada())
             throw new IllegalArgumentException("Registre que o paciente ou o responsável legal autorizou esta pessoa de confiança");
+
         Paciente paciente = pacientes.buscarPaciente(pacienteId)
                 .orElseThrow(() -> new NaoEncontradoException("Paciente não encontrado: " + pacienteId));
         if (cpf.equals(paciente.cpf())) throw new IllegalArgumentException("A pessoa de confiança não pode ser o próprio paciente");
@@ -102,10 +104,12 @@ public class PessoaDeConfiancaUseCaseImpl implements PessoaDeConfiancaUseCase {
         Cuidador cuidador = transacao.executar(() -> {
             UUID id = cuidadores.buscarCuidadorPorCpf(cpf).map(Cuidador::id).orElseGet(UUID::randomUUID);
             Cuidador salvo = new Cuidador(id, dados.nome().trim(), cpf, telefone);
+
             cuidadores.salvarCuidador(salvo, agora);
             cuidadores.vincular(new VinculoDeCuidado(id, pacienteId, dados.parentesco(), ator.usuarioId(), agora));
             return salvo;
         });
+
         auditor.registrar(ator, "VINCULAR_PESSOA_DE_CONFIANCA", "PACIENTE", pacienteId, pacienteId);
         notificacao.enviar(null, cuidador.telefone(), modelos.boasVindasAoCuidador(cuidador.nome(), paciente, urlDoPortal));
         return new CuidadorVinculado(cuidador, dados.parentesco(), agora);
@@ -115,6 +119,7 @@ public class PessoaDeConfiancaUseCaseImpl implements PessoaDeConfiancaUseCase {
     public void revogar(Ator ator, UUID pacienteId, UUID cuidadorId) {
         Permissoes.exigir(ator, Papel.RECEPCAO, Papel.ADMINISTRADOR);
         if (!cuidadores.cuidaDe(cuidadorId, pacienteId)) throw new NaoEncontradoException("Pessoa de confiança não encontrada");
+
         cuidadores.revogarVinculo(cuidadorId, pacienteId, Instant.now(clock));
         auditor.registrar(ator, "REVOGAR_PESSOA_DE_CONFIANCA", "PACIENTE", pacienteId, pacienteId);
     }
@@ -130,19 +135,23 @@ public class PessoaDeConfiancaUseCaseImpl implements PessoaDeConfiancaUseCase {
     public void solicitarCodigo(String cpfDoCuidador, String cpfDoPaciente) {
         Optional<Vinculo> vinculo = vinculo(cpfDoCuidador, cpfDoPaciente);
         if (vinculo.isEmpty()) return;
+
         Cuidador cuidador = vinculo.get().cuidador();
         Paciente paciente = vinculo.get().paciente();
 
         String codigo = "%06d".formatted(aleatorio.nextInt(1_000_000));
         Instant agora = Instant.now(clock);
+
         boolean emitido = transacao.executar(() -> {
             boolean recente = cuidadores.codigoParaAtualizar(cuidador.id())
                     .filter(c -> c.enviadoEm().plus(INTERVALO_ENTRE_CODIGOS).isAfter(agora))
                     .isPresent();
             if (recente) return false;
+
             cuidadores.salvarCodigo(cuidador.id(), new CodigoDoCuidador(cifrador.cifrar(codigo), agora.plus(VALIDADE_DO_CODIGO), agora, 0));
             return true;
         });
+
         if (!emitido) return;
 
         ResultadoEnvio envio = enviador.enviar(new MensagemSaida(null, cuidador.telefone(), null,
@@ -156,6 +165,7 @@ public class PessoaDeConfiancaUseCaseImpl implements PessoaDeConfiancaUseCase {
     public Sessao ativar(String cpfDoCuidador, String cpfDoPaciente, String codigo, String senha) {
         exigirSenhaForte(senha);
         if (vazio(codigo) || !codigo.trim().matches("\\d{6}")) throw new IllegalArgumentException(CODIGO_INVALIDO);
+
         Vinculo vinculo = vinculo(cpfDoCuidador, cpfDoPaciente).orElseThrow(() -> new IllegalArgumentException(CODIGO_INVALIDO));
         UUID cuidadorId = vinculo.cuidador().id();
         Instant agora = Instant.now(clock);
@@ -163,21 +173,26 @@ public class PessoaDeConfiancaUseCaseImpl implements PessoaDeConfiancaUseCase {
         boolean valido = transacao.executar(() -> {
             Optional<CodigoDoCuidador> registro = cuidadores.codigoParaAtualizar(cuidadorId);
             if (registro.isEmpty()) return false;
+
             CodigoDoCuidador atual = registro.get();
             if (!atual.expiraEm().isAfter(agora) || atual.tentativas() >= LIMITE_DE_TENTATIVAS) {
                 cuidadores.removerCodigo(cuidadorId);
                 return false;
             }
+
             if (!cifrador.confere(codigo.trim(), atual.codigoHash())) {
                 cuidadores.salvarCodigo(cuidadorId, new CodigoDoCuidador(atual.codigoHash(), atual.expiraEm(), atual.enviadoEm(),
                         atual.tentativas() + 1));
                 return false;
             }
+
             cuidadores.removerCodigo(cuidadorId);
             cuidadores.definirSenha(cuidadorId, cifrador.cifrar(senha));
             return true;
         });
+
         if (!valido) throw new IllegalArgumentException(CODIGO_INVALIDO);
+
         Ator ator = Ator.cuidador(cuidadorId, vinculo.paciente().id());
         auditor.registrar(ator, "ATIVAR_ACESSO_DE_CUIDADOR", "PACIENTE", vinculo.paciente().id(), vinculo.paciente().id());
         return sessao(vinculo);
@@ -187,20 +202,25 @@ public class PessoaDeConfiancaUseCaseImpl implements PessoaDeConfiancaUseCase {
     public Sessao entrar(String cpfDoCuidador, String cpfDoPaciente, String senha) {
         if (vazio(cpfDoCuidador) || vazio(cpfDoPaciente) || vazio(senha))
             throw new IllegalArgumentException("Informe o seu CPF, o CPF da pessoa cuidada e a senha");
+
         Optional<Cuidador> cuidador = cuidadorPorCpf(cpfDoCuidador);
         Optional<CredencialDoCuidador> credencial = cuidador.flatMap(c -> cuidadores.credencial(c.id()));
+
         if (credencial.isEmpty()) {
             cifrador.confere(senha, hashDeReferencia);
             throw new NaoAutenticadoException(CREDENCIAIS_INVALIDAS);
         }
+
         Instant agora = Instant.now(clock);
         UUID cuidadorId = cuidador.get().id();
         if (credencial.get().bloqueadaEm(agora))
             throw new NaoAutenticadoException("Acesso bloqueado temporariamente por excesso de tentativas. Tente novamente mais tarde.");
+
         if (!cifrador.confere(senha, credencial.get().senhaHash())) {
             cuidadores.registrarFalha(cuidadorId, LIMITE_DE_TENTATIVAS, agora.plus(BLOQUEIO));
             throw new NaoAutenticadoException(CREDENCIAIS_INVALIDAS);
         }
+
         Vinculo vinculo = vinculo(cpfDoCuidador, cpfDoPaciente).orElseThrow(() -> new NaoAutenticadoException(CREDENCIAIS_INVALIDAS));
         cuidadores.registrarAcesso(cuidadorId);
         auditor.registrar(Ator.cuidador(cuidadorId, vinculo.paciente().id()), "ENTRAR", "PACIENTE", vinculo.paciente().id(),

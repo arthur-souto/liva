@@ -160,6 +160,7 @@ class SegurancaIntegracaoTest {
         String recepcao = entrar(conta(Papel.RECEPCAO, null));
         String cpf = cpfValido();
         String telefone = telefoneAleatorio();
+
         mvc.perform(autenticado(post("/api/pacientes").content(pacienteJson(cpf, telefone)), recepcao)).andExpect(status().isCreated());
 
         mvc.perform(json(post("/api/auth/portal/codigo"), "{\"documento\":\"%s\",\"dataNascimento\":\"1975-04-02\"}".formatted(cpf)))
@@ -182,6 +183,7 @@ class SegurancaIntegracaoTest {
                 .andExpect(status().isCreated()), "$.id");
 
         mvc.perform(autenticado(post("/api/triagens/{id}/iniciar", triagemId), medico)).andExpect(status().isOk());
+
         String versao = ler(mvc.perform(autenticado(put("/api/triagens/{id}/avaliacao", triagemId).content("""
                         {"avaliacao":{"queixaPrincipal":"Dor no joelho"},"sinaisVitais":{"pressaoSistolica":120,"pressaoDiastolica":80,
                          "frequenciaCardiaca":72,"frequenciaRespiratoria":16,"temperatura":36.5,"saturacao":98},
@@ -190,6 +192,7 @@ class SegurancaIntegracaoTest {
                         {"especialidade":"ORTOPEDIA","profissionalDestinoId":"%s","modalidade":"ELETIVO","prioridade":"POUCO_URGENTE",
                          "justificativa":"Avaliar lesão"}""".formatted(ortopedista.id())), medico))
                 .andExpect(status().isCreated()), "$.id");
+
         mvc.perform(autenticado(post("/api/triagens/{id}/finalizar", triagemId).content("{\"versao\":%s}".formatted(versao)), medico))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("FINALIZADA"));
@@ -197,18 +200,24 @@ class SegurancaIntegracaoTest {
         String solicitar = "{\"documento\":\"%s\",\"dataNascimento\":\"1975-04-02\"}".formatted(cpf);
         mvc.perform(json(post("/api/auth/portal/codigo"), "{\"documento\":\"%s\",\"dataNascimento\":\"1975-04-03\"}".formatted(cpf)))
                 .andExpect(status().isAccepted());
+
         assertThat(caixa.para(telefone)).isEmpty();
+
         mvc.perform(json(post("/api/auth/portal/codigo"), solicitar)).andExpect(status().isAccepted());
         mvc.perform(json(post("/api/auth/portal/codigo"), solicitar)).andExpect(status().isAccepted());
+
         assertThat(caixa.para(telefone)).hasSize(1);
+
         String codigo = codigoEnviado(telefone);
 
         String errado = codigo.equals("000000") ? "111111" : "000000";
+
         mvc.perform(json(post("/api/auth/portal/ativar"), ativacao(cpf, errado))).andExpect(status().isBadRequest());
         String paciente = ler(mvc.perform(json(post("/api/auth/portal/ativar"), ativacao(cpf, codigo)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.usuario.papel").value("PACIENTE")), "$.token");
         mvc.perform(json(post("/api/auth/portal/ativar"), ativacao(cpf, codigo))).andExpect(status().isBadRequest());
+
         assertThat(entrarComo(cpf, SENHA)).isNotBlank();
 
         mvc.perform(autenticado(get("/api/portal/historico"), paciente))
@@ -224,10 +233,12 @@ class SegurancaIntegracaoTest {
                         .param("inicio", amanha.toString()).param("fim", amanha.toString()), paciente))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(8)));
+
         String corpo = "{\"profissionalId\":\"%s\",\"inicio\":\"%sT09:00:00\"}".formatted(ortopedista.id(), amanha);
         String chave = "portal-" + UUID.randomUUID();
         String consultaId = ler(mvc.perform(autenticado(post("/api/encaminhamentos/{id}/consultas", encaminhamentoId)
                 .header("Idempotency-Key", chave).content(corpo), paciente)).andExpect(status().isCreated()), "$.id");
+
         mvc.perform(autenticado(post("/api/encaminhamentos/{id}/consultas", encaminhamentoId).header("Idempotency-Key", chave)
                         .content(corpo), paciente))
                 .andExpect(jsonPath("$.id").value(consultaId));

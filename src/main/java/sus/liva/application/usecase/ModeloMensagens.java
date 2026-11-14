@@ -39,6 +39,7 @@ public class ModeloMensagens {
     public String montar(TipoLembrete tipo, Paciente p, Agendamento a) {
         String data = a.getDataHora().format(DATA);
         String hora = a.getDataHora().format(HORA);
+
         return switch (tipo) {
             case CONFIRMACAO_AGENDAMENTO -> """
                 Olá, %s! Seu atendimento na %s foi agendado para %s, às %s.
@@ -79,6 +80,7 @@ public class ModeloMensagens {
     public String retornoResposta(RespostaPaciente resposta, Paciente p, Agendamento a) {
         String data = a.getDataHora().format(DATA);
         String hora = a.getDataHora().format(HORA);
+
         return switch (resposta) {
             case CONFIRMAR -> """
                 Obrigado, %s! Sua presença está confirmada para %s, às %s, na %s.
@@ -333,6 +335,7 @@ public class ModeloMensagens {
             if (!t.isEmpty()) t.append('\n');
             t.append(m.getNumero()).append(" - ").append(m.getRotulo());
         }
+
         return t.toString();
     }
 

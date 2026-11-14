@@ -25,6 +25,7 @@ public record AgendamentoDaEquipeResponse(
     public static AgendamentoDaEquipeResponse de(AgendamentoDetalhado detalhado) {
         Agendamento a = detalhado.agendamento();
         Paciente p = detalhado.paciente();
+
         return new AgendamentoDaEquipeResponse(a.getId(), a.getDataHora(), a.getTipo(), a.getUnidade(), a.getStatus(),
                 a.getPacienteId(),
                 p == null ? null : p.nomeCompleto(),

@@ -191,12 +191,15 @@ class FluxoAssistencialIntegracaoTest {
     @Test
     void portalSoEhLiberadoDepoisDaPrimeiraTriagemFinalizada() {
         UUID paciente = novoPaciente();
+
         assertThat(historico.podeAcessarPortal(paciente)).isFalse();
 
         Triagem t = triagemEmAndamento(paciente);
+
         assertThat(historico.podeAcessarPortal(paciente)).isFalse();
 
         finalizar(t);
+
         assertThat(historico.podeAcessarPortal(paciente)).isTrue();
     }
 
@@ -213,6 +216,7 @@ class FluxoAssistencialIntegracaoTest {
         String semAgenda = "AGENDA_" + Long.toString(ThreadLocalRandom.current().nextLong(Long.MAX_VALUE), 36).toUpperCase();
         jdbc.update("INSERT INTO especialidades (codigo, nome, plantao) VALUES (?, ?, FALSE)", semAgenda, "Especialidade " + semAgenda);
         profissional(TipoProfissional.ESPECIALISTA, semAgenda);
+
         UUID paciente = novoPaciente();
         Ator portal = Ator.paciente(UUID.randomUUID(), paciente);
         Encaminhamento e = encaminhamentoLiberado(paciente, semAgenda);
@@ -221,6 +225,7 @@ class FluxoAssistencialIntegracaoTest {
         assertThat(agenda.horariosDisponiveis(portal, e.getId(), SEGUNDA, SEGUNDA.plusDays(6))).isEmpty();
 
         especialistaComAgenda(semAgenda);
+
         assertThat(agenda.possuiAgenda(portal, e.getId())).isTrue();
         assertThat(agenda.possuiAgenda(recepcao, e.getId())).isTrue();
         assertThatThrownBy(() -> agenda.possuiAgenda(Ator.paciente(UUID.randomUUID(), novoPaciente()), e.getId()))
@@ -236,16 +241,19 @@ class FluxoAssistencialIntegracaoTest {
 
         Triagem t = triagemEmAndamento(paciente);
         Encaminhamento e = triagens.encaminhar(clinicoAtor, t.getId(), eletivo("ORTOPEDIA", ortopedista.id()));
+
         assertThat(e.getStatus()).isEqualTo(StatusEncaminhamento.PENDENTE);
         assertThatThrownBy(() -> agenda.agendar(portal, e.getId(), ortopedista.id(), AS_14, null))
                 .isInstanceOf(IllegalStateException.class);
 
         finalizar(t);
+
         assertThat(encaminhamento(e.getId()).getStatus()).isEqualTo(StatusEncaminhamento.AGUARDANDO_AGENDAMENTO);
         assertThat(agenda.horariosDisponiveis(portal, e.getId(), SEGUNDA, SEGUNDA))
                 .extracting(h -> h.inicio()).contains(AS_14, AS_14_30, AS_15);
 
         Agendamento inicial = agenda.agendar(portal, e.getId(), ortopedista.id(), AS_14, null);
+
         assertThat(inicial.getNatureza()).isEqualTo(NaturezaConsulta.INICIAL);
         assertThat(inicial.getTriagemId()).isEqualTo(t.getId());
         assertThat(encaminhamento(e.getId()).getStatus()).isEqualTo(StatusEncaminhamento.AGENDADO);
@@ -257,10 +265,12 @@ class FluxoAssistencialIntegracaoTest {
         Agendamento emCurso = atendimento.iniciar(especialista, inicial.getId(), inicial.getVersao());
         atendimento.registrarEvolucao(especialista, inicial.getId(), "Edema leve, solicitado raio-x");
         Agendamento realizada = atendimento.finalizar(especialista, inicial.getId(), "Retorno com exame", true, emCurso.getVersao());
+
         assertThat(realizada.getStatus()).isEqualTo(StatusAgendamento.COMPARECEU);
         assertThat(encaminhamento(e.getId()).getStatus()).isEqualTo(StatusEncaminhamento.AGUARDANDO_AGENDAMENTO);
 
         Agendamento retorno = agenda.agendar(portal, e.getId(), ortopedista.id(), AS_15, null);
+
         assertThat(retorno.getNatureza()).isEqualTo(NaturezaConsulta.RETORNO);
         assertThatThrownBy(() -> triagens.encerrar(clinicoAtor, t.getId())).isInstanceOf(ConflitoException.class);
 
@@ -288,9 +298,11 @@ class FluxoAssistencialIntegracaoTest {
 
         Encaminhamento imediato = triagens.encaminhar(clinicoAtor, t.getId(), new NovoEncaminhamento("PRONTO_ATENDIMENTO", null,
                 Modalidade.IMEDIATO, Prioridade.EMERGENCIA, "Dor torácica com sudorese"));
+
         assertThat(encaminhamentos.recebidos(plantao)).extracting(r -> r.encaminhamento().getId()).contains(imediato.getId());
 
         Encaminhamento recebido = encaminhamentos.receberNoPlantao(plantao, imediato.getId());
+
         assertThat(recebido.getStatus()).isEqualTo(StatusEncaminhamento.EM_ATENDIMENTO);
         assertThatThrownBy(() -> encaminhamentos.receberNoPlantao(plantao, imediato.getId())).isInstanceOf(IllegalStateException.class);
     }
@@ -305,21 +317,25 @@ class FluxoAssistencialIntegracaoTest {
 
         Triagem primeira = triagemEmAndamento(paciente);
         Encaminhamento joelho = triagens.encaminhar(clinicoAtor, primeira.getId(), eletivo("ORTOPEDIA", null));
+
         finalizar(primeira);
         agenda.agendar(portal, joelho.getId(), ortopedista.id(), AS_14, null);
 
         Triagem segunda = triagemEmAndamento(paciente);
         Encaminhamento coracao = triagens.encaminhar(clinicoAtor, segunda.getId(), eletivo("CARDIOLOGIA", null));
+
         finalizar(segunda);
         agenda.agendar(portal, coracao.getId(), cardiologista.id(), AS_14, null);
 
         HistoricoDoPaciente visaoDoPaciente = historico.historico(portal, paciente);
+
         assertThat(visaoDoPaciente.ramos()).hasSize(2).allSatisfy(r -> {
             assertThat(r.encaminhamentos()).hasSize(1);
             assertThat(r.consultas()).hasSize(1);
         });
 
         HistoricoDoPaciente visaoDoOrtopedista = historico.historico(ortopedia, paciente);
+
         assertThat(visaoDoOrtopedista.ramos()).filteredOn(RamoDoHistorico::acessoClinico)
                 .extracting(r -> r.triagem().id()).containsExactly(primeira.getId());
         assertThat(visaoDoOrtopedista.ramos()).filteredOn(r -> !r.acessoClinico())
@@ -339,6 +355,7 @@ class FluxoAssistencialIntegracaoTest {
         Ator intruso = Ator.paciente(UUID.randomUUID(), outro);
         Triagem t = triagemEmAndamento(dono);
         Encaminhamento e = triagens.encaminhar(clinicoAtor, t.getId(), eletivo("ORTOPEDIA", null));
+
         finalizar(t);
 
         assertThatThrownBy(() -> agenda.agendar(intruso, e.getId(), ortopedista.id(), AS_14, null)).isInstanceOf(AcessoNegadoException.class);
@@ -347,7 +364,9 @@ class FluxoAssistencialIntegracaoTest {
         assertThatThrownBy(() -> cadastro.buscar(intruso, dono)).isInstanceOf(AcessoNegadoException.class);
         assertThatThrownBy(() -> triagens.iniciar(recepcao, t.getId())).isInstanceOf(AcessoNegadoException.class);
         assertThatThrownBy(() -> cadastro.cadastrar(clinicoAtor, dados("X", cpfValido()))).isInstanceOf(AcessoNegadoException.class);
+
         Profissional cardiologista = profissional(TipoProfissional.ESPECIALISTA, "CARDIOLOGIA");
+
         assertThatThrownBy(() -> triagens.detalhar(Ator.profissional(UUID.randomUUID(), Papel.ESPECIALISTA, cardiologista.id()), t.getId()))
                 .isInstanceOf(AcessoNegadoException.class);
         assertThat(jdbc.queryForObject("SELECT count(*) FROM agendamentos WHERE paciente_id = ?", Integer.class, dono)).isZero();
@@ -358,6 +377,7 @@ class FluxoAssistencialIntegracaoTest {
         Profissional ortopedista = especialistaComAgenda("ORTOPEDIA");
         int concorrentes = 5;
         List<Encaminhamento> liberados = new ArrayList<>();
+
         for (int i = 0; i < concorrentes; i++) liberados.add(encaminhamentoLiberado(novoPaciente(), "ORTOPEDIA"));
 
         List<Resultado<Agendamento>> resultados = emParalelo(concorrentes, i -> () -> agenda.agendar(
@@ -391,6 +411,7 @@ class FluxoAssistencialIntegracaoTest {
         Encaminhamento a = encaminhamentoLiberado(novoPaciente(), "ORTOPEDIA");
         Encaminhamento b = encaminhamentoLiberado(novoPaciente(), "ORTOPEDIA");
         Agendamento consultaA = agenda.agendar(recepcao, a.getId(), ortopedista.id(), AS_14, null);
+
         agenda.agendar(recepcao, b.getId(), ortopedista.id(), AS_14_30, null);
 
         assertThatThrownBy(() -> agenda.remarcar(recepcao, consultaA.getId(), ortopedista.id(), AS_14_30, consultaA.getVersao()))
@@ -405,6 +426,7 @@ class FluxoAssistencialIntegracaoTest {
     void triagemComVersaoDesatualizadaNaoSobrescreve() {
         Triagem t = triagemEmAndamento(novoPaciente());
         AvaliacaoClinica avaliacao = new AvaliacaoClinica("Cefaleia", null, null, null, null);
+
         triagens.registrarAvaliacao(clinicoAtor, t.getId(), avaliacao, SinaisVitais.naoColetados(), Prioridade.URGENTE, null, t.getVersao());
 
         assertThatThrownBy(() -> triagens.registrarAvaliacao(clinicoAtor, t.getId(), avaliacao, SinaisVitais.naoColetados(),
@@ -421,6 +443,7 @@ class FluxoAssistencialIntegracaoTest {
         UUID paciente = cadastro.cadastrar(recepcao, dadosComTelefone("Ana Souza", cpfValido(), telefone)).paciente().id();
         Encaminhamento e = encaminhamentoLiberado(paciente, "ORTOPEDIA");
         Agendamento consulta = agenda.agendar(recepcao, e.getId(), ortopedista.id(), AS_14, null);
+
         dispararLembrete.disparar(consulta.getId(), TipoLembrete.PEDIDO_CONFIRMACAO, true);
 
         processarResposta.processar(Telefone.de(telefone), "2", null);
@@ -451,13 +474,16 @@ class FluxoAssistencialIntegracaoTest {
     @Test
     void whatsappMostraOMenuAgendaEEnviaLinkDeRemarcacao() {
         especialistaComAgenda("CARDIOLOGIA");
+
         String telefone = telefoneAleatorio();
         UUID paciente = cadastro.cadastrar(recepcao, dadosComTelefone("Bruno Lima", cpfValido(), telefone)).paciente().id();
+
         encaminhamentoLiberado(paciente, "CARDIOLOGIA");
         Telefone remetente = Telefone.de(telefone);
 
         assertThat(processarResposta.processar(remetente, "oi", null).motivo()).contains("MENU");
         assertThat(processarResposta.processar(remetente, "1", null).motivo()).contains("ESCOLHER_HORARIO");
+
         ResultadoResposta agendado = processarResposta.processar(remetente, "1", null);
 
         assertThat(agendado.motivo()).contains("AGENDADO");
@@ -465,6 +491,7 @@ class FluxoAssistencialIntegracaoTest {
                 .isEqualTo("AGENDADO");
 
         processarResposta.processar(remetente, "menu", null);
+
         assertThat(processarResposta.processar(remetente, "3", null).motivo()).contains("LINK_DE_REMARCACAO");
         assertThat(jdbc.queryForObject("SELECT count(*) FROM links_de_acesso WHERE paciente_id = ?", Integer.class, paciente))
                 .isEqualTo(2);
@@ -483,34 +510,41 @@ class FluxoAssistencialIntegracaoTest {
         assertThatThrownBy(() -> pessoasDeConfianca.vincular(recepcao, paciente,
                 new NovaPessoaDeConfianca("Ana Filha", cpfDaFilha, telefoneDaFilha, Parentesco.FILHO, false)))
                 .isInstanceOf(RuntimeException.class);
+
         CuidadorVinculado filha = pessoasDeConfianca.vincular(recepcao, paciente,
                 new NovaPessoaDeConfianca("Ana Filha", cpfDaFilha, telefoneDaFilha, Parentesco.FILHO, true));
+
         assertThat(pessoasDeConfianca.doPaciente(recepcao, paciente)).extracting(v -> v.cuidador().cpf()).containsExactly(cpfDaFilha);
 
         pessoasDeConfianca.solicitarCodigo(cpfDaFilha, cpfDoPaciente);
         jdbc.update("UPDATE cuidadores SET codigo_hash = ? WHERE id = ?", cifrador.cifrar("123456"), filha.cuidador().id());
         Sessao ativada = pessoasDeConfianca.ativar(cpfDaFilha, cpfDoPaciente, "123456", senha);
+
         assertThat(ativada.ator().papel()).isEqualTo(Papel.CUIDADOR);
         assertThat(ativada.ator().pacienteId()).isEqualTo(paciente);
 
         Sessao sessao = pessoasDeConfianca.entrar(cpfDaFilha, cpfDoPaciente, senha);
         Agendamento consulta = agenda.agendar(sessao.ator(), e.getId(), cardiologista.id(), AS_14, null);
+
         assertThat(consulta.getStatus()).isEqualTo(StatusAgendamento.AGENDADO);
         assertThatThrownBy(() -> historico.historico(sessao.ator(), novoPaciente())).isInstanceOf(AcessoNegadoException.class);
 
         dispararLembrete.disparar(consulta.getId(), TipoLembrete.PEDIDO_CONFIRMACAO, true);
         String destinoDaFilha = Telefone.de(telefoneDaFilha).e164();
+
         assertThat(jdbc.queryForObject("SELECT count(*) FROM registros_mensagem WHERE destino = ? AND tipo = 'PEDIDO_CONFIRMACAO'",
                 Integer.class, destinoDaFilha)).isEqualTo(1);
 
         Telefone remetente = Telefone.de(telefoneDaFilha);
         processarResposta.processar(remetente, "1", null);
+
         assertThat(jdbc.queryForObject("SELECT status FROM agendamentos WHERE id = ?", String.class, consulta.getId())).isEqualTo("CONFIRMADO");
         assertThat(processarResposta.processar(remetente, "oi", null).motivo()).contains("MENU");
         assertThat(jdbc.queryForObject("SELECT texto FROM registros_mensagem WHERE destino = ? ORDER BY id DESC LIMIT 1",
                 String.class, destinoDaFilha)).contains("Maria");
 
         pessoasDeConfianca.revogar(recepcao, paciente, filha.cuidador().id());
+
         assertThatThrownBy(() -> pessoasDeConfianca.entrar(cpfDaFilha, cpfDoPaciente, senha)).isInstanceOf(RuntimeException.class);
     }
 
@@ -518,14 +552,18 @@ class FluxoAssistencialIntegracaoTest {
     void historicoConsultasEPesquisaSaoPaginadosNoServidor() {
         Profissional cardiologista = especialistaComAgenda("CARDIOLOGIA");
         especialistaComAgenda("ORTOPEDIA");
+
         UUID paciente = novoPaciente();
         Encaminhamento cardiologia = encaminhamentoLiberado(paciente, "CARDIOLOGIA");
+
         encaminhamentoLiberado(paciente, "ORTOPEDIA");
         encaminhamentoLiberado(paciente, "ORTOPEDIA");
+
         Ator ator = Ator.paciente(UUID.randomUUID(), paciente);
         FiltroDeAtendimentos todos = new FiltroDeAtendimentos(null, null, null);
 
         AtendimentosDoPaciente primeira = historico.atendimentos(ator, paciente, todos, new PedidoDePagina(1, 2));
+
         assertThat(primeira.pagina().itens()).extracting(a -> a.numero()).containsExactly(3, 2);
         assertThat(primeira.pagina().total()).isEqualTo(3);
         assertThat(primeira.pagina().totalPaginas()).isEqualTo(2);
@@ -536,8 +574,10 @@ class FluxoAssistencialIntegracaoTest {
                 .pagina().total()).isEqualTo(1);
 
         agenda.agendar(recepcao, cardiologia.getId(), cardiologista.id(), AS_14, null);
+
         FiltroDeConsultas proximas = new FiltroDeConsultas(PeriodoDasConsultas.PROXIMAS, null, null, null, "cardio");
         ConsultasDoPaciente consultas = historico.consultas(ator, paciente, proximas, PedidoDePagina.de(null, null));
+
         assertThat(consultas.pagina().itens()).hasSize(1);
         assertThat(consultas.proximas()).isEqualTo(1);
         assertThat(consultas.anteriores()).isZero();
@@ -569,6 +609,7 @@ class FluxoAssistencialIntegracaoTest {
     private Encaminhamento encaminhamentoLiberado(UUID paciente, String especialidade) {
         Triagem t = triagemEmAndamento(paciente);
         Encaminhamento e = triagens.encaminhar(clinicoAtor, t.getId(), eletivo(especialidade, null));
+
         finalizar(t);
         return encaminhamento(e.getId());
     }
@@ -662,6 +703,7 @@ class FluxoAssistencialIntegracaoTest {
                     return c.call();
                 }));
             }
+
             largada.countDown();
             List<Resultado<T>> resultados = new ArrayList<>();
             for (Future<T> f : futuros) {
@@ -671,6 +713,7 @@ class FluxoAssistencialIntegracaoTest {
                     resultados.add(new Resultado<>(null, e.getCause()));
                 }
             }
+
             return resultados;
         }
     }

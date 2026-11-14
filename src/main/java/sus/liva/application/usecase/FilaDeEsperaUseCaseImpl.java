@@ -71,6 +71,7 @@ public class FilaDeEsperaUseCaseImpl implements FilaDeEsperaUseCase {
     @Override
     public MinhaFila minhaFila(Ator ator) {
         Permissoes.exigir(ator, Papel.PACIENTE, Papel.CUIDADOR);
+
         processamento.sincronizar(ator.pacienteId());
         Instant agora = Instant.now(clock);
         return new MinhaFila(agora, fila.posicoesDoPaciente(ator.pacienteId(), agora.minus(RECENTES)),
@@ -80,13 +81,16 @@ public class FilaDeEsperaUseCaseImpl implements FilaDeEsperaUseCase {
     @Override
     public Agendamento aceitar(Ator ator, UUID ofertaId) {
         Permissoes.exigir(ator, Papel.PACIENTE, Papel.CUIDADOR, Papel.RECEPCAO, Papel.ADMINISTRADOR);
+
         ReservaDeVaga.Resultado r = reserva.aceitar(ofertaId, ator, CanalDeResposta.PORTAL);
         auditor.registrar(ator, r.garantiuAVaga() ? "ACEITAR_OFERTA_DE_VAGA" : "TENTAR_ACEITAR_OFERTA_DE_VAGA", "OFERTA_DE_VAGA",
                 ofertaId, r.oferta().getPacienteId());
+
         if (!r.garantiuAVaga()) {
             ofertarEmSeguida();
             throw new ConflitoException(r.motivo());
         }
+
         ofertarEmSeguida();
         return r.nova();
     }
@@ -94,17 +98,21 @@ public class FilaDeEsperaUseCaseImpl implements FilaDeEsperaUseCase {
     @Override
     public void recusar(Ator ator, UUID ofertaId) {
         Permissoes.exigir(ator, Papel.PACIENTE, Papel.CUIDADOR, Papel.RECEPCAO, Papel.ADMINISTRADOR);
+
         ReservaDeVaga.Resultado r = reserva.recusar(ofertaId, ator, CanalDeResposta.PORTAL);
         auditor.registrar(ator, "RECUSAR_OFERTA_DE_VAGA", "OFERTA_DE_VAGA", ofertaId, r.oferta().getPacienteId());
         ofertarEmSeguida();
+
         if (r.desfecho() != ReservaDeVaga.Desfecho.RECUSADA) throw new ConflitoException(r.motivo());
     }
 
     @Override
     public PainelDaFila painel(Ator ator, FiltroDaFila filtro, PedidoDePagina pagina) {
         Permissoes.exigir(ator, Papel.ADMINISTRADOR, Papel.RECEPCAO, Papel.ESPECIALISTA);
+
         FiltroDaFila efetivo = filtroDoAtor(ator, filtro);
         atualizarSemEnvios();
+
         Instant agora = Instant.now(clock);
         LocalDateTime agoraLocal = LocalDateTime.now(clock);
         List<ConsultaSemConfirmacao> semConfirmacao = fila.semConfirmacao(efetivo, agoraLocal, ITENS_DO_PAINEL).stream()
@@ -112,6 +120,7 @@ public class FilaDeEsperaUseCaseImpl implements FilaDeEsperaUseCase {
                         c.unidade(), c.dataHora(), politica.confirmarAte(c.dataHora()), c.status(), c.decisao(), c.pedidoEnviado(),
                         c.pedidoEntregue()))
                 .toList();
+
         return new PainelDaFila(agora, efetivo, ator.eh(Papel.ADMINISTRADOR, Papel.RECEPCAO),
                 fila.indicadores(efetivo, agora.minus(RECENTES), agoraLocal.minus(RECENTES), agoraLocal),
                 fila.fila(efetivo, pagina), fila.vagas(efetivo, ITENS_DO_PAINEL), fila.ofertas(efetivo, null, ITENS_DO_PAINEL),
@@ -121,14 +130,17 @@ public class FilaDeEsperaUseCaseImpl implements FilaDeEsperaUseCase {
     @Override
     public DetalheDaEntrada detalhar(Ator ator, UUID entradaId) {
         Permissoes.exigir(ator, Papel.ADMINISTRADOR, Papel.RECEPCAO, Papel.ESPECIALISTA);
+
         EntradaNaFila entrada = entrada(entradaId);
         if (ator.eh(Papel.ESPECIALISTA)) {
             Profissional p = profissionalDoAtor(ator);
             if (!entrada.disputa(p.id(), p.especialidade())) throw Permissoes.negado();
         }
+
         PosicaoNaFila posicao = fila.posicao(entradaId).orElseThrow();
         String nome = pacientes.buscarPaciente(entrada.getPacienteId()).map(p -> p.nomeSocial() != null && !p.nomeSocial().isBlank()
                 ? p.nomeSocial() : p.nomeCompleto()).orElse("");
+
         auditor.registrar(ator, "CONSULTAR_FILA_DO_PACIENTE", "ENTRADA_FILA", entradaId, entrada.getPacienteId());
         return new DetalheDaEntrada(entrada.getPacienteId(), nome, posicao, fila.ofertas(FiltroDaFila.todas(), entradaId, 50),
                 fila.movimentacoes(FiltroDaFila.todas(), entradaId, 100));
@@ -137,6 +149,7 @@ public class FilaDeEsperaUseCaseImpl implements FilaDeEsperaUseCase {
     @Override
     public void pausar(Ator ator, UUID entradaId, String motivo) {
         Permissoes.exigir(ator, Papel.ADMINISTRADOR, Papel.RECEPCAO);
+
         EntradaNaFila e = transacao.executar(() -> {
             EntradaNaFila atual = fila.entradaParaAtualizar(entradaId)
                     .orElseThrow(() -> new NaoEncontradoException("Entrada na fila não encontrada: " + entradaId));
@@ -145,12 +158,14 @@ public class FilaDeEsperaUseCaseImpl implements FilaDeEsperaUseCase {
             diario.daEntrada(EventoDaFila.PAUSADA, atual, atual.getMotivo(), ator);
             return atual;
         });
+
         auditor.registrar(ator, "PAUSAR_ENTRADA_NA_FILA", "ENTRADA_FILA", entradaId, e.getPacienteId());
     }
 
     @Override
     public void retomar(Ator ator, UUID entradaId) {
         Permissoes.exigir(ator, Papel.ADMINISTRADOR, Papel.RECEPCAO);
+
         EntradaNaFila e = transacao.executar(() -> {
             EntradaNaFila atual = fila.entradaParaAtualizar(entradaId)
                     .orElseThrow(() -> new NaoEncontradoException("Entrada na fila não encontrada: " + entradaId));
@@ -159,6 +174,7 @@ public class FilaDeEsperaUseCaseImpl implements FilaDeEsperaUseCase {
             diario.daEntrada(EventoDaFila.RETOMADA, atual, "Retomada pela equipe com a data de entrada original", ator);
             return atual;
         });
+
         auditor.registrar(ator, "RETOMAR_ENTRADA_NA_FILA", "ENTRADA_FILA", entradaId, e.getPacienteId());
         ofertarEmSeguida();
     }
@@ -166,6 +182,7 @@ public class FilaDeEsperaUseCaseImpl implements FilaDeEsperaUseCase {
     @Override
     public Agendamento confirmarPresenca(Ator ator, UUID consultaId) {
         Permissoes.exigir(ator, Papel.ADMINISTRADOR, Papel.RECEPCAO);
+
         Agendamento confirmada = transacao.executar(() -> {
             Agendamento a = agendamentos.buscarAgendamentoParaAtualizar(consultaId)
                     .orElseThrow(() -> new NaoEncontradoException("Consulta não encontrada: " + consultaId));
@@ -177,6 +194,7 @@ public class FilaDeEsperaUseCaseImpl implements FilaDeEsperaUseCase {
                     "Presença confirmada pela equipe em contato com a pessoa", ator);
             return a;
         });
+
         auditor.registrar(ator, "CONFIRMAR_PRESENCA_NA_RECEPCAO", "CONSULTA", consultaId, confirmada.getPacienteId());
         return agendamentos.buscarAgendamento(consultaId).orElseThrow();
     }

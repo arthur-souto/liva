@@ -12,6 +12,7 @@ public class TransacaoFake implements TransacaoPort {
     public <T> T executar(Supplier<T> operacao) {
         ativa = true;
         execucoes++;
+
         try {
             return operacao.get();
         } finally {

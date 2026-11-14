@@ -32,14 +32,18 @@ public enum MotivoDeAusencia {
 
     public static Optional<MotivoDeAusencia> interpretar(String texto) {
         if (texto == null) return Optional.empty();
+
         String normalizado = normalizar(texto);
         if (normalizado.isEmpty()) return Optional.empty();
+
         String primeiro = normalizado.split(" ")[0];
         for (MotivoDeAusencia m : values())
             if (m.numero.equals(primeiro) || m.palavras.contains(normalizado)) return Optional.of(m);
+
         for (MotivoDeAusencia m : values())
             for (String palavra : m.palavras)
                 if (palavra.contains(" ") && normalizado.contains(palavra)) return Optional.of(m);
+
         return Optional.empty();
     }
 

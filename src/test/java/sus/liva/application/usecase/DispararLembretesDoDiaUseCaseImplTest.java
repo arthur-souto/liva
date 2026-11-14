@@ -55,6 +55,7 @@ class DispararLembretesDoDiaUseCaseImplTest {
     void enviaPedidoEVesperaConformeAntecedenciaDeCadaLembrete() {
         Agendamento doPedido = agendar(DIA_DO_PEDIDO, paciente.id());
         Agendamento daVespera = agendar(DIA_DA_VESPERA, paciente.id());
+
         agendar(DIA_DO_PEDIDO.plusDays(1), paciente.id());
         agendar(HOJE, paciente.id());
 
@@ -103,12 +104,14 @@ class DispararLembretesDoDiaUseCaseImplTest {
         assertThat(useCase.dispararPendentes(HOJE)).isZero();
 
         resposta = ResultadoEnvio.ok("id");
+
         assertThat(useCase.dispararPendentes(HOJE)).isEqualTo(1);
     }
 
     @Test
     void continuaQuandoUmAgendamentoFalha() {
         agendar(DIA_DO_PEDIDO, UUID.randomUUID());
+
         Agendamento valido = agendar(DIA_DO_PEDIDO, paciente.id());
 
         int enviadasNoDia = useCase.dispararPendentes(HOJE);

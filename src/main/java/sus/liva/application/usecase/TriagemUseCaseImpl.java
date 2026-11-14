@@ -66,6 +66,7 @@ public class TriagemUseCaseImpl implements TriagemUseCase {
     public Triagem registrarChegada(Ator ator, UUID pacienteId) {
         Permissoes.exigir(ator, Papel.RECEPCAO);
         if (pacientes.buscarPaciente(pacienteId).isEmpty()) throw new NaoEncontradoException("Paciente não encontrado: " + pacienteId);
+
         Triagem triagem = Triagem.registrarChegada(UUID.randomUUID(), pacienteId, ator.usuarioId(), agora());
         triagens.salvarTriagem(triagem);
         auditor.registrar(ator, "REGISTRAR_CHEGADA", "TRIAGEM", triagem.getId(), pacienteId);
@@ -85,6 +86,7 @@ public class TriagemUseCaseImpl implements TriagemUseCase {
     @Override
     public Triagem iniciar(Ator ator, UUID triagemId) {
         Permissoes.exigir(ator, Papel.CLINICO_GERAL);
+
         UUID profissional = Permissoes.profissional(ator);
         Triagem triagem = transacao.executar(() -> {
             Triagem t = paraAtualizar(triagemId);
@@ -92,6 +94,7 @@ public class TriagemUseCaseImpl implements TriagemUseCase {
             triagens.salvarTriagem(t);
             return t;
         });
+
         auditor.registrar(ator, "INICIAR_TRIAGEM", "TRIAGEM", triagemId, triagem.getPacienteId());
         return recarregar(triagemId);
     }
@@ -100,8 +103,10 @@ public class TriagemUseCaseImpl implements TriagemUseCase {
     public Triagem registrarAvaliacao(Ator ator, UUID triagemId, AvaliacaoClinica avaliacao, SinaisVitais sinais,
                                       Prioridade prioridade, String justificativa, long versao) {
         Permissoes.exigir(ator, Papel.CLINICO_GERAL);
+
         UUID profissional = Permissoes.profissional(ator);
         validarSinais(sinais);
+
         Triagem triagem = transacao.executar(() -> {
             Triagem t = paraAtualizar(triagemId);
             conferirVersao(t, versao);
@@ -110,6 +115,7 @@ public class TriagemUseCaseImpl implements TriagemUseCase {
             triagens.salvarTriagem(t);
             return t;
         });
+
         auditor.registrar(ator, "REGISTRAR_AVALIACAO", "TRIAGEM", triagemId, triagem.getPacienteId());
         return recarregar(triagemId);
     }
@@ -117,25 +123,30 @@ public class TriagemUseCaseImpl implements TriagemUseCase {
     @Override
     public Encaminhamento encaminhar(Ator ator, UUID triagemId, NovoEncaminhamento novo) {
         Permissoes.exigir(ator, Papel.CLINICO_GERAL);
+
         UUID profissional = Permissoes.profissional(ator);
         if (novo == null || ValidacaoCadastral.vazio(novo.especialidade()) || novo.modalidade() == null)
             throw new IllegalArgumentException("Informe a especialidade e a modalidade do encaminhamento");
         if (profissionais.buscarEspecialidade(novo.especialidade()).isEmpty())
             throw new IllegalArgumentException("Especialidade desconhecida: " + novo.especialidade());
+
         if (novo.profissionalDestinoId() != null) {
             Profissional destino = profissionais.buscarProfissional(novo.profissionalDestinoId())
                     .orElseThrow(() -> new IllegalArgumentException("Profissional de destino não encontrado"));
             if (!destino.atende(novo.especialidade()))
                 throw new IllegalArgumentException("O profissional de destino não atende a especialidade escolhida");
         }
+
         Encaminhamento encaminhamento = transacao.executar(() -> {
             Triagem t = paraAtualizar(triagemId);
             if (!t.responsavel(profissional)) throw new IllegalStateException("A triagem está sendo conduzida por outro profissional");
+
             Encaminhamento e = Encaminhamento.aPartirDe(UUID.randomUUID(), t, novo.especialidade(),
                     novo.profissionalDestinoId(), novo.modalidade(), novo.prioridade(), novo.justificativa(), profissional, agora());
             encaminhamentos.salvarEncaminhamento(e);
             return e;
         });
+
         auditor.registrar(ator, "ENCAMINHAR_" + novo.modalidade().name(), "ENCAMINHAMENTO", encaminhamento.getId(),
                 encaminhamento.getPacienteId());
         return encaminhamentos.buscarEncaminhamento(encaminhamento.getId()).orElseThrow();
@@ -144,19 +155,23 @@ public class TriagemUseCaseImpl implements TriagemUseCase {
     @Override
     public Triagem finalizar(Ator ator, UUID triagemId, long versao) {
         Permissoes.exigir(ator, Papel.CLINICO_GERAL);
+
         UUID profissional = Permissoes.profissional(ator);
         Triagem triagem = transacao.executar(() -> {
             Triagem t = paraAtualizar(triagemId);
             conferirVersao(t, versao);
             t.finalizar(profissional, agora());
             triagens.salvarTriagem(t);
+
             for (Encaminhamento e : encaminhamentos.encaminhamentosDaTriagem(triagemId)) {
                 StatusEncaminhamento anterior = e.getStatus();
                 e.liberarParaAgendamento();
                 if (e.getStatus() != anterior) encaminhamentos.salvarEncaminhamento(e);
             }
+
             return t;
         });
+
         auditor.registrar(ator, "FINALIZAR_TRIAGEM", "TRIAGEM", triagemId, triagem.getPacienteId());
         return recarregar(triagemId);
     }
@@ -164,22 +179,27 @@ public class TriagemUseCaseImpl implements TriagemUseCase {
     @Override
     public Triagem cancelar(Ator ator, UUID triagemId, String motivo) {
         Permissoes.exigir(ator, Papel.RECEPCAO, Papel.CLINICO_GERAL);
+
         Triagem triagem = transacao.executar(() -> {
             Triagem t = paraAtualizar(triagemId);
             if (ator.eh(Papel.RECEPCAO) && t.getStatus() != StatusTriagem.AGUARDANDO_ATENDIMENTO)
                 throw new IllegalStateException("A recepção só cancela triagens que ainda não começaram");
             if (ator.eh(Papel.CLINICO_GERAL) && t.getStatus() == StatusTriagem.EM_ANDAMENTO && !t.responsavel(ator.profissionalId()))
                 throw new IllegalStateException("A triagem está sendo conduzida por outro profissional");
+
             t.cancelar(motivo, agora());
             triagens.salvarTriagem(t);
+
             for (Encaminhamento e : encaminhamentos.encaminhamentosDaTriagem(triagemId)) {
                 if (e.getStatus() == StatusEncaminhamento.PENDENTE) {
                     e.cancelar("triagem cancelada", agora());
                     encaminhamentos.salvarEncaminhamento(e);
                 }
             }
+
             return t;
         });
+
         auditor.registrar(ator, "CANCELAR_TRIAGEM", "TRIAGEM", triagemId, triagem.getPacienteId());
         return recarregar(triagemId);
     }
@@ -187,14 +207,17 @@ public class TriagemUseCaseImpl implements TriagemUseCase {
     @Override
     public Retificacao retificar(Ator ator, UUID triagemId, String texto, String justificativa) {
         Permissoes.exigir(ator, Papel.CLINICO_GERAL);
+
         UUID profissional = Permissoes.profissional(ator);
         Retificacao retificacao = transacao.executar(() -> {
             Triagem t = paraAtualizar(triagemId);
             if (!t.responsavel(profissional)) throw new IllegalStateException("Somente o profissional responsável pode retificar a triagem");
+
             Retificacao r = t.retificar(profissional, texto, justificativa, agora());
             triagens.salvarRetificacao(r);
             return r;
         });
+
         auditor.registrar(ator, "RETIFICAR_TRIAGEM", "TRIAGEM", triagemId, triagens.buscarTriagem(triagemId).orElseThrow().getPacienteId());
         return retificacao;
     }
@@ -202,6 +225,7 @@ public class TriagemUseCaseImpl implements TriagemUseCase {
     @Override
     public Triagem encerrar(Ator ator, UUID triagemId) {
         Permissoes.exigir(ator, Papel.CLINICO_GERAL, Papel.ESPECIALISTA);
+
         Triagem triagem = transacao.executar(() -> {
             Triagem t = paraAtualizar(triagemId);
             List<Encaminhamento> doRamo = encaminhamentos.encaminhamentosDaTriagem(triagemId);
@@ -211,10 +235,12 @@ public class TriagemUseCaseImpl implements TriagemUseCase {
             if (!autorizado) throw Permissoes.negado();
             if (doRamo.stream().anyMatch(e -> !e.getStatus().encerrado()))
                 throw new ConflitoException("Conclua ou cancele os encaminhamentos desta triagem antes de encerrá-la");
+
             t.encerrar(agora());
             triagens.salvarTriagem(t);
             return t;
         });
+
         auditor.registrar(ator, "ENCERRAR_TRIAGEM", "TRIAGEM", triagemId, triagem.getPacienteId());
         return recarregar(triagemId);
     }
@@ -224,6 +250,7 @@ public class TriagemUseCaseImpl implements TriagemUseCase {
         Triagem triagem = recarregar(triagemId);
         List<Encaminhamento> doRamo = encaminhamentos.encaminhamentosDaTriagem(triagemId);
         List<Agendamento> consultas = consultasDoRamo(doRamo);
+
         acesso.exigirLeituraClinica(ator, triagem.getPacienteId(), doRamo, consultas);
         auditor.registrar(ator, "LER_TRIAGEM", "TRIAGEM", triagemId, triagem.getPacienteId());
         return new RamoDeAtendimento(triagem, doRamo, consultas, triagens.retificacoes(triagemId),
@@ -250,11 +277,13 @@ public class TriagemUseCaseImpl implements TriagemUseCase {
 
     private static void validarSinais(SinaisVitais s) {
         if (s == null) return;
+
         faixa(s.pressaoSistolica(), 40, 300, "Pressão sistólica");
         faixa(s.pressaoDiastolica(), 20, 200, "Pressão diastólica");
         faixa(s.frequenciaCardiaca(), 20, 250, "Frequência cardíaca");
         faixa(s.frequenciaRespiratoria(), 4, 80, "Frequência respiratória");
         faixa(s.saturacao(), 40, 100, "Saturação");
+
         if (s.temperatura() != null && (s.temperatura().compareTo(BigDecimal.valueOf(30)) < 0 || s.temperatura().compareTo(BigDecimal.valueOf(45)) > 0))
             throw new IllegalArgumentException("Temperatura fora da faixa plausível (30 a 45 °C)");
     }

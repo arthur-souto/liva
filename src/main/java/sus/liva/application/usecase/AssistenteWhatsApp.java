@@ -113,6 +113,7 @@ public class AssistenteWhatsApp {
         Optional<Conversa> conversa = ativa(remetente);
         if (conversa.isEmpty() || PEDIDOS_DE_MENU.contains(resposta))
             return iniciar(remetente, conversa.map(Conversa::pacienteId).orElse(null));
+
         if (PEDIDOS_DE_SAIDA.contains(resposta)) {
             conversas.encerrarConversa(remetente);
             return responder("SAIR", null, remetente, modelos.despedida());
@@ -154,8 +155,10 @@ public class AssistenteWhatsApp {
                 return ResultadoResposta.ignorada("Telefone sem cadastro; aviso já enviado há pouco");
             return responder("SEM_CADASTRO", null, remetente, texto);
         }
+
         Optional<Paciente> escolhido = doTelefone.stream().filter(p -> p.id().equals(pacienteAtual)).findFirst();
         if (escolhido.isEmpty() && doTelefone.size() == 1) escolhido = Optional.of(doTelefone.getFirst());
+
         if (escolhido.isPresent()) return mostrarMenu(remetente, escolhido.get(), menuDe(remetente, escolhido.get()));
 
         salvar(remetente, null, EtapaDaConversa.ESCOLHER_PACIENTE, doTelefone.stream().map(p -> p.id().toString()).toList());
@@ -208,6 +211,7 @@ public class AssistenteWhatsApp {
         LocalDate hoje = LocalDate.now(clock);
         List<HorarioDisponivel> sugeridos = sugerir(agenda.horariosDisponiveis(ator(remetente, paciente), encaminhamento.getId(), hoje,
                 hoje.plusDays(DIAS_DE_BUSCA - 1)));
+
         if (sugeridos.isEmpty()) {
             conversas.encerrarConversa(remetente);
             return responder("SEM_HORARIOS", null, remetente, """
@@ -215,6 +219,7 @@ public class AssistenteWhatsApp {
                     Veja outras datas pelo link (vale por %d minutos):
                     %s""".formatted(especialidade, LinksDeAcesso.VALIDADE.toMinutes(), link));
         }
+
         salvar(remetente, paciente.id(), EtapaDaConversa.ESCOLHER_HORARIO, sugeridos.stream()
                 .map(h -> encaminhamento.getId() + "|" + h.profissionalId() + "|" + h.inicio()).toList());
         return responder("ESCOLHER_HORARIO", null, remetente, modelos.lista("Horários livres para " + especialidade + ":",
@@ -226,6 +231,7 @@ public class AssistenteWhatsApp {
     private ResultadoResposta agendar(Telefone remetente, Paciente paciente, String opcao) {
         String[] partes = opcao.split("\\|");
         UUID encaminhamentoId = UUID.fromString(partes[0]);
+
         try {
             Agendamento consulta = agenda.agendar(ator(remetente, paciente), encaminhamentoId, UUID.fromString(partes[1]),
                     LocalDateTime.parse(partes[2]), UUID.randomUUID().toString());
@@ -251,10 +257,12 @@ public class AssistenteWhatsApp {
         List<Agendamento> remarcaveis = futuras(paciente).stream().filter(Agendamento::doEncaminhamento).toList();
         if (remarcaveis.isEmpty())
             return mostrarMenu(remetente, paciente, "Você não tem consultas que possam ser remarcadas.\n\nEnvie MENU para ver as opções.");
+
         if (!podeRemarcar(paciente.id())) {
             conversas.encerrarConversa(remetente);
             return responder("LIMITE_DE_REMARCACOES", null, remetente, modelos.limiteDeRemarcacoes(paciente, LimiteDeRemarcacoes.POR_MES));
         }
+
         if (remarcaveis.size() == 1) return enviarLinkDeRemarcacao(remetente, paciente, remarcaveis.getFirst());
 
         salvar(remetente, paciente.id(), EtapaDaConversa.ESCOLHER_CONSULTA_REMARCAR, remarcaveis.stream().map(a -> a.getId().toString()).toList());
@@ -267,6 +275,7 @@ public class AssistenteWhatsApp {
         RemarcacoesDoMes doMes = limite.doMes(paciente.id());
         if (doMes.restantes() == 0)
             return responder("LIMITE_DE_REMARCACOES", consulta.getId(), remetente, modelos.limiteDeRemarcacoes(paciente, LimiteDeRemarcacoes.POR_MES));
+
         String link = links.gerar(paciente.id(), "/portal/agendar/%s?remarcar=%s&versao=%d"
                 .formatted(consulta.getEncaminhamentoId(), consulta.getId(), consulta.getVersao() == null ? 0 : consulta.getVersao()));
         return responder("LINK_DE_REMARCACAO", consulta.getId(), remetente,
@@ -295,8 +304,11 @@ public class AssistenteWhatsApp {
             conversas.encerrarConversa(remetente);
             return responder("CANCELAMENTO_DESISTIDO", consultaId, remetente, "Certo, sua consulta continua marcada.");
         }
+
         if (Stream.of("1", "sim", "cancelar").noneMatch(resposta::equals)) return naoEntendi(remetente, atual);
+
         conversas.encerrarConversa(remetente);
+
         try {
             Agendamento atualizada = agendamentos.buscarAgendamento(consultaId).orElseThrow();
             Agendamento cancelada = agenda.cancelar(ator(remetente, paciente), consultaId, atualizada.getVersao() == null ? 0 : atualizada.getVersao());
@@ -314,6 +326,7 @@ public class AssistenteWhatsApp {
 
     private Optional<String> escolha(Conversa conversa, String resposta) {
         if (!resposta.matches("\\d{1,2}")) return Optional.empty();
+
         int indice = Integer.parseInt(resposta) - 1;
         if (indice < 0 || indice >= conversa.opcoes().size()) return Optional.empty();
         return Optional.of(conversa.opcoes().get(indice));
@@ -325,6 +338,7 @@ public class AssistenteWhatsApp {
             List<HorarioDisponivel> doDia = porDia.computeIfAbsent(h.inicio().toLocalDate(), d -> new ArrayList<>());
             if (doDia.size() < HORARIOS_POR_DIA) doDia.add(h);
         }
+
         return porDia.values().stream().flatMap(List::stream).limit(HORARIOS_SUGERIDOS).toList();
     }
 
@@ -346,6 +360,7 @@ public class AssistenteWhatsApp {
                 .flatMap(profissionais::buscarProfissional)
                 .map(p -> " com " + p.nome())
                 .orElse("");
+
         return "%s em %s%s".formatted(especialidade, modelos.quando(a), profissional);
     }
 
@@ -388,6 +403,7 @@ public class AssistenteWhatsApp {
         } catch (IllegalArgumentException e) {
             return Optional.empty();
         }
+
         return Optional.empty();
     }
 

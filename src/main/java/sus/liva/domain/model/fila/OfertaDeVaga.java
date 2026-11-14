@@ -45,6 +45,7 @@ public class OfertaDeVaga {
         if (!entrada.disputa(vaga.getProfissionalId(), vaga.getEspecialidade()))
             throw new IllegalArgumentException("A vaga não atende o encaminhamento desta entrada");
         if (!expiraEm.isAfter(agora)) throw new IllegalArgumentException("O prazo da oferta precisa estar no futuro");
+
         return new OfertaDeVaga(id, vaga.getId(), entrada.getId(), entrada.getPacienteId(), consultaAnteriorId,
                 StatusOferta.PENDENTE, agora, expiraEm, null, null, null, null, null, null);
     }
@@ -63,6 +64,7 @@ public class OfertaDeVaga {
 
     public void enviada(String idDaMensagem, Instant em) {
         if (status != StatusOferta.PENDENTE) return;
+
         status = StatusOferta.ENVIADA;
         idExterno = idDaMensagem;
         enviadaEm = em;
@@ -71,6 +73,7 @@ public class OfertaDeVaga {
     public void aceitar(UUID consultaNova, CanalDeResposta pelo, Instant agora) {
         exigirRespondivel(agora);
         if (consultaNova == null) throw new IllegalArgumentException("A aceitação precisa gerar a nova consulta");
+
         status = StatusOferta.ACEITA;
         consultaNovaId = consultaNova;
         canal = pelo;
@@ -79,6 +82,7 @@ public class OfertaDeVaga {
 
     public void recusar(CanalDeResposta pelo, Instant agora) {
         exigirRespondivel(agora);
+
         status = StatusOferta.RECUSADA;
         canal = pelo;
         respondidaEm = agora;
@@ -87,6 +91,7 @@ public class OfertaDeVaga {
     public void expirar(Instant agora) {
         if (!ativa()) throw new IllegalStateException("Só ofertas em aberto expiram. Situação atual: " + status);
         if (!vencida(agora)) throw new IllegalStateException("O prazo desta oferta ainda não terminou");
+
         status = StatusOferta.EXPIRADA;
         motivo = "Prazo de resposta encerrado";
     }

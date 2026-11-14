@@ -31,8 +31,10 @@ public class LinksDeAcesso {
     public String gerar(UUID pacienteId, String destino) {
         byte[] bytes = new byte[32];
         aleatorio.nextBytes(bytes);
+
         String token = Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
         Instant agora = Instant.now(clock);
+
         links.salvarLink(new LinkDeAcesso(hash(token), pacienteId, destino, agora, agora.plus(VALIDADE), null));
         return urlDoPortal + "/acesso/link?t=" + token;
     }

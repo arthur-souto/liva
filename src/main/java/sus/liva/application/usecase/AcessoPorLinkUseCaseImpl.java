@@ -47,8 +47,10 @@ public class AcessoPorLinkUseCaseImpl implements AcessoPorLinkUseCase {
     @Override
     public AcessoPorLink entrar(String token) {
         if (token == null || token.isBlank() || token.length() > 100) throw new NaoAutenticadoException(LINK_INVALIDO);
+
         String hash = LinksDeAcesso.hash(token.trim());
         Instant agora = Instant.now(clock);
+
         LinkDeAcesso link = transacao.executar(() -> {
             Optional<LinkDeAcesso> valido = links.buscarParaUsar(hash).filter(l -> l.validoEm(agora));
             valido.ifPresent(l -> links.marcarUsado(hash, agora));
@@ -59,10 +61,12 @@ public class AcessoPorLinkUseCaseImpl implements AcessoPorLinkUseCase {
         Optional<ContaDeAcesso> conta = contas.buscarPorPaciente(paciente.id());
         if (conta.isPresent() && !conta.get().ativo())
             throw new NaoAutenticadoException("Este acesso está desativado. Procure a recepção da unidade.");
+
         Ator ator = conta.map(ContaDeAcesso::ator).orElse(Ator.paciente(paciente.id(), paciente.id()));
         String nome = conta.map(ContaDeAcesso::nome)
                 .orElse(paciente.nomeSocial() != null ? paciente.nomeSocial() : paciente.nomeCompleto());
         TokenEmitido emitido = emissor.emitir(ator, nome, SESSAO);
+
         auditor.registrar(ator, "ENTRAR_POR_LINK", "PACIENTE", paciente.id(), paciente.id());
         return new AcessoPorLink(new Sessao(emitido.token(), emitido.expiraEm(), ator, nome), link.destino());
     }

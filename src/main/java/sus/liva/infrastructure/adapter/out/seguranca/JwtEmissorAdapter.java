@@ -39,6 +39,7 @@ public class JwtEmissorAdapter implements EmissorDeTokenPort {
                 .expiresAt(expiraEm)
                 .claim(AtorArgumentResolver.PAPEL, ator.papel().name())
                 .claim(AtorArgumentResolver.NOME, nome);
+
         if (ator.profissionalId() != null) claims.claim(AtorArgumentResolver.PROFISSIONAL, ator.profissionalId().toString());
         if (ator.pacienteId() != null) claims.claim(AtorArgumentResolver.PACIENTE, ator.pacienteId().toString());
         String token = encoder.encode(JwtEncoderParameters.from(JwsHeader.with(MacAlgorithm.HS256).build(), claims.build()))

@@ -34,6 +34,7 @@ final class AcessoAoRamo {
     boolean especialistaVinculado(UUID profissionalId, List<Encaminhamento> encaminhamentos, List<Agendamento> consultas) {
         if (profissionalId == null) return false;
         if (consultas.stream().anyMatch(c -> c.doProfissional(profissionalId))) return true;
+
         Optional<Profissional> profissional = profissionais.buscarProfissional(profissionalId);
         return encaminhamentos.stream().anyMatch(e -> e.destinadoA(profissionalId)
                 || (e.getProfissionalDestinoId() == null && profissional.filter(p -> p.atende(e.getEspecialidade())).isPresent()));

@@ -91,6 +91,7 @@ public class HistoricoDoPacienteUseCaseImpl implements HistoricoDoPacienteUseCas
                 .map(ResumoDoEncaminhamento::especialidade).distinct().sorted().toList();
         List<Integer> anos = ramos.stream().map(r -> ano(r.triagem().chegadaEm())).distinct()
                 .sorted(Comparator.reverseOrder()).toList();
+
         return new AtendimentosDoPaciente(Pagina.de(numerados, pedido), especialidades, anos);
     }
 
@@ -114,6 +115,7 @@ public class HistoricoDoPacienteUseCaseImpl implements HistoricoDoPacienteUseCas
                 .filter(c -> filtro.situacao() == null || c.consulta().getStatus() == filtro.situacao())
                 .filter(c -> filtro.ano() == null || c.consulta().getDataHora().getYear() == filtro.ano())
                 .toList();
+
         return new ConsultasDoPaciente(Pagina.de(filtradas, pedido), proximas.size(), anteriores.size(),
                 doPeriodo.stream().map(ConsultaDoPaciente::especialidade).distinct().sorted().toList(),
                 doPeriodo.stream().map(c -> c.consulta().getStatus()).distinct().sorted().toList(),
@@ -130,6 +132,7 @@ public class HistoricoDoPacienteUseCaseImpl implements HistoricoDoPacienteUseCas
     private Leitura ler(Ator ator, UUID pacienteId) {
         Permissoes.exigir(ator, Papel.PACIENTE, Papel.CUIDADOR, Papel.RECEPCAO, Papel.CLINICO_GERAL, Papel.ESPECIALISTA, Papel.ADMINISTRADOR);
         Permissoes.exigirPacienteProprio(ator, pacienteId);
+
         Paciente paciente = pacientes.buscarPaciente(pacienteId)
                 .orElseThrow(() -> new NaoEncontradoException("Paciente não encontrado: " + pacienteId));
         List<Agendamento> consultas = agendamentos.consultasDoPaciente(pacienteId);
@@ -166,6 +169,7 @@ public class HistoricoDoPacienteUseCaseImpl implements HistoricoDoPacienteUseCas
                 : profissionais.buscarEspecialidade(encaminhamento.especialidade()).map(Especialidade::nome).orElse(encaminhamento.especialidade());
         String profissional = Optional.ofNullable(consulta.getProfissionalId()).flatMap(profissionais::buscarProfissional)
                 .map(Profissional::nome).orElse("");
+
         return new ConsultaDoPaciente(consulta, encaminhamento, especialidade, profissional);
     }
 
@@ -194,6 +198,7 @@ public class HistoricoDoPacienteUseCaseImpl implements HistoricoDoPacienteUseCas
                         e.getStatus(), e.getCriadoEm(), e.getProfissionalDestinoId(),
                         clinico ? e.getJustificativa() : null, clinico ? e.getDesfecho() : null, e.getVersao()))
                 .toList();
+
         return new RamoDoHistorico(resumo, resumos, consultas, clinico);
     }
 }

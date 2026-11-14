@@ -105,6 +105,7 @@ public class EvolutionWebhookController {
 
     private ResultadoResposta registrarEntregas(JsonNode dados) {
         if (entregas == null) return ResultadoResposta.ignorada("Evento ignorado");
+
         long confirmadas = (dados.isArray() ? dados.valueStream() : Stream.of(dados))
                 .filter(item -> ENTREGUE.contains(item.path("status").asString(item.path("update").path("status").asString(""))))
                 .map(item -> item.path("keyId").asString(item.path("key").path("id").asString(null)))

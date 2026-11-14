@@ -16,6 +16,7 @@ public enum RespostaAOferta {
 
     public static Optional<RespostaAOferta> interpretar(String texto) {
         if (texto == null) return Optional.empty();
+
         String normalizado = Normalizer.normalize(texto, Normalizer.Form.NFD)
                 .replaceAll("\\p{M}", "")
                 .toLowerCase()

@@ -124,15 +124,19 @@ class FilaDeEsperaIntegracaoTest {
         String outra = novaEspecialidade();
         Encaminhamento anaOutra = encaminhamento(ana.id(), outra, Prioridade.POUCO_URGENTE);
         Paciente bruno = paciente();
+
         encaminhamento(bruno.id(), especialidade, Prioridade.URGENTE);
 
         processamento.sincronizar(null);
         processamento.sincronizar(null);
 
         MinhaFila daAna = fila.minhaFila(ana.ator());
+
         assertThat(daAna.filas()).hasSize(2);
+
         PosicaoNaFila naPrimeira = filaDe(daAna, anaOrtopedia);
         PosicaoNaFila naSegunda = filaDe(daAna, anaOutra);
+
         assertThat(naPrimeira.triagemId()).isEqualTo(anaOrtopedia.getTriagemId()).isNotEqualTo(naSegunda.triagemId());
         assertThat(naPrimeira.triagemNumero()).isEqualTo(1);
         assertThat(naSegunda.triagemNumero()).isEqualTo(2);
@@ -161,6 +165,7 @@ class FilaDeEsperaIntegracaoTest {
         processamento.executarCiclo();
 
         OfertaParaPaciente oferta = ofertaUnica(bruno);
+
         assertThat(oferta.inicio()).isEqualTo(AS_14);
         assertThat(oferta.antecipaDe()).isEqualTo(AS_15);
         assertThat(fila.minhaFila(carla.ator()).ofertas()).isEmpty();
@@ -187,8 +192,10 @@ class FilaDeEsperaIntegracaoTest {
 
         assertThat(fila.minhaFila(ana.ator()).ofertas()).singleElement().extracting(OfertaParaPaciente::inicio).isEqualTo(AS_15);
         assertThat(fila.minhaFila(carla.ator()).ofertas()).isEmpty();
+
         fila.recusar(ana.ator(), ofertaUnica(ana).id());
         OfertaParaPaciente emCascata = ofertaUnica(carla);
+
         assertThat(emCascata.inicio()).isEqualTo(AS_15);
         assertThat(jdbc.queryForObject("SELECT origem FROM vagas_liberadas WHERE agendamento_origem_id = ?", String.class,
                 consultaDoBruno.getId())).isEqualTo("ANTECIPACAO");
@@ -202,6 +209,7 @@ class FilaDeEsperaIntegracaoTest {
         Paciente bruno = paciente();
         Encaminhamento doBruno = encaminhamento(bruno.id(), especialidade, Prioridade.URGENTE);
         Paciente carla = paciente();
+
         encaminhamento(carla.id(), especialidade, Prioridade.POUCO_URGENTE);
         agenda.cancelar(recepcao, consultaDaAna.getId(), consultaDaAna.getVersao());
         processamento.executarCiclo();
@@ -210,10 +218,14 @@ class FilaDeEsperaIntegracaoTest {
         fila.recusar(bruno.ator(), ofertaUnica(bruno).id());
 
         assertThat(fila.minhaFila(bruno.ator()).ofertas()).isEmpty();
+
         PosicaoNaFila brunoDepois = filaDe(fila.minhaFila(bruno.ator()), doBruno);
+
         assertThat(brunoDepois.status()).isEqualTo(StatusEntrada.AGUARDANDO);
         assertThat(brunoDepois.posicao()).isEqualTo(posicaoDoBruno);
+
         OfertaParaPaciente daCarla = ofertaUnica(carla);
+
         assertThat(daCarla.inicio()).isEqualTo(AS_14);
 
         relogio.em(AS_14.minus(politica.antecedenciaMinima()).plusSeconds(1));
@@ -234,13 +246,18 @@ class FilaDeEsperaIntegracaoTest {
         Agendamento consultaDaAna = agenda.agendar(recepcao, encaminhamento(ana.id(), especialidade, Prioridade.NAO_URGENTE).getId(),
                 especialista.id(), AS_14, null);
         Paciente bruno = paciente();
+
         encaminhamento(bruno.id(), especialidade, Prioridade.URGENTE);
+
         Paciente carla = paciente();
         Encaminhamento daCarla = encaminhamento(carla.id(), especialidade, Prioridade.NAO_URGENTE);
+
         agenda.cancelar(recepcao, consultaDaAna.getId(), consultaDaAna.getVersao());
         processamento.executarCiclo();
+
         OfertaParaPaciente oferta = ofertaUnica(bruno);
         UUID vaga = jdbc.queryForObject("SELECT vaga_id FROM ofertas_de_vaga WHERE id = ?", UUID.class, oferta.id());
+
         assertThatThrownBy(() -> jdbc.update("""
                 INSERT INTO ofertas_de_vaga (id, vaga_id, entrada_id, paciente_id, status, criada_em, expira_em)
                 SELECT gen_random_uuid(), ?, e.id, e.paciente_id, 'PENDENTE', now(), now() + interval '1 hour'
@@ -263,6 +280,7 @@ class FilaDeEsperaIntegracaoTest {
         Paciente ana = paciente();
         Agendamento consultaDaAna = agenda.agendar(recepcao, encaminhamento(ana.id(), especialidade, Prioridade.NAO_URGENTE).getId(),
                 especialista.id(), AS_14, null);
+
         for (int i = 0; i < 3; i++) encaminhamento(paciente().id(), especialidade, Prioridade.POUCO_URGENTE);
         agenda.cancelar(recepcao, consultaDaAna.getId(), consultaDaAna.getVersao());
 
@@ -287,6 +305,7 @@ class FilaDeEsperaIntegracaoTest {
         Paciente bruno = paciente();
         Encaminhamento doBruno = encaminhamento(bruno.id(), especialidade, Prioridade.URGENTE);
         Agendamento consultaDoBruno = agenda.agendar(recepcao, doBruno.getId(), especialista.id(), AS_15, null);
+
         agenda.cancelar(recepcao, consultaDaAna.getId(), consultaDaAna.getVersao());
         processamento.executarCiclo();
         OfertaParaPaciente oferta = ofertaUnica(bruno);
@@ -311,6 +330,7 @@ class FilaDeEsperaIntegracaoTest {
                 especialista.id(), AS_14, null);
         Paciente bruno = paciente();
         Encaminhamento doBruno = encaminhamento(bruno.id(), especialidade, Prioridade.URGENTE);
+
         agenda.cancelar(recepcao, consultaDaAna.getId(), consultaDaAna.getVersao());
         processamento.executarCiclo();
 
@@ -333,6 +353,7 @@ class FilaDeEsperaIntegracaoTest {
         Paciente entregue = paciente();
         Encaminhamento doEntregue = encaminhamento(entregue.id(), especialidade, Prioridade.NAO_URGENTE);
         Agendamento consultaEntregue = agenda.agendar(recepcao, doEntregue.getId(), especialista.id(), AS_14_30, null);
+
         dispararLembrete.disparar(consultaSemEntrega.getId(), TipoLembrete.PEDIDO_CONFIRMACAO, true);
         dispararLembrete.disparar(consultaEntregue.getId(), TipoLembrete.PEDIDO_CONFIRMACAO, true);
         jdbc.queryForList("SELECT id_externo FROM registros_mensagem WHERE agendamento_id = ? AND tipo = 'PEDIDO_CONFIRMACAO'",
@@ -368,6 +389,7 @@ class FilaDeEsperaIntegracaoTest {
                 consultaEntregue.getId())).isEqualTo("SEM_CONFIRMACAO");
 
         Agendamento confirmada = fila.confirmarPresenca(recepcao, consultaSemEntrega.getId());
+
         assertThat(confirmada.getStatus()).isEqualTo(StatusAgendamento.CONFIRMADO);
         assertThat(decisao(consultaSemEntrega.getId())).isEqualTo("CONFIRMADA_NA_RECEPCAO");
     }
@@ -378,6 +400,7 @@ class FilaDeEsperaIntegracaoTest {
         Agendamento consultaDaAna = agenda.agendar(recepcao, encaminhamento(ana.id(), especialidade, Prioridade.NAO_URGENTE).getId(),
                 especialista.id(), AS_14, null);
         Paciente bruno = paciente();
+
         encaminhamento(bruno.id(), especialidade, Prioridade.URGENTE);
         agenda.cancelar(recepcao, consultaDaAna.getId(), consultaDaAna.getVersao());
         processamento.executarCiclo();
@@ -400,6 +423,7 @@ class FilaDeEsperaIntegracaoTest {
         Agendamento consultaDaAna = agenda.agendar(recepcao, encaminhamento(ana.id(), especialidade, Prioridade.NAO_URGENTE).getId(),
                 especialista.id(), AS_14, null);
         Paciente bruno = paciente();
+
         encaminhamento(bruno.id(), especialidade, Prioridade.URGENTE);
         agenda.cancelar(recepcao, consultaDaAna.getId(), consultaDaAna.getVersao());
 
@@ -428,6 +452,7 @@ class FilaDeEsperaIntegracaoTest {
         Paciente bruno = paciente();
         Encaminhamento doBruno = encaminhamento(bruno.id(), especialidade, Prioridade.URGENTE);
         Paciente carla = paciente();
+
         encaminhamento(carla.id(), especialidade, Prioridade.NAO_URGENTE);
         agenda.cancelar(recepcao, consultaDaAna.getId(), consultaDaAna.getVersao());
         processamento.executarCiclo();
@@ -439,6 +464,7 @@ class FilaDeEsperaIntegracaoTest {
 
         Ator especialistaDaArea = Ator.profissional(UUID.randomUUID(), Papel.ESPECIALISTA, especialista.id());
         PainelDaFila painel = fila.painel(especialistaDaArea, new FiltroDaFila("CARDIOLOGIA", null, null), PedidoDePagina.de(1, 10));
+
         assertThat(painel.filtro().especialidade()).isEqualTo(especialidade);
         assertThat(painel.podeIntervir()).isFalse();
         assertThat(painel.fila().itens()).extracting(p -> p.pacienteId()).containsExactly(bruno.id(), ana.id(), carla.id());
@@ -446,11 +472,13 @@ class FilaDeEsperaIntegracaoTest {
 
         Profissional deOutraArea = especialistaComAgenda(novaEspecialidade());
         UUID entradaDoBruno = jdbc.queryForObject("SELECT id FROM entradas_fila WHERE encaminhamento_id = ?", UUID.class, doBruno.getId());
+
         assertThatThrownBy(() -> fila.detalhar(Ator.profissional(UUID.randomUUID(), Papel.ESPECIALISTA, deOutraArea.id()), entradaDoBruno))
                 .isInstanceOf(AcessoNegadoException.class);
         assertThatThrownBy(() -> fila.pausar(especialistaDaArea, entradaDoBruno, "Sem contato")).isInstanceOf(AcessoNegadoException.class);
 
         fila.pausar(recepcao, entradaDoBruno, "Pessoa internada, aguardar alta");
+
         assertThat(filaDe(fila.minhaFila(bruno.ator()), doBruno).status()).isEqualTo(StatusEntrada.PAUSADA);
         assertThat(filaDe(fila.minhaFila(bruno.ator()), doBruno).posicao()).isNull();
         assertThat(fila.detalhar(recepcao, entradaDoBruno).movimentacoes()).extracting(m -> m.evento().name())
@@ -472,11 +500,13 @@ class FilaDeEsperaIntegracaoTest {
     private Encaminhamento encaminhamento(UUID paciente, String codigo, Prioridade prioridade) {
         instante = instante.plusMinutes(1);
         relogio.em(instante);
+
         Triagem t = triagens.iniciar(clinico, triagens.registrarChegada(recepcao, paciente).getId());
         Encaminhamento e = triagens.encaminhar(clinico, t.getId(),
                 new NovoEncaminhamento(codigo, null, Modalidade.ELETIVO, prioridade, "Avaliação especializada"));
         Triagem avaliada = triagens.registrarAvaliacao(clinico, t.getId(), new AvaliacaoClinica("Dor persistente", null, null, null, null),
                 new SinaisVitais(120, 80, 78, 16, new BigDecimal("36.7"), 98), prioridade, null, t.getVersao());
+
         triagens.finalizar(clinico, t.getId(), avaliada.getVersao());
         return encaminhamentos.buscarEncaminhamento(e.getId()).orElseThrow();
     }

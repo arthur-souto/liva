@@ -27,6 +27,7 @@ public class EnviarMensagemUseCaseImpl implements EnviarMensagemUseCase {
         Telefone destino = Telefone.de(telefone);
         if (texto == null || texto.isBlank())
             throw new IllegalArgumentException("Texto da mensagem não pode ser vazio");
+
         ResultadoEnvio resultado = enviador.enviar(new MensagemSaida(null, destino, null, texto));
         registros.salvarRegistro(new RegistroMensagem(null, destino, null, texto,
                 resultado.sucesso(), resultado.idExterno(), resultado.erro(), Instant.now(clock)));

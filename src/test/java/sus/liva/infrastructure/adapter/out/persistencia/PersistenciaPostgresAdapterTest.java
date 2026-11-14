@@ -67,6 +67,7 @@ class PersistenciaPostgresAdapterTest {
         pacientes.salvarPaciente(simples);
 
         Paciente lido = pacientes.buscarPaciente(simples.id()).orElseThrow();
+
         assertThat(lido).isEqualTo(simples);
         assertThat(lido.endereco()).isNull();
         assertThat(lido.temCuidador()).isFalse();
@@ -111,6 +112,7 @@ class PersistenciaPostgresAdapterTest {
                 null, "HTTP 500", agora));
 
         Telefone semNono = Telefone.de("555193953661");
+
         assertThat(registros.enviadaDesde(semNono, "Não entendi", agora.minusSeconds(60))).isTrue();
         assertThat(registros.enviadaDesde(semNono, "Não entendi", agora.plusSeconds(1))).isFalse();
         assertThat(registros.enviadaDesde(semNono, "Outro texto", agora.minusSeconds(60))).isFalse();
@@ -125,6 +127,7 @@ class PersistenciaPostgresAdapterTest {
                 DIA.atStartOfDay(), paciente.id(), UUID.randomUUID());
         Agendamento fora = new Agendamento(StatusAgendamento.AGENDADO, null, "Rua A", "UBS", TipoAtendimento.CONSULTA,
                 DIA.plusDays(3).atStartOfDay(), paciente.id(), UUID.randomUUID());
+
         agendamentos.salvarAgendamento(ultimo);
         agendamentos.salvarAgendamento(primeiro);
         agendamentos.salvarAgendamento(fora);
@@ -152,6 +155,7 @@ class PersistenciaPostgresAdapterTest {
         agendamentos.salvarAgendamento(a);
 
         Agendamento lido = agendamentos.buscarAgendamento(a.getId()).orElseThrow();
+
         assertThat(lido.getStatus()).isEqualTo(StatusAgendamento.AGUARDANDO_RESPOSTA);
         assertThat(lido.getPacienteId()).isEqualTo(paciente.id());
         assertThat(lido.getDataHora()).isEqualTo(DIA.atTime(9, 30));
@@ -162,6 +166,7 @@ class PersistenciaPostgresAdapterTest {
     void listaAgendamentosDoDiaRespeitandoLimites() {
         Agendamento inicioDoDia = agendamento(DIA.atStartOfDay());
         Agendamento fimDoDia = agendamento(DIA.atTime(23, 59, 59));
+
         agendamentos.salvarAgendamento(agendamento(DIA.minusDays(1).atTime(23, 59, 59)));
         agendamentos.salvarAgendamento(fimDoDia);
         agendamentos.salvarAgendamento(inicioDoDia);
@@ -201,6 +206,7 @@ class PersistenciaPostgresAdapterTest {
     void encontraUltimoEnvioPeloTelefoneMesmoSemNonoDigito() {
         Agendamento antigo = agendamento(DIA.atTime(8, 0));
         Agendamento recente = agendamento(DIA.atTime(10, 0));
+
         agendamentos.salvarAgendamento(antigo);
         agendamentos.salvarAgendamento(recente);
         Instant agora = Instant.now().truncatedTo(ChronoUnit.MICROS);

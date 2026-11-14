@@ -49,6 +49,7 @@ public class VagaLiberada {
 
     public void preencher(Instant em) {
         exigirAberta();
+
         status = StatusVaga.PREENCHIDA;
         motivo = null;
         encerradaEm = em;
@@ -56,6 +57,7 @@ public class VagaLiberada {
 
     public void encerrar(String justificativa, Instant em) {
         exigirAberta();
+
         status = StatusVaga.ENCERRADA;
         motivo = justificativa;
         encerradaEm = em;
@@ -63,6 +65,7 @@ public class VagaLiberada {
 
     public void indisponivel(String justificativa, Instant em) {
         exigirAberta();
+
         status = StatusVaga.INDISPONIVEL;
         motivo = justificativa;
         encerradaEm = em;
