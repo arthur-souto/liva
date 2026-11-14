@@ -36,7 +36,7 @@ O navegador nunca vê o token da API.
 - Toda chamada do front vai para `/api/liva/*`, um Route Handler que lê o cookie, envia `Authorization: Bearer` e repassa para `LIVA_API_URL`.
 - Escritas vindas de outra origem são recusadas (403). `/api/auth/**` e o webhook da Evolution não são expostos pelo proxy.
 - Um `401` do backend apaga o cookie, e a tela volta para `/entrar`.
-- `src/proxy.ts` redireciona quem está sem sessão para `/entrar?volta=...`.
+- `src/proxy.ts` redireciona quem está sem sessão (ou com token expirado) para `/entrar?volta=...` e manda cada papel para a sua área. Ele só lê o papel do token para rotear; quem valida a assinatura e as permissões é o backend.
 - `DELETE /api/sessao` encerra a sessão.
 - `/api/liva-health` consulta `/actuator/health` para o indicador de status do menu.
 
@@ -52,7 +52,12 @@ src/
     conversas/         simulador de respostas do paciente e envio avulso
     avisos/            cancelamentos, remarcações e quem ainda não respondeu
     agendamentos/      lista com status e resposta, detalhe, tipos, API e disparo manual
-    acesso/            tela de entrada
+    acesso/            entrada e ativação do portal do paciente (código pelo WhatsApp)
+    assistencial/      tipos, API, rótulos e componentes do fluxo (histórico, ramo, escolha de horário)
+    recepcao/          busca, cadastro e edição de pacientes, chegada e fila, agendamento
+    triagem/           fila do clínico, avaliação, sinais vitais, prioridade, encaminhamentos, retificação
+    especialista/      agenda da semana, plantão, consulta (iniciar, evolução, finalizar, falta), desfecho
+    portal/            histórico do paciente, agendar e cancelar consultas
   shared/
     styles/token.css   cores, tipografia, espaços, raios e sombras
     api/               cliente HTTP e erros padronizados do backend
@@ -61,7 +66,28 @@ src/
     lib/, hooks/       datas, telefone, CPF, consultas com atualização automática
 ```
 
-## Roteiro da demonstração
+## Áreas por papel
+
+| Papel | Início | Acesso |
+| --- | --- | --- |
+| Recepção e administração | `/` | Recepção, agendamentos, calendário, conversas e avisos |
+| Clínico geral | `/triagem` | Fila e atendimento de triagem |
+| Especialista | `/especialista` | Agenda, plantão e atendimentos |
+| Paciente | `/portal` | Histórico, agendamento e cancelamento |
+
+## Roteiro do fluxo assistencial
+
+Usuários `*@liva.demo` com a senha de `DEMO_SENHA` (ver README da raiz).
+
+1. **Recepção** (`recepcao@liva.demo`): cadastre o paciente com consentimento e registre a chegada.
+2. **Triagem** (`clinico@liva.demo`): atenda o primeiro da fila, registre avaliação, sinais vitais e prioridade. Encaminhe para uma especialidade (eletivo) e, em caso grave, para o plantão (imediato). Finalize.
+3. **Plantão** (`plantao@liva.demo`): receba o encaminhamento imediato e conclua com o desfecho.
+4. **Agendamento**: a recepção (ficha do paciente) ou o próprio paciente escolhe um horário livre. Dois cliques no mesmo horário não geram duas consultas.
+5. **Portal** (`/portal/ativar`): CPF + data de nascimento → código pelo WhatsApp → senha. O paciente vê o histórico, agenda e cancela.
+6. **Especialista** (`ortopedia@liva.demo`): no dia da consulta, inicie, registre a evolução e finalize (com ou sem retorno). Conclua o encaminhamento.
+7. **Encerrar**: com todos os encaminhamentos concluídos ou cancelados, o clínico ou o especialista encerra o atendimento.
+
+## Roteiro dos lembretes
 
 1. **Agendar**: crie um atendimento com o seu WhatsApp. A confirmação chega na hora; se faltar 3 dias ou menos, o pedido "Você consegue ir?" também chega.
 2. **Agendamentos**: o atendimento aparece com o status e a resposta do paciente ("Ainda não respondeu"). Filtre por período, status, nome ou telefone.

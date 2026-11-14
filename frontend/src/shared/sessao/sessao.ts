@@ -24,10 +24,6 @@ export function rotaPublica(caminho: string): boolean {
   return ROTAS_PUBLICAS.some((rota) => caminho === rota || caminho.startsWith(`${rota}/`));
 }
 
-export function inicioDoPapel(papel: Papel): string {
-  return papel === "PACIENTE" ? "/portal" : "/";
-}
-
 export function irParaEntrada(): void {
   const volta = `${window.location.pathname}${window.location.search}`;
   window.location.assign(rotaPublica(window.location.pathname) ? "/entrar" : `/entrar?volta=${encodeURIComponent(volta)}`);
@@ -70,4 +66,12 @@ export function usuarioAtual(): Promise<Usuario> {
 
 export function sair(): Promise<void> {
   return enviar("/api/sessao", "DELETE");
+}
+
+export function solicitarCodigoDoPortal(documento: string, dataNascimento: string): Promise<{ mensagem: string }> {
+  return enviar("/api/sessao/portal/codigo", "POST", { documento, dataNascimento });
+}
+
+export function ativarPortal(documento: string, dataNascimento: string, codigo: string, senha: string): Promise<{ usuario: Usuario }> {
+  return enviar("/api/sessao/portal/ativar", "POST", { documento, dataNascimento, codigo, senha });
 }

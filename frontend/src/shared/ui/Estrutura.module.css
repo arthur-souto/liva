@@ -32,7 +32,7 @@
   inset: auto 0 0;
   z-index: var(--camada-navegacao);
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(var(--colunas), 1fr);
   gap: var(--espaco-1);
   height: var(--altura-navegacao-inferior);
   padding: var(--espaco-2) var(--espaco-2) calc(var(--espaco-2) + env(safe-area-inset-bottom));

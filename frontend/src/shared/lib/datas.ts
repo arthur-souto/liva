@@ -121,3 +121,9 @@ export function gradeDoMes(ano: number, mes: number): (string | null)[] {
     ...Array.from({ length: total }, (_, i) => adicionarDias(primeiro, i)),
   ];
 }
+
+export function idade(dataNascimento: string): number {
+  const [ano, mes, dia] = dataNascimento.split("-").map(Number);
+  const [anoAtual, mesAtual, diaAtual] = hoje().split("-").map(Number);
+  return anoAtual - ano - (mesAtual < mes || (mesAtual === mes && diaAtual < dia) ? 1 : 0);
+}

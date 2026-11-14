@@ -1,4 +1,4 @@
-import { type InputHTMLAttributes, type SelectHTMLAttributes, type ReactNode, useId } from "react";
+import { type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes, useId } from "react";
 import { classes } from "@/shared/lib/classes";
 import estilos from "./Campo.module.css";
 
@@ -54,6 +54,22 @@ export function Selecao({ rotulo, dica, erro, opcional, className, children, ...
       <select id={id} {...selecao} className={classes(estilos.entrada, erro && estilos.invalida, className)} aria-invalid={Boolean(erro)}>
         {children}
       </select>
+    </Envoltorio>
+  );
+}
+
+export function AreaDeTexto({ rotulo, dica, erro, opcional, className, ...area }: Moldura & TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  const id = useId();
+  return (
+    <Envoltorio id={id} rotulo={rotulo} dica={dica} erro={erro} opcional={opcional}>
+      <textarea
+        id={id}
+        rows={3}
+        {...area}
+        className={classes(estilos.entrada, estilos.area, erro && estilos.invalida, className)}
+        aria-invalid={Boolean(erro)}
+        aria-describedby={erro || dica ? `${id}-mensagem` : undefined}
+      />
     </Envoltorio>
   );
 }

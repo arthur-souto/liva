@@ -1,0 +1,93 @@
+.painel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-6);
+}
+
+.colunas {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--espaco-5);
+  align-items: start;
+}
+
+.busca {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-3);
+}
+
+.lista {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.paciente,
+.itemFila {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espaco-3);
+  padding: var(--espaco-3) var(--espaco-4);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-lg);
+  background: var(--cor-superficie);
+}
+
+.itemFila {
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+}
+
+.dados {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.dados strong {
+  color: var(--cor-titulo);
+  overflow-wrap: anywhere;
+}
+
+.dados span {
+  font-size: var(--texto-xs);
+  color: var(--cor-texto-suave);
+}
+
+.posicao {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--raio-pilula);
+  background: var(--cor-superficie-destaque);
+  color: var(--cor-primaria);
+  font-weight: var(--peso-semi);
+}
+
+@media (min-width: 1100px) {
+  .colunas {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  }
+
+  .busca {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+
+  .busca > :first-child {
+    flex: 1;
+  }
+
+  .busca > button {
+    margin-top: 1.4rem;
+  }
+}

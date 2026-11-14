@@ -1,18 +1,23 @@
 "use client";
 
-import { Bell, CalendarDays, ClipboardList, House, MessageCircle, Plus } from "lucide-react";
+import { Bell, CalendarCheck, CalendarDays, ClipboardList, HeartPulse, House, MessageCircle, Plus, Stethoscope, UserRoundPlus } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { useConsulta } from "@/shared/hooks/useConsulta";
 import { classes } from "@/shared/lib/classes";
-import { rotaPublica } from "@/shared/sessao/sessao";
+import { rotaPermitida } from "@/shared/sessao/acesso";
+import { rotaPublica, usuarioAtual } from "@/shared/sessao/sessao";
 import { Logo } from "./Logo";
 import { UsuarioDaSessao } from "./UsuarioDaSessao";
 import estilos from "./Estrutura.module.css";
 
 const ITENS = [
   { href: "/", rotulo: "Início", curto: "Início", Icone: House },
+  { href: "/recepcao", rotulo: "Recepção", curto: "Recepção", Icone: UserRoundPlus },
+  { href: "/triagem", rotulo: "Triagem", curto: "Triagem", Icone: Stethoscope },
+  { href: "/especialista", rotulo: "Minha agenda", curto: "Agenda", Icone: CalendarCheck },
+  { href: "/portal", rotulo: "Meus atendimentos", curto: "Início", Icone: HeartPulse },
   { href: "/agendamentos", rotulo: "Agendamentos", curto: "Lista", Icone: ClipboardList },
   { href: "/agendar", rotulo: "Agendar", curto: "Agendar", Icone: Plus },
   { href: "/calendario", rotulo: "Calendário", curto: "Agenda", Icone: CalendarDays },
@@ -39,11 +44,14 @@ export function Estrutura({ children }: { children: ReactNode }) {
 
 function EstruturaDaEquipe({ caminho, children }: { caminho: string; children: ReactNode }) {
   const saude = useConsulta(consultarSaude, "saude", 30000);
+  const usuario = useConsulta(usuarioAtual, "usuario");
+  const papel = usuario.dados?.papel;
+  const itens = papel ? ITENS.filter(({ href }) => rotaPermitida(papel, href)) : [];
   const online = saude.dados === true;
   const offline = saude.dados === false || Boolean(saude.erro);
 
   const links = (campo: "rotulo" | "curto") =>
-    ITENS.map(({ href, Icone, ...rotulos }) => (
+    itens.map(({ href, Icone, ...rotulos }) => (
       <Link
         key={href}
         href={href}
@@ -84,7 +92,7 @@ function EstruturaDaEquipe({ caminho, children }: { caminho: string; children: R
         {children}
       </main>
 
-      <nav aria-label="Principal" className={estilos.navInferior}>
+      <nav aria-label="Principal" className={estilos.navInferior} style={{ "--colunas": Math.max(itens.length, 1) } as CSSProperties}>
         {links("curto")}
       </nav>
     </div>

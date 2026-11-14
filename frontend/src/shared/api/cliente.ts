@@ -6,9 +6,10 @@ const BASE = "/api/liva";
 type Parametros = Record<string, string | string[] | boolean | undefined>;
 
 type Opcoes = {
-  metodo?: "GET" | "POST";
+  metodo?: "GET" | "POST" | "PUT";
   corpo?: unknown;
   parametros?: Parametros;
+  cabecalhos?: Record<string, string>;
 };
 
 function montarUrl(caminho: string, parametros?: Parametros): string {
@@ -38,7 +39,11 @@ export async function requisitar<T>(caminho: string, opcoes: Opcoes = {}): Promi
   try {
     resposta = await fetch(url, {
       method: opcoes.metodo ?? "GET",
-      headers: opcoes.corpo === undefined ? { Accept: "application/json" } : { Accept: "application/json", "Content-Type": "application/json" },
+      headers: {
+        Accept: "application/json",
+        ...(opcoes.corpo === undefined ? {} : { "Content-Type": "application/json" }),
+        ...opcoes.cabecalhos,
+      },
       body: opcoes.corpo === undefined ? undefined : JSON.stringify(opcoes.corpo),
       cache: "no-store",
     });

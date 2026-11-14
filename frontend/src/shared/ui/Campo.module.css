@@ -59,3 +59,9 @@
   font-weight: var(--peso-medio);
   color: var(--cor-perigo);
 }
+
+.area {
+  min-height: 5.5rem;
+  padding-top: var(--espaco-3);
+  resize: vertical;
+}
