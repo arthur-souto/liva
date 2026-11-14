@@ -134,6 +134,7 @@ Toda a configuração vem do arquivo `.env` na raiz do projeto. Ele é lido **ta
 | Variável | Usada por | Descrição |
 |---|---|---|
 | `API_KEY` | Liva | Chave exigida no header `X-API-Key` em todas as rotas `/api/**` (exceto o webhook). **Obrigatória**: sem ela a Liva não sobe. Gere com `openssl rand -hex 32` |
+| `CORS_ORIGENS_PERMITIDAS` | Liva | Origens do front-end que podem chamar a API pelo navegador, separadas por vírgula. Padrão `http://localhost:3000` |
 | `WHATSAPP_PROVEDOR` | Liva | `evolution` envia de verdade; `console` só escreve a mensagem no log (padrão) |
 | `EVOLUTION_URL` | Liva | URL da Evolution. Padrão `http://localhost:8080` |
 | `EVOLUTION_API_KEY` | Liva e Evolution | Chave de autenticação da Evolution (gere com `openssl rand -hex 32`) |
@@ -345,6 +346,7 @@ Quem monta a resposta: `GlobalExceptionHandler` (erros dentro dos controllers), 
 - Toda rota `/api/**` exige o header `X-API-Key` com o valor de `API_KEY`; sem ele, `401` com `codigo: NAO_AUTORIZADO`. A comparação é em tempo constante.
 - O webhook (`/api/webhooks/**`) não usa a chave: é chamado pela Evolution e é protegido pelo `?token=WEBHOOK_TOKEN`.
 - O Swagger (`/swagger-ui.html`, `/v3/api-docs`) fica aberto para leitura, mas as chamadas feitas por ele também precisam da chave (botão **Authorize**).
+- **CORS**: só as origens de `CORS_ORIGENS_PERMITIDAS` podem chamar a API pelo navegador (`CorsConfig`). O CORS roda antes da verificação da chave, então o preflight (`OPTIONS`) passa sem `X-API-Key` e o front consegue ler as respostas de erro, inclusive o 401. Headers aceitos: `Content-Type`, `Accept`, `X-API-Key`; o `Location` é exposto ao front.
 - A verificação é um filtro de servlet (`ChaveApiFiltro`, em `adapter/in/web/seguranca`), sem Spring Security: há um único cliente (o sistema da unidade/equipe), então uma chave compartilhada basta para o MVP.
 
 ---

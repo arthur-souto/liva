@@ -29,6 +29,8 @@ management:
 confirmasus:
   seguranca:
     api-key: ${API_KEY:}
+  cors:
+    origens-permitidas: ${CORS_ORIGENS_PERMITIDAS:http://localhost:3000}
   fuso: ${FUSO_HORARIO:America/Sao_Paulo}
   disparo-diario:
     habilitado: ${DISPARO_DIARIO_HABILITADO:true}
