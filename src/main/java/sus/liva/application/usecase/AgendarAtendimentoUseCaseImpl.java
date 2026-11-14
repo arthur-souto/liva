@@ -15,13 +15,17 @@ import sus.liva.domain.model.agendamento.TipoLembrete;
 import sus.liva.domain.model.paciente.Paciente;
 import sus.liva.domain.model.paciente.Sexo;
 
-import java.text.Normalizer;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
+
+import static sus.liva.application.usecase.ValidacaoCadastral.cpf;
+import static sus.liva.application.usecase.ValidacaoCadastral.exigir;
+import static sus.liva.application.usecase.ValidacaoCadastral.normalizar;
+import static sus.liva.application.usecase.ValidacaoCadastral.telefone;
+import static sus.liva.application.usecase.ValidacaoCadastral.vazio;
 
 public class AgendarAtendimentoUseCaseImpl implements AgendarAtendimentoUseCase {
     private final PacienteRepositoryPort pacientes;
@@ -108,45 +112,6 @@ public class AgendarAtendimentoUseCaseImpl implements AgendarAtendimentoUseCase 
         } catch (RuntimeException e) {
             return ResultadoDisparo.ignorado("Falha ao enviar: " + e.getMessage());
         }
-    }
-
-    private static String cpf(String valor) {
-        String d = valor.replaceAll("\\D", "");
-        if (d.length() != 11 || d.chars().distinct().count() == 1 || !digitosConferem(d))
-            throw new IllegalArgumentException("CPF inválido: \"" + valor + "\"");
-        return d;
-    }
-
-    private static boolean digitosConferem(String d) {
-        return digito(d, 9) == d.charAt(9) - '0' && digito(d, 10) == d.charAt(10) - '0';
-    }
-
-    private static int digito(String d, int posicao) {
-        int soma = 0;
-        for (int i = 0; i < posicao; i++) soma += (d.charAt(i) - '0') * (posicao + 1 - i);
-        int resto = soma * 10 % 11;
-        return resto == 10 ? 0 : resto;
-    }
-
-    private static String normalizar(String nome) {
-        return Normalizer.normalize(nome, Normalizer.Form.NFD).replaceAll("\\p{M}", "")
-                .toLowerCase(Locale.ROOT).replaceAll("\\s+", " ").trim();
-    }
-
-    private static Telefone telefone(String valor, String campo) {
-        try {
-            return Telefone.de(valor);
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException(campo + " inválido: \"" + valor + "\". Use DDD + número, ex.: 51999999999");
-        }
-    }
-
-    private static void exigir(String valor, String mensagem) {
-        if (vazio(valor)) throw new IllegalArgumentException(mensagem);
-    }
-
-    private static boolean vazio(String valor) {
-        return valor == null || valor.isBlank();
     }
 
     private record Cadastro(Agendamento agendamento, boolean pacienteNovo) {}

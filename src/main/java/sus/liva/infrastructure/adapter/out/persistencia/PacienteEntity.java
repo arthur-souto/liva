@@ -6,11 +6,14 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import sus.liva.domain.model.Telefone;
+import sus.liva.domain.model.paciente.CadastroDePaciente;
 import sus.liva.domain.model.paciente.Endereco;
 import sus.liva.domain.model.paciente.Paciente;
 import sus.liva.domain.model.paciente.Sexo;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
 
@@ -62,38 +65,65 @@ public class PacienteEntity {
     private String observacoes;
     @Column(nullable = false)
     private boolean consentimento;
+    @Column(name = "criado_em", nullable = false, updatable = false)
+    private Instant criadoEm;
+    @Column(name = "criado_por", updatable = false)
+    private UUID criadoPor;
+    @Column(name = "atualizado_em")
+    private Instant atualizadoEm;
+    @Column(name = "atualizado_por")
+    private UUID atualizadoPor;
+    @Version
+    private Long version;
 
     protected PacienteEntity() {
     }
 
-    static PacienteEntity de(Paciente p) {
+    static PacienteEntity novo(Paciente p, UUID responsavel, Instant em) {
         PacienteEntity e = new PacienteEntity();
         e.id = p.id();
-        e.nomeCompleto = p.nomeCompleto();
-        e.nomeSocial = p.nomeSocial();
-        e.cpf = p.cpf();
-        e.cartaoSus = p.cartaoSus();
-        e.dataNascimento = p.dataNascimento();
-        e.sexo = p.sexo();
-        e.email = p.email();
-        e.telefone = e164(p.telefone());
-        Endereco end = p.endereco();
-        if (end != null) {
-            e.cep = end.cep();
-            e.logradouro = end.logradouro();
-            e.numero = end.numero();
-            e.complemento = end.complemento();
-            e.bairro = end.bairro();
-            e.cidade = end.cidade();
-            e.uf = end.uf();
-        }
-        e.nomeCuidador = p.nomeCuidador();
-        e.telefoneCuidador = e164(p.telefoneCuidador());
-        e.contatoEmergenciaNome = p.contatoEmergenciaNome();
-        e.contatoEmergenciaTelefone = e164(p.contatoEmergenciaTelefone());
-        e.observacoes = p.observacoes();
-        e.consentimento = p.consentimento();
+        e.criadoEm = em;
+        e.criadoPor = responsavel;
+        e.copiar(p);
         return e;
+    }
+
+    void copiar(Paciente p) {
+        nomeCompleto = p.nomeCompleto();
+        nomeSocial = p.nomeSocial();
+        cpf = p.cpf();
+        cartaoSus = p.cartaoSus();
+        dataNascimento = p.dataNascimento();
+        sexo = p.sexo();
+        email = p.email();
+        telefone = e164(p.telefone());
+        Endereco end = p.endereco();
+        cep = end == null ? null : end.cep();
+        logradouro = end == null ? null : end.logradouro();
+        numero = end == null ? null : end.numero();
+        complemento = end == null ? null : end.complemento();
+        bairro = end == null ? null : end.bairro();
+        cidade = end == null ? null : end.cidade();
+        uf = end == null ? null : end.uf();
+        nomeCuidador = p.nomeCuidador();
+        telefoneCuidador = e164(p.telefoneCuidador());
+        contatoEmergenciaNome = p.contatoEmergenciaNome();
+        contatoEmergenciaTelefone = e164(p.contatoEmergenciaTelefone());
+        observacoes = p.observacoes();
+        consentimento = p.consentimento();
+    }
+
+    void registrarAtualizacao(UUID responsavel, Instant em) {
+        atualizadoPor = responsavel;
+        atualizadoEm = em;
+    }
+
+    Long getVersion() {
+        return version;
+    }
+
+    CadastroDePaciente paraCadastro() {
+        return new CadastroDePaciente(paraDominio(), version, criadoEm, criadoPor, atualizadoEm);
     }
 
     Paciente paraDominio() {

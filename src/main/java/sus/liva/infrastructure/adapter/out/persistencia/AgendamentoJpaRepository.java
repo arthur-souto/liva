@@ -17,4 +17,13 @@ interface AgendamentoJpaRepository extends JpaRepository<AgendamentoEntity, UUID
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select a from AgendamentoEntity a where a.id = :id")
     Optional<AgendamentoEntity> buscarComTrava(@Param("id") UUID id);
+
+    Optional<AgendamentoEntity> findByChaveIdempotencia(String chaveIdempotencia);
+
+    List<AgendamentoEntity> findByEncaminhamentoIdOrderByDataHora(UUID encaminhamentoId);
+
+    List<AgendamentoEntity> findByPacienteIdOrderByDataHora(UUID pacienteId);
+
+    List<AgendamentoEntity> findByProfissionalIdAndDataHoraGreaterThanEqualAndDataHoraLessThanOrderByDataHora(
+            UUID profissionalId, LocalDateTime inicio, LocalDateTime fim);
 }

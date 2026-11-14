@@ -17,6 +17,7 @@ import sus.liva.domain.model.mensagem.RegistroMensagem;
 import sus.liva.domain.model.paciente.Paciente;
 import sus.liva.domain.model.paciente.Sexo;
 import sus.liva.infrastructure.adapter.out.memoria.AgendamentoMemoriaAdapter;
+import sus.liva.infrastructure.adapter.out.memoria.EncaminhamentoMemoriaAdapter;
 import sus.liva.infrastructure.adapter.out.memoria.MensagemRecebidaMemoriaAdapter;
 import sus.liva.infrastructure.adapter.out.memoria.PacienteMemoriaAdapter;
 import sus.liva.infrastructure.adapter.out.memoria.RegistroMensagemMemoriaAdapter;
@@ -78,7 +79,7 @@ class ProcessarRespostaUseCaseImplTest {
         }
     };
     private final ProcessarRespostaUseCaseImpl useCase =
-            new ProcessarRespostaUseCaseImpl(registros, recebidas, agendamentos, pacientes, enviador, new ModeloMensagens(), transacao, relogio);
+            new ProcessarRespostaUseCaseImpl(registros, recebidas, agendamentos, new EncaminhamentoMemoriaAdapter(), pacientes, enviador, new ModeloMensagens(), transacao, relogio);
 
     @BeforeEach
     void setUp() {

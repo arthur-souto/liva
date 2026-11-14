@@ -119,6 +119,28 @@ Convenções do projeto:
 
 ---
 
+### Fluxo assistencial (triagem → encaminhamento → consulta)
+
+Cada **triagem** abre um ramo independente do histórico do paciente. Encaminhamentos pertencem a uma triagem e as consultas a um encaminhamento. FKs compostas (`triagem_id, paciente_id`) garantem que um ramo nunca misture pacientes.
+
+| Entidade | Estados |
+|---|---|
+| Triagem | `AGUARDANDO_ATENDIMENTO → EM_ANDAMENTO → FINALIZADA → ENCERRADA` (ou `CANCELADA`); finalizada só recebe retificações |
+| Encaminhamento | `PENDENTE → AGUARDANDO_AGENDAMENTO → AGENDADO → EM_ATENDIMENTO → CONCLUIDO` (ou `CANCELADO`); imediato vai direto ao plantão |
+| Consulta | `AGENDADO → EM_ANDAMENTO → COMPARECEU`, ou `FALTOU` / `CANCELADO` |
+
+Concorrência:
+
+- `@Version` em paciente, triagem, encaminhamento e consulta; o cliente envia a versão que viu.
+- Trava pessimista (`SELECT … FOR UPDATE`) no encaminhamento ao agendar.
+- Constraint `EXCLUDE` (`btree_gist`) impede dois horários sobrepostos do mesmo profissional.
+- Índices únicos parciais: CPF, Cartão SUS, uma triagem aberta por paciente e a chave de idempotência.
+- `lock_timeout` de 5 s.
+
+Violações viram **409** com mensagem amigável.
+
+Toda leitura e alteração clínica gera um registro na tabela `auditoria`.
+
 ## Pré-requisitos
 
 - Java 25
@@ -448,6 +470,8 @@ Os testes de persistência e o `LivaApplicationTests` sobem um Postgres temporá
 | `DispararLembretesDoDiaUseCaseImplTest` | Rotina diária: datas de cada lembrete, não reenvia, reenvia falhas, segue após erro, ignora cancelados |
 | `DisparoDiarioAgendadorTest` | Agendador usa a data do fuso configurado e não propaga falhas |
 | `LivaApplicationTests` | Contexto Spring sobe com Flyway, validação do schema e agendador registrado |
+| `TriagemTest`, `EncaminhamentoTest`, `ConsultaTest`, `DisponibilidadeTest` | Máquinas de estado da triagem, do encaminhamento e da consulta; transições inválidas; geração de horários |
+| `FluxoAssistencialIntegracaoTest` | No Postgres real, com relógio controlado: cadastro e CPF duplicado (inclusive simultâneo), conflito de versão, portal só após a primeira triagem finalizada, fila única por paciente, fluxo completo até a alta com retorno, caso grave ao plantão, segunda triagem como ramo independente, acessos negados, mesmo horário disputado por 5 pacientes ao mesmo tempo (só um reserva), idempotência, rollback da remarcação, resposta pelo WhatsApp liberando o encaminhamento, falta |
 
 ---
 

@@ -139,7 +139,7 @@ class PersistenciaPostgresAdapterTest {
         Paciente duplicado = new Paciente(UUID.randomUUID(), "Outra Maria", null, "12345678909", null, null,
                 Sexo.FEMININO, null, Telefone.de("11999998888"), null, null, null, null, null, null, true);
 
-        assertThatThrownBy(() -> repositorioPacientes.saveAndFlush(PacienteEntity.de(duplicado)))
+        assertThatThrownBy(() -> repositorioPacientes.saveAndFlush(PacienteEntity.novo(duplicado, null, Instant.now())))
                 .isInstanceOf(DataIntegrityViolationException.class);
     }
 

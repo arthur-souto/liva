@@ -7,5 +7,10 @@ public enum StatusAgendamento {
     CANCELADO,
     REAGENDADO,
     COMPARECEU,
-    FALTOU
+    FALTOU,
+    EM_ANDAMENTO;
+
+    public boolean ocupaAgenda() {
+        return this == AGENDADO || this == AGUARDANDO_RESPOSTA || this == CONFIRMADO || this == EM_ANDAMENTO;
+    }
 }

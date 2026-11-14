@@ -6,7 +6,9 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import sus.liva.domain.model.agendamento.Agendamento;
+import sus.liva.domain.model.agendamento.NaturezaConsulta;
 import sus.liva.domain.model.agendamento.StatusAgendamento;
 import sus.liva.domain.model.agendamento.TipoAtendimento;
 
@@ -34,24 +36,51 @@ public class AgendamentoEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
     private StatusAgendamento status;
+    @Column(name = "triagem_id")
+    private UUID triagemId;
+    @Column(name = "encaminhamento_id")
+    private UUID encaminhamentoId;
+    @Column(name = "profissional_id")
+    private UUID profissionalId;
+    @Column(name = "duracao_minutos", nullable = false)
+    private int duracaoMinutos;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private NaturezaConsulta natureza;
+    @Column(name = "chave_idempotencia", length = 64)
+    private String chaveIdempotencia;
+    @Version
+    private Long version;
 
     protected AgendamentoEntity() {
     }
 
-    static AgendamentoEntity de(Agendamento a) {
+    static AgendamentoEntity novo(Agendamento a) {
         AgendamentoEntity e = new AgendamentoEntity();
         e.id = a.getId();
-        e.pacienteId = a.getPacienteId();
-        e.dataHora = a.getDataHora();
-        e.tipo = a.getTipo();
-        e.unidade = a.getUnidade();
-        e.endereco = a.getEndereco();
-        e.preparo = a.getPreparo();
-        e.status = a.getStatus();
+        e.copiar(a);
         return e;
     }
 
+    void copiar(Agendamento a) {
+        Restricoes.conferirVersao(a.getVersao(), version, AgendamentoEntity.class, id);
+        pacienteId = a.getPacienteId();
+        dataHora = a.getDataHora();
+        tipo = a.getTipo();
+        unidade = a.getUnidade();
+        endereco = a.getEndereco();
+        preparo = a.getPreparo();
+        status = a.getStatus();
+        triagemId = a.getTriagemId();
+        encaminhamentoId = a.getEncaminhamentoId();
+        profissionalId = a.getProfissionalId();
+        duracaoMinutos = a.getDuracaoMinutos();
+        natureza = a.getNatureza();
+        chaveIdempotencia = a.getChaveIdempotencia();
+    }
+
     Agendamento paraDominio() {
-        return new Agendamento(status, preparo, endereco, unidade, tipo, dataHora, pacienteId, id);
+        return new Agendamento(id, pacienteId, dataHora, tipo, unidade, endereco, preparo, status, triagemId,
+                encaminhamentoId, profissionalId, duracaoMinutos, natureza, chaveIdempotencia, version);
     }
 }

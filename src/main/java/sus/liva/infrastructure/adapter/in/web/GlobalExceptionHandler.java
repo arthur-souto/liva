@@ -5,6 +5,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.DataAccessResourceFailureException;
+import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.dao.PessimisticLockingFailureException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
@@ -15,6 +17,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
+import sus.liva.application.exception.AcessoNegadoException;
+import sus.liva.application.exception.ConflitoException;
 import sus.liva.application.exception.NaoEncontradoException;
 import sus.liva.infrastructure.adapter.in.web.erro.CodigoErro;
 import sus.liva.infrastructure.adapter.in.web.erro.ErroResposta;
@@ -54,6 +58,30 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(NaoEncontradoException.class)
     public ResponseEntity<ErroResposta> naoEncontrado(NaoEncontradoException e, HttpServletRequest request) {
         return ErroResposta.resposta(CodigoErro.NAO_ENCONTRADO, e.getMessage(), request.getRequestURI());
+    }
+
+    @ExceptionHandler(AcessoNegadoException.class)
+    public ResponseEntity<ErroResposta> acessoNegado(AcessoNegadoException e, HttpServletRequest request) {
+        return ErroResposta.resposta(CodigoErro.ACESSO_NEGADO, e.getMessage(), request.getRequestURI());
+    }
+
+    @ExceptionHandler(ConflitoException.class)
+    public ResponseEntity<ErroResposta> conflitoDeNegocio(ConflitoException e, HttpServletRequest request) {
+        return ErroResposta.resposta(CodigoErro.CONFLITO, e.getMessage(), request.getRequestURI());
+    }
+
+    @ExceptionHandler(OptimisticLockingFailureException.class)
+    public ResponseEntity<ErroResposta> alteracaoConcorrente(OptimisticLockingFailureException e, HttpServletRequest request) {
+        log.warn("Alteração concorrente em {}", request.getRequestURI());
+        return ErroResposta.resposta(CodigoErro.CONFLITO,
+                "Este registro foi alterado por outra pessoa. Recarregue e tente novamente.", request.getRequestURI());
+    }
+
+    @ExceptionHandler(PessimisticLockingFailureException.class)
+    public ResponseEntity<ErroResposta> registroEmUso(PessimisticLockingFailureException e, HttpServletRequest request) {
+        log.warn("Registro em uso em {}: {}", request.getRequestURI(), e.getClass().getSimpleName());
+        return ErroResposta.resposta(CodigoErro.CONFLITO,
+                "Este registro está sendo alterado por outra operação. Tente novamente em instantes.", request.getRequestURI());
     }
 
     @ExceptionHandler(NoResourceFoundException.class)

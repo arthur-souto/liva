@@ -3,6 +3,7 @@ package sus.liva.application.usecase;
 import sus.liva.application.port.in.ProcessarRespostaUseCase;
 import sus.liva.application.port.in.ResultadoResposta;
 import sus.liva.application.port.out.AgendamentoRepositoryPort;
+import sus.liva.application.port.out.EncaminhamentoRepositoryPort;
 import sus.liva.application.port.out.EnviadorMensagemPort;
 import sus.liva.application.port.out.MensagemRecebidaPort;
 import sus.liva.application.port.out.MensagemSaida;
@@ -31,6 +32,7 @@ public class ProcessarRespostaUseCaseImpl implements ProcessarRespostaUseCase {
     private final RegistroMensagemPort registros;
     private final MensagemRecebidaPort recebidas;
     private final AgendamentoRepositoryPort agendamentos;
+    private final EncaminhamentoRepositoryPort encaminhamentos;
     private final PacienteRepositoryPort pacientes;
     private final EnviadorMensagemPort enviador;
     private final ModeloMensagens modelos;
@@ -38,12 +40,13 @@ public class ProcessarRespostaUseCaseImpl implements ProcessarRespostaUseCase {
     private final Clock clock;
 
     public ProcessarRespostaUseCaseImpl(RegistroMensagemPort registros, MensagemRecebidaPort recebidas,
-                                        AgendamentoRepositoryPort agendamentos, PacienteRepositoryPort pacientes,
-                                        EnviadorMensagemPort enviador, ModeloMensagens modelos,
-                                        TransacaoPort transacao, Clock clock) {
+                                        AgendamentoRepositoryPort agendamentos, EncaminhamentoRepositoryPort encaminhamentos,
+                                        PacienteRepositoryPort pacientes, EnviadorMensagemPort enviador,
+                                        ModeloMensagens modelos, TransacaoPort transacao, Clock clock) {
         this.registros = registros;
         this.recebidas = recebidas;
         this.agendamentos = agendamentos;
+        this.encaminhamentos = encaminhamentos;
         this.pacientes = pacientes;
         this.enviador = enviador;
         this.modelos = modelos;
@@ -99,6 +102,11 @@ public class ProcessarRespostaUseCaseImpl implements ProcessarRespostaUseCase {
 
         a.responder(resposta);
         agendamentos.salvarAgendamento(a);
+        if (a.doEncaminhamento() && !a.getStatus().ocupaAgenda())
+            encaminhamentos.buscarEncaminhamentoParaAtualizar(a.getEncaminhamentoId()).ifPresent(e -> {
+                e.consultaDesmarcada();
+                encaminhamentos.salvarEncaminhamento(e);
+            });
         return new Aplicacao(null, a, pedido.get().destino());
     }
 

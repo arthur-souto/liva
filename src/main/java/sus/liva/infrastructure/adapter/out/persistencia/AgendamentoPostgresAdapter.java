@@ -7,6 +7,7 @@ import sus.liva.application.port.out.AgendamentoRepositoryPort;
 import sus.liva.domain.model.agendamento.Agendamento;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -50,6 +51,37 @@ public class AgendamentoPostgresAdapter implements AgendamentoRepositoryPort {
     @Override
     @Transactional
     public void salvarAgendamento(Agendamento agendamento) {
-        repository.save(AgendamentoEntity.de(agendamento));
+        AgendamentoEntity entidade = repository.findById(agendamento.getId())
+                .map(e -> {
+                    e.copiar(agendamento);
+                    return e;
+                })
+                .orElseGet(() -> AgendamentoEntity.novo(agendamento));
+        Restricoes.traduzir(() -> repository.saveAndFlush(entidade));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<Agendamento> buscarPorChaveIdempotencia(String chave) {
+        return repository.findByChaveIdempotencia(chave).map(AgendamentoEntity::paraDominio);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Agendamento> consultasDoEncaminhamento(UUID encaminhamentoId) {
+        return repository.findByEncaminhamentoIdOrderByDataHora(encaminhamentoId).stream().map(AgendamentoEntity::paraDominio).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Agendamento> consultasDoPaciente(UUID pacienteId) {
+        return repository.findByPacienteIdOrderByDataHora(pacienteId).stream().map(AgendamentoEntity::paraDominio).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Agendamento> consultasDoProfissional(UUID profissionalId, LocalDateTime inicio, LocalDateTime fim) {
+        return repository.findByProfissionalIdAndDataHoraGreaterThanEqualAndDataHoraLessThanOrderByDataHora(profissionalId, inicio, fim)
+                .stream().map(AgendamentoEntity::paraDominio).toList();
     }
 }

@@ -14,6 +14,7 @@ import sus.liva.application.usecase.ModeloMensagens;
 import sus.liva.application.usecase.ProcessarRespostaUseCaseImpl;
 import sus.liva.infrastructure.adapter.in.web.GlobalExceptionHandler;
 import sus.liva.infrastructure.adapter.out.memoria.AgendamentoMemoriaAdapter;
+import sus.liva.infrastructure.adapter.out.memoria.EncaminhamentoMemoriaAdapter;
 import sus.liva.infrastructure.adapter.out.memoria.MensagemRecebidaMemoriaAdapter;
 import sus.liva.infrastructure.adapter.out.memoria.PacienteMemoriaAdapter;
 import sus.liva.infrastructure.adapter.out.memoria.RegistroMensagemMemoriaAdapter;
@@ -50,7 +51,7 @@ class AtendimentoTesteControllerTest {
                     new AgendarAtendimentoUseCaseImpl(pacientes, agendamentos, dispararLembrete, new TransacaoFake(), CLOCK),
                     dispararLembrete,
                     new ConsultarAgendamentoUseCaseImpl(agendamentos),
-                    new ProcessarRespostaUseCaseImpl(registros, new MensagemRecebidaMemoriaAdapter(), agendamentos, pacientes, enviador, modelos, new TransacaoFake(), CLOCK),
+                    new ProcessarRespostaUseCaseImpl(registros, new MensagemRecebidaMemoriaAdapter(), agendamentos, new EncaminhamentoMemoriaAdapter(), pacientes, enviador, modelos, new TransacaoFake(), CLOCK),
                     CLOCK))
             .setControllerAdvice(new GlobalExceptionHandler())
             .build();
