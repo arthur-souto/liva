@@ -6,28 +6,28 @@ import { BotaoLink, Botao } from "@/shared/ui/Botao";
 import { EstadoVazio } from "@/shared/ui/EstadoVazio";
 import { Etiqueta } from "@/shared/ui/Etiqueta";
 import { NATUREZAS, PRIORIDADES, STATUS_DA_CONSULTA, STATUS_DA_TRIAGEM, STATUS_DO_ENCAMINHAMENTO, nomeDaEspecialidade } from "../rotulos";
-import type { Consulta, Historico, StatusConsulta } from "../tipos";
+import type { Consulta, RamoDoHistorico, StatusConsulta } from "../tipos";
 import estilos from "./HistoricoDeRamos.module.css";
 
 const CANCELAVEIS: StatusConsulta[] = ["AGENDADO", "AGUARDANDO_RESPOSTA", "CONFIRMADO"];
 
 type Props = {
-  historico: Historico;
+  ramos: (RamoDoHistorico & { numero?: number })[];
   linkParaAgendar?: (encaminhamentoId: string) => string;
   aoCancelar?: (consulta: Consulta) => void;
   cancelando?: string | null;
 };
 
-export function HistoricoDeRamos({ historico, linkParaAgendar, aoCancelar, cancelando }: Props) {
-  if (historico.ramos.length === 0)
+export function HistoricoDeRamos({ ramos, linkParaAgendar, aoCancelar, cancelando }: Props) {
+  if (ramos.length === 0)
     return <EstadoVazio icone={<ClipboardList size={28} aria-hidden="true" />} titulo="Nenhuma triagem ainda" descricao="Os atendimentos aparecem aqui depois da triagem." />;
 
   return (
     <ol className={estilos.ramos}>
-      {historico.ramos.map((ramo, indice) => (
+      {ramos.map((ramo, indice) => (
         <li key={ramo.triagem.id} className={estilos.ramo}>
           <header className={estilos.cabecalho}>
-            <span className={estilos.numero}>Triagem {historico.ramos.length - indice}</span>
+            <span className={estilos.numero}>Triagem {ramo.numero ?? ramos.length - indice}</span>
             <span className={estilos.meta}>{formatarInstante(ramo.triagem.chegadaEm)}</span>
             <Etiqueta tom={STATUS_DA_TRIAGEM[ramo.triagem.status].tom}>{STATUS_DA_TRIAGEM[ramo.triagem.status].texto}</Etiqueta>
             {ramo.triagem.prioridade && (

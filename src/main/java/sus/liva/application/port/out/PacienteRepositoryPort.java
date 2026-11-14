@@ -1,5 +1,7 @@
 package sus.liva.application.port.out;
 
+import sus.liva.application.port.in.Pagina;
+import sus.liva.application.port.in.PedidoDePagina;
 import sus.liva.domain.model.Telefone;
 import sus.liva.domain.model.paciente.CadastroDePaciente;
 import sus.liva.domain.model.paciente.Paciente;
@@ -16,7 +18,8 @@ public interface PacienteRepositoryPort {
     void salvarPaciente(Paciente paciente);
     Optional<Paciente> buscarPorCartaoSus(String cartaoSus);
     Optional<CadastroDePaciente> buscarCadastro(UUID id);
-    List<CadastroDePaciente> pesquisarCadastros(String nome, String documento, int limite);
+    Pagina<CadastroDePaciente> pesquisarCadastros(String nome, String documento, PedidoDePagina pedido);
+    Pagina<CadastroDePaciente> cadastrosRecentes(PedidoDePagina pedido);
     CadastroDePaciente cadastrar(Paciente paciente, UUID responsavel, Instant em);
     CadastroDePaciente atualizarCadastro(Paciente paciente, long versaoEsperada, UUID responsavel, Instant em);
 }

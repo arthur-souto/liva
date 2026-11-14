@@ -1,5 +1,5 @@
 import type { Tom } from "@/shared/ui/Etiqueta";
-import type { Modalidade, NaturezaConsulta, Prioridade, StatusConsulta, StatusEncaminhamento, StatusTriagem } from "./tipos";
+import type { Modalidade, NaturezaConsulta, Parentesco, Prioridade, StatusConsulta, StatusEncaminhamento, StatusTriagem } from "./tipos";
 
 type Rotulo = { texto: string; tom: Tom };
 
@@ -40,6 +40,18 @@ export const PRIORIDADES: Record<Prioridade, Rotulo> = {
 };
 
 export const ORDEM_DAS_PRIORIDADES: Prioridade[] = ["EMERGENCIA", "MUITO_URGENTE", "URGENTE", "POUCO_URGENTE", "NAO_URGENTE"];
+
+export const PARENTESCOS: Record<Parentesco, string> = {
+  FILHO: "Filho(a)",
+  CONJUGE: "Cônjuge ou companheiro(a)",
+  PAI_OU_MAE: "Pai ou mãe",
+  IRMAO: "Irmão(ã)",
+  NETO: "Neto(a)",
+  OUTRO_FAMILIAR: "Outro familiar",
+  RESPONSAVEL_LEGAL: "Responsável legal",
+  CUIDADOR_PROFISSIONAL: "Cuidador(a) profissional",
+  AMIGO: "Amigo(a) ou vizinho(a)",
+};
 
 export const MODALIDADES: Record<Modalidade, string> = {
   ELETIVO: "Eletivo",

@@ -18,13 +18,13 @@ public class CatalogoUseCaseImpl implements CatalogoUseCase {
 
     @Override
     public List<Especialidade> especialidades(Ator ator) {
-        Permissoes.exigir(ator, Papel.ADMINISTRADOR, Papel.RECEPCAO, Papel.CLINICO_GERAL, Papel.ESPECIALISTA);
+        Permissoes.exigir(ator, Papel.ADMINISTRADOR, Papel.RECEPCAO, Papel.CLINICO_GERAL, Papel.ESPECIALISTA, Papel.PACIENTE, Papel.CUIDADOR);
         return profissionais.especialidades();
     }
 
     @Override
     public List<Profissional> especialistas(Ator ator, String especialidade) {
-        Permissoes.exigir(ator, Papel.ADMINISTRADOR, Papel.RECEPCAO, Papel.CLINICO_GERAL, Papel.ESPECIALISTA);
+        Permissoes.exigir(ator, Papel.ADMINISTRADOR, Papel.RECEPCAO, Papel.CLINICO_GERAL, Papel.ESPECIALISTA, Papel.PACIENTE, Papel.CUIDADOR);
         if (ValidacaoCadastral.vazio(especialidade)) throw new IllegalArgumentException("Informe a especialidade");
         if (profissionais.buscarEspecialidade(especialidade).isEmpty())
             throw new IllegalArgumentException("Especialidade desconhecida: " + especialidade);

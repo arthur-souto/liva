@@ -20,7 +20,7 @@ final class Permissoes {
     }
 
     static void exigirPacienteProprio(Ator ator, UUID pacienteId) {
-        if (ator.eh(Papel.PACIENTE) && !pacienteId.equals(ator.pacienteId()))
+        if (ator.agePeloPaciente() && !pacienteId.equals(ator.pacienteId()))
             throw new AcessoNegadoException("Você só pode acessar os seus próprios atendimentos");
     }
 

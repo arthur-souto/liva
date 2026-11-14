@@ -3,7 +3,7 @@ import { inicioDoPapel, papelValido, rotaPermitida } from "@/shared/sessao/acess
 import type { Papel } from "@/shared/sessao/sessao";
 
 const COOKIE_SESSAO = "liva_sessao";
-const ROTAS_PUBLICAS = ["/entrar", "/portal/ativar"];
+const ROTAS_PUBLICAS = ["/entrar", "/portal/ativar", "/acesso", "/cuidador"];
 
 function papelDoToken(token: string | undefined): Papel | null {
   const carga = token?.split(".")[1];

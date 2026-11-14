@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import { Logo } from "./Logo";
 import estilos from "./CabecalhoPagina.module.css";
 
 type Props = {
@@ -15,12 +14,7 @@ export function CabecalhoPagina({ titulo, subtitulo, acoes }: Props) {
         <h1 className={estilos.titulo}>{titulo}</h1>
         {subtitulo && <p className={estilos.subtitulo}>{subtitulo}</p>}
       </div>
-      <div className={estilos.lateral}>
-        {acoes}
-        <span className={estilos.logo}>
-          <Logo />
-        </span>
-      </div>
+      {acoes && <div className={estilos.lateral}>{acoes}</div>}
     </header>
   );
 }

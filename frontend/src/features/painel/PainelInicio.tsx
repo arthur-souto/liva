@@ -15,12 +15,13 @@ import { adicionarDias, formatarDataCurta, horaAtual, horaDe, hoje, montarDataHo
 import { Alerta } from "@/shared/ui/Alerta";
 import { AtualizadoHa } from "@/shared/ui/AtualizadoHa";
 import { Botao, BotaoLink } from "@/shared/ui/Botao";
-import { CabecalhoPagina } from "@/shared/ui/CabecalhoPagina";
+import { Banner } from "@/shared/ui/Banner";
 import { Campo } from "@/shared/ui/Campo";
 import { Carregando } from "@/shared/ui/Carregando";
 import { Cartao } from "@/shared/ui/Cartao";
 import { Chip } from "@/shared/ui/Chip";
 import { EstadoVazio } from "@/shared/ui/EstadoVazio";
+import { ProfissionalComPrancheta } from "@/shared/ui/Ilustracoes";
 import estilos from "./PainelInicio.module.css";
 
 type Periodo = "hoje" | "amanha" | "semana" | "personalizado";
@@ -89,7 +90,9 @@ export function PainelInicio() {
 
   return (
     <div className={estilos.pagina}>
-      <CabecalhoPagina titulo="Olá, equipe 👋" subtitulo="Acompanhe as confirmações dos pacientes pelo WhatsApp." />
+      <Banner titulo="Olá, equipe" ilustracao={<ProfissionalComPrancheta />}>
+        Acompanhe as confirmações dos pacientes pelo WhatsApp.
+      </Banner>
 
       <div className={estilos.grade}>
         <div className={estilos.lateral}>

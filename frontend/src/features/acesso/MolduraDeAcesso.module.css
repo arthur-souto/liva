@@ -1,0 +1,122 @@
+.moldura {
+  display: grid;
+  min-height: 100dvh;
+  background: var(--cor-superficie);
+}
+
+.vitrine {
+  display: none;
+}
+
+.painel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--espaco-8);
+  padding: var(--espaco-8) var(--espaco-4);
+}
+
+.logoMovel {
+  display: flex;
+}
+
+.formulario {
+  width: 100%;
+  max-width: 24rem;
+}
+
+.rodape {
+  font-size: var(--texto-xs);
+  color: var(--cor-texto-suave);
+}
+
+@media (min-width: 960px) {
+  .moldura {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .vitrine {
+    position: relative;
+    display: block;
+    overflow: hidden;
+    background: var(--cor-roxo-900);
+  }
+
+  .foto {
+    object-fit: cover;
+    object-position: 50% 18%;
+  }
+
+  .vitrine::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(180deg, rgb(36 9 58 / 0.55) 0%, rgb(36 9 58 / 0) 22%),
+      linear-gradient(0deg, rgb(36 9 58 / 0.92) 0%, rgb(36 9 58 / 0.6) 34%, rgb(36 9 58 / 0) 62%);
+  }
+
+  .vitrineConteudo {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%;
+    padding: var(--espaco-10);
+    color: var(--cor-texto-invertido);
+  }
+
+  .chamada {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espaco-5);
+    max-width: 30rem;
+    margin-top: auto;
+  }
+
+  .titulo {
+    font-family: var(--fonte-marca);
+    font-size: 2.5rem;
+    font-weight: var(--peso-marca);
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+  }
+
+  .destaques {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espaco-3);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    color: var(--cor-roxo-100);
+    font-size: var(--texto-sm);
+  }
+
+  .destaques li {
+    display: flex;
+    align-items: center;
+    gap: var(--espaco-3);
+  }
+
+  .destaques svg {
+    flex-shrink: 0;
+    color: var(--cor-destaque);
+  }
+
+  .credito {
+    margin-top: var(--espaco-8);
+    font-size: var(--texto-xs);
+    color: var(--cor-roxo-300);
+  }
+
+  .painel {
+    padding: var(--espaco-10) var(--espaco-8);
+  }
+
+  .logoMovel {
+    display: none;
+  }
+}

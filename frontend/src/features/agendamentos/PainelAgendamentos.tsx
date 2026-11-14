@@ -1,11 +1,11 @@
 "use client";
 
 import { CalendarPlus, CalendarSearch } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { mensagemDeErro } from "@/shared/api/erro";
+import { useAtrasado } from "@/shared/hooks/useAtrasado";
 import { useConsulta } from "@/shared/hooks/useConsulta";
 import { adicionarDias, hoje } from "@/shared/lib/datas";
-import { apenasDigitos } from "@/shared/lib/telefone";
 import { Alerta } from "@/shared/ui/Alerta";
 import { AtualizadoHa } from "@/shared/ui/AtualizadoHa";
 import { BotaoLink } from "@/shared/ui/Botao";
@@ -14,13 +14,15 @@ import { Campo } from "@/shared/ui/Campo";
 import { Carregando } from "@/shared/ui/Carregando";
 import { Chip } from "@/shared/ui/Chip";
 import { EstadoVazio } from "@/shared/ui/EstadoVazio";
+import { Paginacao } from "@/shared/ui/Paginacao";
 import { listarAgendamentos } from "./api";
 import { ListaAgendamentos } from "./componentes/ListaAgendamentos";
 import { STATUS } from "./rotulos";
-import type { AgendamentoDaEquipe, StatusAgendamento } from "./tipos";
+import type { StatusAgendamento } from "./tipos";
 import estilos from "./PainelAgendamentos.module.css";
 
 const INTERVALO = 10000;
+const POR_PAGINA = 20;
 const MAXIMO_DE_DIAS = 30;
 const ORDEM_DOS_STATUS: StatusAgendamento[] = [
   "AGUARDANDO_RESPOSTA",
@@ -28,6 +30,7 @@ const ORDEM_DOS_STATUS: StatusAgendamento[] = [
   "REAGENDADO",
   "CANCELADO",
   "AGENDADO",
+  "EM_ANDAMENTO",
   "COMPARECEU",
   "FALTOU",
 ];
@@ -38,36 +41,36 @@ const ATALHOS = [
   { rotulo: "Últimos 7 dias", inicio: -7, fim: 0 },
 ];
 
-function corresponde(agendamento: AgendamentoDaEquipe, busca: string): boolean {
-  const termo = busca.trim().toLowerCase();
-  if (!termo) return true;
-  const digitos = apenasDigitos(termo);
-  return (
-    (agendamento.nomePaciente ?? "").toLowerCase().includes(termo) ||
-    (agendamento.nomeCuidador ?? "").toLowerCase().includes(termo) ||
-    (digitos.length > 0 && [agendamento.telefone, agendamento.telefoneCuidador].some((t) => t?.includes(digitos)))
-  );
-}
-
 export function PainelAgendamentos() {
   const [periodo, setPeriodo] = useState(() => ({ inicio: hoje(), fim: adicionarDias(hoje(), 6) }));
   const [status, setStatus] = useState<StatusAgendamento | null>(null);
   const [busca, setBusca] = useState("");
+  const [pagina, setPagina] = useState(1);
+  const buscaAtrasada = useAtrasado(busca.trim());
   const { inicio, fim } = periodo;
-  const consulta = useConsulta(() => listarAgendamentos({ inicio, fim }), `${inicio}:${fim}`, INTERVALO);
+  const pedido = { inicio, fim, status: status ? [status] : undefined, busca: buscaAtrasada, pagina, tamanho: POR_PAGINA };
+  const consulta = useConsulta(() => listarAgendamentos(pedido), JSON.stringify(pedido), INTERVALO);
   const lista = consulta.dados;
+  const visiveis = lista?.agendamentos ?? [];
 
-  const visiveis = useMemo(
-    () => (lista ? lista.agendamentos.filter((a) => (!status || a.status === status) && corresponde(a, busca)) : []),
-    [lista, status, busca],
-  );
+  function filtrarStatus(proximo: StatusAgendamento | null) {
+    setStatus(proximo);
+    setPagina(1);
+  }
+
+  function buscar(valor: string) {
+    setBusca(valor);
+    setPagina(1);
+  }
 
   function aplicarAtalho(deslocamentoInicio: number, deslocamentoFim: number) {
     setPeriodo({ inicio: adicionarDias(hoje(), deslocamentoInicio), fim: adicionarDias(hoje(), deslocamentoFim) });
+    setPagina(1);
   }
 
   function alterarInicio(valor: string) {
     if (!valor) return;
+    setPagina(1);
     setPeriodo((atual) => ({
       inicio: valor,
       fim: atual.fim < valor || atual.fim > adicionarDias(valor, MAXIMO_DE_DIAS) ? adicionarDias(valor, 6) : atual.fim,
@@ -101,20 +104,30 @@ export function PainelAgendamentos() {
             value={fim}
             min={inicio}
             max={adicionarDias(inicio, MAXIMO_DE_DIAS)}
-            onChange={(e) => e.target.value && setPeriodo({ inicio, fim: e.target.value })}
+            onChange={(e) => {
+              if (!e.target.value) return;
+              setPeriodo({ inicio, fim: e.target.value });
+              setPagina(1);
+            }}
           />
           <div className={estilos.busca}>
-            <Campo rotulo="Buscar paciente" type="search" value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Nome ou telefone" />
+            <Campo
+              rotulo="Buscar paciente"
+              type="search"
+              value={busca}
+              onChange={(e) => buscar(e.target.value)}
+              placeholder="Nome ou telefone"
+            />
           </div>
         </div>
       </div>
 
       <div className={estilos.status} role="group" aria-label="Filtrar por status">
-        <Chip selecionado={status === null} onClick={() => setStatus(null)}>
+        <Chip selecionado={status === null} onClick={() => filtrarStatus(null)}>
           Todos · {lista?.total ?? "–"}
         </Chip>
         {ORDEM_DOS_STATUS.map((s) => (
-          <Chip key={s} selecionado={status === s} onClick={() => setStatus(status === s ? null : s)}>
+          <Chip key={s} selecionado={status === s} onClick={() => filtrarStatus(status === s ? null : s)}>
             {STATUS[s].rotulo} · {lista?.porStatus[s] ?? "–"}
           </Chip>
         ))}
@@ -138,7 +151,18 @@ export function PainelAgendamentos() {
           }
         />
       ) : (
-        <ListaAgendamentos agendamentos={visiveis} agruparPorDia />
+        <>
+          <ListaAgendamentos agendamentos={visiveis} agruparPorDia />
+          <Paginacao
+            pagina={lista?.pagina ?? 1}
+            totalPaginas={lista?.totalPaginas ?? 1}
+            tamanho={lista?.tamanho ?? POR_PAGINA}
+            total={lista?.encontrados ?? 0}
+            irPara={setPagina}
+            carregando={consulta.carregando}
+            item={["agendamento", "agendamentos"]}
+          />
+        </>
       )}
     </div>
   );

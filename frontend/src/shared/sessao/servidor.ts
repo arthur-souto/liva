@@ -5,7 +5,7 @@ export const COOKIE_SESSAO = "liva_sessao";
 
 const METODOS_DE_ESCRITA = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
-type SessaoDaApi = { token: string; expiraEm: string; usuario: unknown };
+type SessaoDaApi = { token: string; expiraEm: string; usuario: unknown; destino?: string };
 
 export function erro(status: number, codigo: string, mensagem: string, caminho: string): Response {
   return Response.json({ timestamp: new Date().toISOString(), status, codigo, mensagem, caminho }, { status });
@@ -66,5 +66,5 @@ export async function abrirSessao(request: NextRequest, caminhoNaApi: string): P
     path: "/",
     expires: expiraEm,
   });
-  return Response.json({ usuario: sessao.usuario, expiraEm: sessao.expiraEm });
+  return Response.json({ usuario: sessao.usuario, expiraEm: sessao.expiraEm, destino: sessao.destino });
 }

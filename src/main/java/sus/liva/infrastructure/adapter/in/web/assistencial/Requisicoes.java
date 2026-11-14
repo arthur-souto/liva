@@ -31,4 +31,13 @@ public final class Requisicoes {
     public record Finalizacao(String evolucao, boolean autorizarRetorno, Long versao) {}
 
     public record NovaEvolucao(String texto) {}
+
+    static Boolean andamento(String valor) {
+        if (valor == null || valor.isBlank()) return null;
+        return switch (valor.trim().toUpperCase()) {
+            case "ABERTO" -> true;
+            case "ENCERRADO" -> false;
+            default -> throw new IllegalArgumentException("Use andamento=ABERTO ou andamento=ENCERRADO");
+        };
+    }
 }

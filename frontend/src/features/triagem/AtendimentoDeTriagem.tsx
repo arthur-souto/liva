@@ -64,17 +64,17 @@ export function AtendimentoDeTriagem({ triagemId }: { triagemId: string }) {
       <div className={estilos.colunas}>
         <div className={estilos.principal}>
           {triagem.status === "AGUARDANDO_ATENDIMENTO" && (
-            <Secao titulo="Paciente aguardando" descricao="Ao iniciar, a triagem fica sob sua responsabilidade.">
+            <Secao titulo="Paciente aguardando" descricao="Ao iniciar, o registro desta triagem fica sob sua responsabilidade.">
               <div>
                 <Botao icone={<Stethoscope size={18} aria-hidden="true" />} carregando={acao.executando === "iniciar"} onClick={iniciar}>
-                  Iniciar triagem
+                  Iniciar registro
                 </Botao>
               </div>
             </Secao>
           )}
 
           {triagem.status === "EM_ANDAMENTO" && !responsavel && (
-            <Alerta tom="info">Esta triagem está sendo conduzida por outro profissional. Você pode apenas consultar.</Alerta>
+            <Alerta tom="info">Esta triagem está sendo registrada por outro profissional. Você pode apenas consultar.</Alerta>
           )}
 
           {emEdicao && (
@@ -153,7 +153,7 @@ export function AtendimentoDeTriagem({ triagemId }: { triagemId: string }) {
           </Secao>
           {passado && passado.ramos.length > 0 && (
             <Secao titulo="Atendimentos anteriores">
-              <HistoricoDeRamos historico={passado} />
+              <HistoricoDeRamos ramos={passado.ramos} />
             </Secao>
           )}
         </aside>

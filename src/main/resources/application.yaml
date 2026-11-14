@@ -36,6 +36,8 @@ confirmasus:
   cors:
     origens-permitidas: ${CORS_ORIGENS_PERMITIDAS:http://localhost:3000}
   fuso: ${FUSO_HORARIO:America/Sao_Paulo}
+  portal:
+    url: ${PORTAL_URL:http://localhost:3000}
   disparo-diario:
     habilitado: ${DISPARO_DIARIO_HABILITADO:true}
     cron: ${DISPARO_DIARIO_CRON:0 0 8 * * *}

@@ -14,11 +14,21 @@ type Filtro = {
   inicio: string;
   fim: string;
   status?: StatusAgendamento[];
+  busca?: string;
+  pagina?: number;
+  tamanho?: number;
 };
 
-export function listarAgendamentos({ inicio, fim, status }: Filtro): Promise<ListaDaEquipe> {
+export function listarAgendamentos({ inicio, fim, status, busca, pagina, tamanho }: Filtro): Promise<ListaDaEquipe> {
   return requisitar<ListaDaEquipe>("/agendamentos", {
-    parametros: { inicio, fim, status: status?.length ? status : undefined },
+    parametros: {
+      inicio,
+      fim,
+      status: status?.length ? status : undefined,
+      busca: busca || undefined,
+      pagina: pagina === undefined ? undefined : String(pagina),
+      tamanho: tamanho === undefined ? undefined : String(tamanho),
+    },
   });
 }
 

@@ -15,6 +15,7 @@ import { Botao, BotaoLink } from "@/shared/ui/Botao";
 import { CabecalhoPagina } from "@/shared/ui/CabecalhoPagina";
 import { Carregando } from "@/shared/ui/Carregando";
 import { EstadoVazio } from "@/shared/ui/EstadoVazio";
+import { ProfissionalComPrancheta } from "@/shared/ui/Ilustracoes";
 import { Etiqueta } from "@/shared/ui/Etiqueta";
 import { Secao } from "@/shared/ui/Secao";
 import estilos from "./PainelEspecialista.module.css";
@@ -92,7 +93,11 @@ export function PainelEspecialista() {
         {agenda.erro ? <Alerta tom="perigo">{mensagemDeErro(agenda.erro)}</Alerta> : null}
         {!agenda.dados && !agenda.erro && <Carregando linhas={3} />}
         {agenda.dados && agenda.dados.length === 0 && (
-          <EstadoVazio icone={<CalendarX size={28} aria-hidden="true" />} titulo="Nenhuma consulta nos próximos 7 dias" />
+          <EstadoVazio
+            ilustracao={<ProfissionalComPrancheta />}
+            icone={<CalendarX size={28} aria-hidden="true" />}
+            titulo="Nenhuma consulta nos próximos 7 dias"
+          />
         )}
         {agenda.dados &&
           porDia(agenda.dados).map(([dia, itens]) => (

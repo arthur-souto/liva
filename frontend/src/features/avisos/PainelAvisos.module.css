@@ -16,6 +16,9 @@
 }
 
 .heroTitulo {
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-3);
   font-family: var(--fonte-marca);
   font-weight: var(--peso-marca);
   font-size: var(--texto-2xl);

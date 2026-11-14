@@ -13,7 +13,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import sus.liva.application.port.in.Ator;
 import sus.liva.application.port.in.CadastroDePacienteUseCase;
+import sus.liva.application.port.in.FiltroDeAtendimentos;
 import sus.liva.application.port.in.HistoricoDoPacienteUseCase;
+import sus.liva.application.port.in.PedidoDePagina;
 
 import java.net.URI;
 import java.util.List;
@@ -39,9 +41,18 @@ public class PacienteController {
     }
 
     @GetMapping
-    @Operation(summary = "Pesquisa pacientes por nome (ao menos 3 letras), CPF ou Cartão SUS")
-    public List<PacienteResponse> pesquisar(Ator ator, @RequestParam String termo) {
+    @Operation(summary = "Pesquisa pacientes por nome (ao menos 3 letras), CPF ou Cartão SUS", description = "Sem termo, devolve os últimos 50 cadastrados.")
+    public List<PacienteResponse> pesquisar(Ator ator, @RequestParam(defaultValue = "") String termo) {
         return cadastro.pesquisar(ator, termo).stream().map(PacienteResponse::de).toList();
+    }
+
+    @GetMapping("/pagina")
+    @Operation(summary = "Pesquisa paginada de pacientes por nome (ao menos 3 letras), CPF ou Cartão SUS",
+            description = "Sem termo, lista os cadastrados mais recentes. Tamanho máximo da página: 50.")
+    public PacientesResponse pesquisarPaginado(Ator ator, @RequestParam(defaultValue = "") String termo,
+                                               @RequestParam(required = false) Integer pagina,
+                                               @RequestParam(required = false) Integer tamanho) {
+        return PacientesResponse.de(cadastro.pesquisar(ator, termo, PedidoDePagina.de(pagina, tamanho)));
     }
 
     @GetMapping("/{id}")
@@ -60,5 +71,15 @@ public class PacienteController {
             description = "Os dados clínicos de cada ramo só aparecem para quem participa do atendimento.")
     public HistoricoResponse historico(Ator ator, @PathVariable UUID id) {
         return HistoricoResponse.de(historico.historico(ator, id));
+    }
+
+    @GetMapping("/{id}/atendimentos")
+    @Operation(summary = "Atendimentos do paciente, paginados",
+            description = "Filtros opcionais: especialidade (código), andamento (ABERTO ou ENCERRADO) e ano. Tamanho máximo da página: 50.")
+    public AtendimentosResponse atendimentos(Ator ator, @PathVariable UUID id, @RequestParam(required = false) String especialidade,
+                                             @RequestParam(required = false) String andamento, @RequestParam(required = false) Integer ano,
+                                             @RequestParam(required = false) Integer pagina, @RequestParam(required = false) Integer tamanho) {
+        return AtendimentosResponse.de(historico.atendimentos(ator, id,
+                new FiltroDeAtendimentos(especialidade, Requisicoes.andamento(andamento), ano), PedidoDePagina.de(pagina, tamanho)));
     }
 }

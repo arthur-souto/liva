@@ -11,6 +11,14 @@ public record Ator(UUID usuarioId, Papel papel, UUID profissionalId, UUID pacien
         return new Ator(usuarioId, Papel.PACIENTE, null, pacienteId);
     }
 
+    public static Ator cuidador(UUID cuidadorId, UUID pacienteId) {
+        return new Ator(cuidadorId, Papel.CUIDADOR, null, pacienteId);
+    }
+
+    public boolean agePeloPaciente() {
+        return eh(Papel.PACIENTE, Papel.CUIDADOR);
+    }
+
     public static Ator equipe(UUID usuarioId, Papel papel) {
         return new Ator(usuarioId, papel, null, null);
     }

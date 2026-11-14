@@ -7,6 +7,7 @@ import sus.liva.application.port.in.Ator;
 import sus.liva.application.port.in.DispararLembreteUseCase;
 import sus.liva.application.port.in.HorarioDisponivel;
 import sus.liva.application.port.in.Papel;
+import sus.liva.application.port.in.RemarcacoesDoMes;
 import sus.liva.application.port.out.AgendamentoRepositoryPort;
 import sus.liva.application.port.out.AuditoriaPort;
 import sus.liva.application.port.out.EncaminhamentoRepositoryPort;
@@ -44,12 +45,16 @@ public class AgendaDeConsultasUseCaseImpl implements AgendaDeConsultasUseCase {
     private final DispararLembreteUseCase dispararLembrete;
     private final TransacaoPort transacao;
     private final Auditor auditor;
+    private final NotificacaoAoPaciente notificacao;
+    private final ModeloMensagens modelos;
+    private final LimiteDeRemarcacoes limite;
     private final Clock clock;
 
     public AgendaDeConsultasUseCaseImpl(EncaminhamentoRepositoryPort encaminhamentos, TriagemRepositoryPort triagens,
                                         AgendamentoRepositoryPort agendamentos, ProfissionalRepositoryPort profissionais,
                                         DispararLembreteUseCase dispararLembrete, TransacaoPort transacao,
-                                        AuditoriaPort auditoria, Clock clock) {
+                                        AuditoriaPort auditoria, NotificacaoAoPaciente notificacao, ModeloMensagens modelos,
+                                        LimiteDeRemarcacoes limite, Clock clock) {
         this.encaminhamentos = encaminhamentos;
         this.triagens = triagens;
         this.agendamentos = agendamentos;
@@ -57,16 +62,19 @@ public class AgendaDeConsultasUseCaseImpl implements AgendaDeConsultasUseCase {
         this.dispararLembrete = dispararLembrete;
         this.transacao = transacao;
         this.auditor = new Auditor(auditoria, clock);
+        this.notificacao = notificacao;
+        this.modelos = modelos;
+        this.limite = limite;
         this.clock = clock;
     }
 
     @Override
     public List<HorarioDisponivel> horariosDisponiveis(Ator ator, UUID encaminhamentoId, LocalDate inicio, LocalDate fim) {
-        Permissoes.exigir(ator, Papel.PACIENTE, Papel.RECEPCAO);
+        Permissoes.exigir(ator, Papel.PACIENTE, Papel.CUIDADOR, Papel.RECEPCAO);
         Encaminhamento encaminhamento = encaminhamentos.buscarEncaminhamento(encaminhamentoId)
                 .orElseThrow(() -> new NaoEncontradoException("Encaminhamento não encontrado: " + encaminhamentoId));
         Permissoes.exigirPacienteProprio(ator, encaminhamento.getPacienteId());
-        if (!encaminhamento.permiteAgendamento())
+        if (!encaminhamento.permiteAgendamento() && !encaminhamento.permiteRemarcacao())
             throw new IllegalStateException("Este encaminhamento não está liberado para agendamento. Status atual: " + encaminhamento.getStatus());
         LocalDateTime agora = LocalDateTime.now(clock);
         LocalDate de = inicio.isBefore(agora.toLocalDate()) ? agora.toLocalDate() : inicio;
@@ -94,7 +102,7 @@ public class AgendaDeConsultasUseCaseImpl implements AgendaDeConsultasUseCase {
 
     @Override
     public Agendamento agendar(Ator ator, UUID encaminhamentoId, UUID profissionalId, LocalDateTime inicio, String chaveIdempotencia) {
-        Permissoes.exigir(ator, Papel.PACIENTE, Papel.RECEPCAO);
+        Permissoes.exigir(ator, Papel.PACIENTE, Papel.CUIDADOR, Papel.RECEPCAO);
         if (chaveIdempotencia != null && !chaveIdempotencia.matches(FORMATO_CHAVE))
             throw new IllegalArgumentException("Chave de idempotência inválida");
         Optional<Agendamento> repetido = repetido(chaveIdempotencia, encaminhamentoId);
@@ -129,13 +137,14 @@ public class AgendaDeConsultasUseCaseImpl implements AgendaDeConsultasUseCase {
 
     @Override
     public Agendamento remarcar(Ator ator, UUID consultaId, UUID profissionalId, LocalDateTime inicio, long versao) {
-        Permissoes.exigir(ator, Papel.PACIENTE, Papel.RECEPCAO);
+        Permissoes.exigir(ator, Papel.PACIENTE, Papel.CUIDADOR, Papel.RECEPCAO);
         exigirFuturo(inicio);
-        Agendamento nova = transacao.executar(() -> {
+        Remarcacao remarcacao = transacao.executar(() -> {
             Agendamento atual = consultaParaAtualizar(consultaId, versao);
             Permissoes.exigirPacienteProprio(ator, atual.getPacienteId());
             if (!atual.doEncaminhamento())
                 throw new IllegalArgumentException("Somente consultas de encaminhamento são remarcadas por aqui");
+            if (ator.agePeloPaciente()) limite.exigirDisponivel(atual.getPacienteId());
             Encaminhamento e = encaminhamentoParaAtualizar(atual.getEncaminhamentoId());
             Profissional profissional = profissional(profissionalId);
             int duracao = duracaoNaAgenda(profissional, inicio);
@@ -143,16 +152,19 @@ public class AgendaDeConsultasUseCaseImpl implements AgendaDeConsultasUseCase {
             agendamentos.salvarAgendamento(atual);
             Agendamento remarcada = Agendamento.consulta(UUID.randomUUID(), e, profissional, inicio, duracao, atual.getNatureza(), null);
             agendamentos.salvarAgendamento(remarcada);
-            return remarcada;
+            limite.registrar(atual.getPacienteId(), atual.getId(), remarcada.getId(),
+                    ator.agePeloPaciente() ? LimiteDeRemarcacoes.PORTAL : LimiteDeRemarcacoes.RECEPCAO);
+            return new Remarcacao(atual, remarcada);
         });
+        Agendamento nova = remarcacao.nova();
         auditor.registrar(ator, "REMARCAR_CONSULTA", "CONSULTA", nova.getId(), nova.getPacienteId());
-        notificar(nova.getId());
+        notificacao.notificar(nova.getId(), nova.getPacienteId(), p -> modelos.consultaRemarcada(p, remarcacao.anterior(), nova));
         return agendamentos.buscarAgendamento(nova.getId()).orElseThrow();
     }
 
     @Override
     public Agendamento cancelar(Ator ator, UUID consultaId, long versao) {
-        Permissoes.exigir(ator, Papel.PACIENTE, Papel.RECEPCAO, Papel.ESPECIALISTA);
+        Permissoes.exigir(ator, Papel.PACIENTE, Papel.CUIDADOR, Papel.RECEPCAO, Papel.ESPECIALISTA);
         Agendamento cancelada = transacao.executar(() -> {
             Agendamento atual = consultaParaAtualizar(consultaId, versao);
             Permissoes.exigirPacienteProprio(ator, atual.getPacienteId());
@@ -167,7 +179,14 @@ public class AgendaDeConsultasUseCaseImpl implements AgendaDeConsultasUseCase {
             return atual;
         });
         auditor.registrar(ator, "CANCELAR_CONSULTA", "CONSULTA", consultaId, cancelada.getPacienteId());
+        notificacao.notificar(consultaId, cancelada.getPacienteId(), p -> modelos.consultaCancelada(p, cancelada));
         return agendamentos.buscarAgendamento(consultaId).orElseThrow();
+    }
+
+    @Override
+    public RemarcacoesDoMes remarcacoesDoMes(Ator ator) {
+        Permissoes.exigir(ator, Papel.PACIENTE, Papel.CUIDADOR);
+        return limite.doMes(ator.pacienteId());
     }
 
     private List<Profissional> candidatos(Encaminhamento e) {
@@ -228,4 +247,6 @@ public class AgendaDeConsultasUseCaseImpl implements AgendaDeConsultasUseCase {
     }
 
     private record Reserva(Agendamento consulta, boolean nova) {}
+
+    private record Remarcacao(Agendamento anterior, Agendamento nova) {}
 }

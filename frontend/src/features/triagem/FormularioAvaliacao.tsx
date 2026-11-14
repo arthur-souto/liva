@@ -164,7 +164,7 @@ export function FormularioAvaliacao({ triagem, podeFinalizar, aoAlterar }: Props
           disabled={!podeFinalizar}
           onClick={() => salvar(true)}
         >
-          Salvar e finalizar triagem
+          Salvar e finalizar registro
         </Botao>
       </div>
     </form>

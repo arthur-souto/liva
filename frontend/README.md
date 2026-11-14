@@ -79,8 +79,8 @@ src/
 
 Usuários de demonstração do `db/demo/R__dados_demo.sql` (ver README da raiz). A fila, o plantão, as agendas e o portal da paciente Maria (`12345678909`) já começam com dados.
 
-1. **Recepção** (`recepcao@liva.demo`): cadastre o paciente com consentimento e registre a chegada.
-2. **Triagem** (`clinico@liva.demo`): atenda o primeiro da fila, registre avaliação, sinais vitais e prioridade. Encaminhe para uma especialidade (eletivo) e, em caso grave, para o plantão (imediato). Finalize.
+1. **Recepção** (`recepcao@liva.demo`): cadastre o paciente com consentimento; com "Paciente está na unidade" marcado, a chegada é registrada no mesmo passo.
+2. **Triagem** (`clinico@liva.demo`): a triagem acontece presencialmente; a Liva só a registra. Em "Registrar triagem", lance avaliação, sinais vitais e prioridade. Encaminhe para uma especialidade (eletivo) e, em caso grave, para o plantão (imediato). Finalize.
 3. **Plantão** (`plantao@liva.demo`): receba o encaminhamento imediato e conclua com o desfecho.
 4. **Agendamento**: a recepção (ficha do paciente) ou o próprio paciente escolhe um horário livre. Dois cliques no mesmo horário não geram duas consultas.
 5. **Portal** (`/portal/ativar`): CPF + data de nascimento → código pelo WhatsApp → senha. O paciente vê o histórico, agenda e cancela.

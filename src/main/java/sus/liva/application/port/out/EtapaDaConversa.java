@@ -1,0 +1,11 @@
+package sus.liva.application.port.out;
+
+public enum EtapaDaConversa {
+    ESCOLHER_PACIENTE,
+    MENU,
+    ESCOLHER_ENCAMINHAMENTO,
+    ESCOLHER_HORARIO,
+    ESCOLHER_CONSULTA_REMARCAR,
+    ESCOLHER_CONSULTA_CANCELAR,
+    CONFIRMAR_CANCELAMENTO
+}

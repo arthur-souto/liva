@@ -10,4 +10,5 @@ public interface CadastroDePacienteUseCase {
     CadastroDePaciente atualizar(Ator ator, UUID pacienteId, DadosCadastrais dados, long versao);
     CadastroDePaciente buscar(Ator ator, UUID pacienteId);
     List<CadastroDePaciente> pesquisar(Ator ator, String termo);
+    Pagina<CadastroDePaciente> pesquisar(Ator ator, String termo, PedidoDePagina pedido);
 }

@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import sus.liva.application.exception.NaoEncontradoException;
-import sus.liva.application.port.in.AgendamentoDetalhado;
+import sus.liva.application.port.in.PedidoDePagina;
 import sus.liva.application.port.in.AgendarAtendimentoUseCase;
 import sus.liva.application.port.in.AtendimentoAgendado;
 import sus.liva.application.port.in.ConsultarAgendamentoUseCase;
@@ -22,7 +22,6 @@ import sus.liva.domain.model.agendamento.StatusAgendamento;
 import java.net.URI;
 import java.time.Clock;
 import java.time.LocalDate;
-import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -49,15 +48,21 @@ public class AgendamentoController {
     @Operation(summary = "Lista os agendamentos para a equipe da unidade",
             description = "Sem parâmetros, lista os de hoje. Use inicio/fim (AAAA-MM-DD, no máximo 31 dias) e status "
                     + "(pode repetir, ex.: status=CANCELADO&status=REAGENDADO) para ver quem precisa de atenção. "
-                    + "porStatus traz a contagem de cada situação no período.")
+                    + "porStatus traz a contagem de cada situação no período. "
+                    + "Envie pagina e tamanho (máximo 50) para receber a lista em páginas e busca para filtrar por nome ou telefone; "
+                    + "nesse caso porStatus e total contam o período inteiro (com a busca) e encontrados conta o resultado do filtro de status.")
     public AgendamentosDaEquipeResponse listar(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate inicio,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fim,
-            @RequestParam(required = false) Set<StatusAgendamento> status) {
+            @RequestParam(required = false) Set<StatusAgendamento> status,
+            @RequestParam(required = false) String busca,
+            @RequestParam(required = false) Integer pagina,
+            @RequestParam(required = false) Integer tamanho) {
         LocalDate de = inicio != null ? inicio : LocalDate.now(clock);
         LocalDate ate = fim != null ? fim : de;
-        List<AgendamentoDetalhado> lista = listarAgendamentos.listar(de, ate, status);
-        return AgendamentosDaEquipeResponse.de(de, ate, lista);
+        if (pagina == null && tamanho == null && busca == null)
+            return AgendamentosDaEquipeResponse.de(de, ate, listarAgendamentos.listar(de, ate, status));
+        return AgendamentosDaEquipeResponse.de(de, ate, listarAgendamentos.listar(de, ate, status, busca, PedidoDePagina.de(pagina, tamanho)));
     }
 
     @PostMapping

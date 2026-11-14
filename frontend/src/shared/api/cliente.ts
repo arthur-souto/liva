@@ -6,7 +6,7 @@ const BASE = "/api/liva";
 type Parametros = Record<string, string | string[] | boolean | undefined>;
 
 type Opcoes = {
-  metodo?: "GET" | "POST" | "PUT";
+  metodo?: "GET" | "POST" | "PUT" | "DELETE";
   corpo?: unknown;
   parametros?: Parametros;
   cabecalhos?: Record<string, string>;
@@ -52,5 +52,6 @@ export async function requisitar<T>(caminho: string, opcoes: Opcoes = {}): Promi
   }
   if (resposta.status === 401) irParaEntrada();
   if (!resposta.ok) throw await lerErro(resposta, caminho);
+  if (resposta.status === 204) return undefined as T;
   return (await resposta.json()) as T;
 }

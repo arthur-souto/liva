@@ -5,5 +5,6 @@ public enum Papel {
     RECEPCAO,
     CLINICO_GERAL,
     ESPECIALISTA,
-    PACIENTE
+    PACIENTE,
+    CUIDADOR
 }

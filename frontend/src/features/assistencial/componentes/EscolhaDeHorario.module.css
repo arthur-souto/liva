@@ -1,7 +1,7 @@
 .escolha {
   display: flex;
   flex-direction: column;
-  gap: var(--espaco-5);
+  gap: var(--espaco-4);
 }
 
 .navegacao {
@@ -12,53 +12,249 @@
 }
 
 .periodo {
-  font-size: var(--texto-sm);
+  font-size: var(--texto-base);
   font-weight: var(--peso-semi);
   color: var(--cor-titulo);
   text-align: center;
 }
 
-.dia {
+.textoNavegacao {
+  display: none;
+}
+
+.passos {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
+  gap: var(--espaco-2) var(--espaco-5);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--texto-sm);
+  color: var(--cor-texto-suave);
+}
+
+.passo {
+  display: inline-flex;
+  align-items: center;
   gap: var(--espaco-2);
 }
 
-.rotuloDia {
+.numero {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.375rem;
+  height: 1.375rem;
+  border-radius: var(--raio-sm);
+  background: var(--cor-superficie-destaque);
+  color: var(--cor-primaria);
+  font-size: var(--texto-xs);
+  font-weight: var(--peso-forte);
+}
+
+.semana {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(4.25rem, 1fr));
+  gap: var(--espaco-2);
+  overflow-x: auto;
+  padding-bottom: var(--espaco-1);
+  scroll-snap-type: x mandatory;
+}
+
+.diaDaSemana {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: var(--espaco-2) var(--espaco-1);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-md);
+  background: var(--cor-superficie);
+  color: var(--cor-texto);
+  font: inherit;
+  cursor: pointer;
+  scroll-snap-align: start;
+  transition:
+    background var(--transicao),
+    border-color var(--transicao);
+}
+
+.diaDaSemana:hover:not(:disabled) {
+  border-color: var(--cor-primaria);
+  background: var(--cor-superficie-suave);
+}
+
+.diaDaSemana:focus-visible {
+  outline: none;
+  box-shadow: var(--sombra-foco);
+}
+
+.diaDaSemana:disabled {
+  background: var(--cor-superficie-suave);
+  color: var(--cor-texto-suave);
+  cursor: not-allowed;
+}
+
+.nomeDoDia {
+  font-size: var(--texto-xs);
+  font-weight: var(--peso-semi);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.numeroDoDia {
+  font-size: var(--texto-xl);
+  font-weight: var(--peso-forte);
+  line-height: 1.2;
+}
+
+.vagas {
+  font-size: var(--texto-xs);
+  color: var(--cor-sucesso);
+  white-space: nowrap;
+}
+
+.diaDaSemana:disabled .vagas {
+  color: var(--cor-texto-suave);
+}
+
+.hoje .nomeDoDia {
+  color: var(--cor-primaria);
+}
+
+.diaSelecionado,
+.diaSelecionado:hover:not(:disabled) {
+  border-color: var(--cor-primaria);
+  background: var(--cor-primaria);
+  color: var(--cor-texto-invertido);
+}
+
+.diaSelecionado .vagas,
+.diaSelecionado.hoje .nomeDoDia {
+  color: var(--cor-texto-invertido);
+}
+
+.agendaDoDia {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-4);
+  padding-top: var(--espaco-4);
+  border-top: 1px solid var(--cor-borda);
+}
+
+.tituloDoDia {
+  font-size: var(--texto-lg);
+  font-weight: var(--peso-semi);
+  color: var(--cor-titulo);
+}
+
+.agenda {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-3);
+}
+
+.profissional {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espaco-2);
   font-size: var(--texto-sm);
   font-weight: var(--peso-semi);
+  color: var(--cor-texto);
+}
+
+.periodoDoDia {
+  display: grid;
+  gap: var(--espaco-2);
+}
+
+.rotuloPeriodo {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espaco-2);
+  font-size: var(--texto-xs);
+  font-weight: var(--peso-semi);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
   color: var(--cor-texto-suave);
 }
 
 .horarios {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(5rem, 1fr));
   gap: var(--espaco-2);
 }
 
-.hora {
+.horario {
+  min-height: 2.75rem;
+  border: 1px solid var(--cor-borda-forte);
+  border-radius: var(--raio-md);
+  background: var(--cor-superficie);
+  color: var(--cor-texto);
+  font: inherit;
+  font-size: var(--texto-base);
   font-weight: var(--peso-semi);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition:
+    background var(--transicao),
+    border-color var(--transicao),
+    color var(--transicao);
 }
 
-.profissional {
-  margin-left: var(--espaco-2);
-  font-size: var(--texto-xs);
-  opacity: 0.8;
+.horario:hover {
+  border-color: var(--cor-primaria);
+  color: var(--cor-primaria);
+}
+
+.horario:focus-visible {
+  outline: none;
+  box-shadow: var(--sombra-foco);
+}
+
+.horarioSelecionado,
+.horarioSelecionado:hover {
+  border-color: var(--cor-primaria);
+  background: var(--cor-primaria);
+  color: var(--cor-texto-invertido);
 }
 
 .confirmacao {
   position: sticky;
-  bottom: calc(var(--altura-navegacao-inferior) + var(--espaco-2));
+  bottom: var(--espaco-2);
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: var(--espaco-3);
   padding: var(--espaco-4);
-  border: 1px solid var(--cor-secundaria);
-  border-radius: var(--raio-lg);
-  background: var(--cor-superficie-destaque);
+  border: 1px solid var(--cor-borda);
+  border-left: 3px solid var(--cor-primaria);
+  border-radius: var(--raio-md);
+  background: var(--cor-superficie);
   box-shadow: var(--sombra-elevada);
+}
+
+.confirmacao p {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+}
+
+.confirmacao span {
+  font-size: var(--texto-sm);
+  color: var(--cor-texto-suave);
+}
+
+@media (min-width: 640px) {
+  .textoNavegacao {
+    display: inline;
+  }
+
+  .semana {
+    overflow-x: visible;
+  }
 }
 
 @media (min-width: 960px) {

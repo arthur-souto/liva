@@ -18,14 +18,25 @@ import sus.liva.application.port.in.Ator;
 import sus.liva.application.port.in.CadastroDePacienteUseCase;
 import sus.liva.application.port.in.DadosCadastrais;
 import sus.liva.application.port.in.DispararLembreteUseCase;
+import sus.liva.application.port.in.AtendimentosDoPaciente;
+import sus.liva.application.port.in.ConsultasDoPaciente;
 import sus.liva.application.port.in.EncaminhamentoUseCase;
+import sus.liva.application.port.in.FiltroDeAtendimentos;
+import sus.liva.application.port.in.FiltroDeConsultas;
 import sus.liva.application.port.in.HistoricoDoPaciente;
 import sus.liva.application.port.in.HistoricoDoPacienteUseCase;
+import sus.liva.application.port.in.NovaPessoaDeConfianca;
 import sus.liva.application.port.in.NovoEncaminhamento;
 import sus.liva.application.port.in.Papel;
+import sus.liva.application.port.in.PedidoDePagina;
+import sus.liva.application.port.in.PeriodoDasConsultas;
+import sus.liva.application.port.in.PessoaDeConfiancaUseCase;
 import sus.liva.application.port.in.ProcessarRespostaUseCase;
 import sus.liva.application.port.in.RamoDoHistorico;
+import sus.liva.application.port.in.ResultadoResposta;
+import sus.liva.application.port.in.Sessao;
 import sus.liva.application.port.in.TriagemUseCase;
+import sus.liva.application.port.out.CifradorPort;
 import sus.liva.application.port.out.EncaminhamentoRepositoryPort;
 import sus.liva.application.port.out.ProfissionalRepositoryPort;
 import sus.liva.domain.model.Telefone;
@@ -33,6 +44,8 @@ import sus.liva.domain.model.agendamento.Agendamento;
 import sus.liva.domain.model.agendamento.NaturezaConsulta;
 import sus.liva.domain.model.agendamento.StatusAgendamento;
 import sus.liva.domain.model.agendamento.TipoLembrete;
+import sus.liva.domain.model.cuidador.CuidadorVinculado;
+import sus.liva.domain.model.cuidador.Parentesco;
 import sus.liva.domain.model.encaminhamento.Encaminhamento;
 import sus.liva.domain.model.encaminhamento.Modalidade;
 import sus.liva.domain.model.encaminhamento.StatusEncaminhamento;
@@ -124,6 +137,8 @@ class FluxoAssistencialIntegracaoTest {
     @Autowired private ProcessarRespostaUseCase processarResposta;
     @Autowired private ProfissionalRepositoryPort profissionais;
     @Autowired private EncaminhamentoRepositoryPort encaminhamentoRepository;
+    @Autowired private PessoaDeConfiancaUseCase pessoasDeConfianca;
+    @Autowired private CifradorPort cifrador;
     @Autowired private JdbcTemplate jdbc;
 
     private final Ator recepcao = Ator.equipe(UUID.randomUUID(), Papel.RECEPCAO);
@@ -214,7 +229,8 @@ class FluxoAssistencialIntegracaoTest {
         assertThat(inicial.getNatureza()).isEqualTo(NaturezaConsulta.INICIAL);
         assertThat(inicial.getTriagemId()).isEqualTo(t.getId());
         assertThat(encaminhamento(e.getId()).getStatus()).isEqualTo(StatusEncaminhamento.AGENDADO);
-        assertThatThrownBy(() -> agenda.horariosDisponiveis(portal, e.getId(), SEGUNDA, SEGUNDA)).isInstanceOf(IllegalStateException.class);
+        assertThat(agenda.horariosDisponiveis(portal, e.getId(), SEGUNDA, SEGUNDA))
+                .extracting(h -> h.inicio()).doesNotContain(AS_14).contains(AS_14_30, AS_15);
         assertThatThrownBy(() -> agenda.agendar(portal, e.getId(), ortopedista.id(), AS_15, null)).isInstanceOf(IllegalStateException.class);
         assertThat(atendimento.agenda(especialista, SEGUNDA, SEGUNDA)).extracting(c -> c.consulta().getId()).contains(inicial.getId());
 
@@ -385,6 +401,124 @@ class FluxoAssistencialIntegracaoTest {
         assertThat(jdbc.queryForObject("SELECT status FROM agendamentos WHERE id = ?", String.class, consulta.getId())).isEqualTo("CANCELADO");
         assertThat(encaminhamento(e.getId()).getStatus()).isEqualTo(StatusEncaminhamento.AGUARDANDO_AGENDAMENTO);
         assertThat(agenda.agendar(recepcao, e.getId(), ortopedista.id(), AS_14, null).getStatus()).isEqualTo(StatusAgendamento.AGENDADO);
+    }
+
+    @Test
+    void pacienteRemarcaNoMaximoDuasVezesPorMes() {
+        Profissional ortopedista = especialistaComAgenda("ORTOPEDIA");
+        UUID paciente = novoPaciente();
+        Ator portal = Ator.paciente(UUID.randomUUID(), paciente);
+        Encaminhamento e = encaminhamentoLiberado(paciente, "ORTOPEDIA");
+        Agendamento consulta = agenda.agendar(portal, e.getId(), ortopedista.id(), AS_14, null);
+
+        Agendamento primeira = agenda.remarcar(portal, consulta.getId(), ortopedista.id(), AS_14_30, consulta.getVersao());
+        Agendamento segunda = agenda.remarcar(portal, primeira.getId(), ortopedista.id(), AS_15, primeira.getVersao());
+
+        assertThat(agenda.remarcacoesDoMes(portal).restantes()).isZero();
+        assertThatThrownBy(() -> agenda.remarcar(portal, segunda.getId(), ortopedista.id(), AS_14, segunda.getVersao()))
+                .isInstanceOf(IllegalStateException.class).hasMessageContaining("2 vezes");
+        assertThat(agenda.remarcar(recepcao, segunda.getId(), ortopedista.id(), AS_14, segunda.getVersao()).getDataHora()).isEqualTo(AS_14);
+        assertThat(agenda.remarcacoesDoMes(portal).restantes()).isZero();
+    }
+
+    @Test
+    void whatsappMostraOMenuAgendaEEnviaLinkDeRemarcacao() {
+        especialistaComAgenda("CARDIOLOGIA");
+        String telefone = telefoneAleatorio();
+        UUID paciente = cadastro.cadastrar(recepcao, dadosComTelefone("Bruno Lima", cpfValido(), telefone)).paciente().id();
+        encaminhamentoLiberado(paciente, "CARDIOLOGIA");
+        Telefone remetente = Telefone.de(telefone);
+
+        assertThat(processarResposta.processar(remetente, "oi", null).motivo()).contains("MENU");
+        assertThat(processarResposta.processar(remetente, "1", null).motivo()).contains("ESCOLHER_HORARIO");
+        ResultadoResposta agendado = processarResposta.processar(remetente, "1", null);
+
+        assertThat(agendado.motivo()).contains("AGENDADO");
+        assertThat(jdbc.queryForObject("SELECT status FROM agendamentos WHERE id = ?", String.class, agendado.agendamentoId()))
+                .isEqualTo("AGENDADO");
+
+        processarResposta.processar(remetente, "menu", null);
+        assertThat(processarResposta.processar(remetente, "3", null).motivo()).contains("LINK_DE_REMARCACAO");
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM links_de_acesso WHERE paciente_id = ?", Integer.class, paciente))
+                .isEqualTo(2);
+    }
+
+    @Test
+    void pessoaDeConfiancaAgendaPeloPacienteERecebeOsAvisos() {
+        Profissional cardiologista = especialistaComAgenda("CARDIOLOGIA");
+        String cpfDoPaciente = cpfValido();
+        UUID paciente = cadastro.cadastrar(recepcao, dadosComTelefone("Maria Idosa", cpfDoPaciente, telefoneAleatorio())).paciente().id();
+        Encaminhamento e = encaminhamentoLiberado(paciente, "CARDIOLOGIA");
+        String cpfDaFilha = cpfValido();
+        String telefoneDaFilha = telefoneAleatorio();
+        String senha = "Cuidado2030";
+
+        assertThatThrownBy(() -> pessoasDeConfianca.vincular(recepcao, paciente,
+                new NovaPessoaDeConfianca("Ana Filha", cpfDaFilha, telefoneDaFilha, Parentesco.FILHO, false)))
+                .isInstanceOf(RuntimeException.class);
+        CuidadorVinculado filha = pessoasDeConfianca.vincular(recepcao, paciente,
+                new NovaPessoaDeConfianca("Ana Filha", cpfDaFilha, telefoneDaFilha, Parentesco.FILHO, true));
+        assertThat(pessoasDeConfianca.doPaciente(recepcao, paciente)).extracting(v -> v.cuidador().cpf()).containsExactly(cpfDaFilha);
+
+        pessoasDeConfianca.solicitarCodigo(cpfDaFilha, cpfDoPaciente);
+        jdbc.update("UPDATE cuidadores SET codigo_hash = ? WHERE id = ?", cifrador.cifrar("123456"), filha.cuidador().id());
+        Sessao ativada = pessoasDeConfianca.ativar(cpfDaFilha, cpfDoPaciente, "123456", senha);
+        assertThat(ativada.ator().papel()).isEqualTo(Papel.CUIDADOR);
+        assertThat(ativada.ator().pacienteId()).isEqualTo(paciente);
+
+        Sessao sessao = pessoasDeConfianca.entrar(cpfDaFilha, cpfDoPaciente, senha);
+        Agendamento consulta = agenda.agendar(sessao.ator(), e.getId(), cardiologista.id(), AS_14, null);
+        assertThat(consulta.getStatus()).isEqualTo(StatusAgendamento.AGENDADO);
+        assertThatThrownBy(() -> historico.historico(sessao.ator(), novoPaciente())).isInstanceOf(AcessoNegadoException.class);
+
+        dispararLembrete.disparar(consulta.getId(), TipoLembrete.PEDIDO_CONFIRMACAO, true);
+        String destinoDaFilha = Telefone.de(telefoneDaFilha).e164();
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM registros_mensagem WHERE destino = ? AND tipo = 'PEDIDO_CONFIRMACAO'",
+                Integer.class, destinoDaFilha)).isEqualTo(1);
+
+        Telefone remetente = Telefone.de(telefoneDaFilha);
+        processarResposta.processar(remetente, "1", null);
+        assertThat(jdbc.queryForObject("SELECT status FROM agendamentos WHERE id = ?", String.class, consulta.getId())).isEqualTo("CONFIRMADO");
+        assertThat(processarResposta.processar(remetente, "oi", null).motivo()).contains("MENU");
+        assertThat(jdbc.queryForObject("SELECT texto FROM registros_mensagem WHERE destino = ? ORDER BY id DESC LIMIT 1",
+                String.class, destinoDaFilha)).contains("Maria");
+
+        pessoasDeConfianca.revogar(recepcao, paciente, filha.cuidador().id());
+        assertThatThrownBy(() -> pessoasDeConfianca.entrar(cpfDaFilha, cpfDoPaciente, senha)).isInstanceOf(RuntimeException.class);
+    }
+
+    @Test
+    void historicoConsultasEPesquisaSaoPaginadosNoServidor() {
+        Profissional cardiologista = especialistaComAgenda("CARDIOLOGIA");
+        especialistaComAgenda("ORTOPEDIA");
+        UUID paciente = novoPaciente();
+        Encaminhamento cardiologia = encaminhamentoLiberado(paciente, "CARDIOLOGIA");
+        encaminhamentoLiberado(paciente, "ORTOPEDIA");
+        encaminhamentoLiberado(paciente, "ORTOPEDIA");
+        Ator ator = Ator.paciente(UUID.randomUUID(), paciente);
+        FiltroDeAtendimentos todos = new FiltroDeAtendimentos(null, null, null);
+
+        AtendimentosDoPaciente primeira = historico.atendimentos(ator, paciente, todos, new PedidoDePagina(1, 2));
+        assertThat(primeira.pagina().itens()).extracting(a -> a.numero()).containsExactly(3, 2);
+        assertThat(primeira.pagina().total()).isEqualTo(3);
+        assertThat(primeira.pagina().totalPaginas()).isEqualTo(2);
+        assertThat(primeira.especialidades()).containsExactly("CARDIOLOGIA", "ORTOPEDIA");
+        assertThat(historico.atendimentos(ator, paciente, todos, new PedidoDePagina(9, 2)).pagina().itens())
+                .extracting(a -> a.numero()).containsExactly(1);
+        assertThat(historico.atendimentos(ator, paciente, new FiltroDeAtendimentos("CARDIOLOGIA", null, null), new PedidoDePagina(1, 10))
+                .pagina().total()).isEqualTo(1);
+
+        agenda.agendar(recepcao, cardiologia.getId(), cardiologista.id(), AS_14, null);
+        FiltroDeConsultas proximas = new FiltroDeConsultas(PeriodoDasConsultas.PROXIMAS, null, null, null, "cardio");
+        ConsultasDoPaciente consultas = historico.consultas(ator, paciente, proximas, PedidoDePagina.de(null, null));
+        assertThat(consultas.pagina().itens()).hasSize(1);
+        assertThat(consultas.proximas()).isEqualTo(1);
+        assertThat(consultas.anteriores()).isZero();
+        assertThat(historico.consultas(ator, paciente, new FiltroDeConsultas(PeriodoDasConsultas.PROXIMAS, null, null, null, "dermato"),
+                PedidoDePagina.de(null, null)).pagina().total()).isZero();
+
+        assertThat(cadastro.pesquisar(recepcao, "", new PedidoDePagina(1, 1)).itens()).hasSize(1);
+        assertThat(PedidoDePagina.de(0, 500)).isEqualTo(new PedidoDePagina(1, PedidoDePagina.TAMANHO_MAXIMO));
     }
 
     @Test

@@ -9,14 +9,30 @@
   text-align: center;
 }
 
+.figura {
+  position: relative;
+  width: 100%;
+  max-width: 10rem;
+  margin-bottom: var(--espaco-2);
+}
+
 .icone {
+  position: absolute;
+  right: 0;
+  bottom: var(--espaco-2);
   display: grid;
   place-items: center;
-  width: 3rem;
-  height: 3rem;
-  border-radius: var(--raio-lg);
-  background: var(--cor-superficie-destaque);
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: var(--raio-circulo);
+  background: var(--cor-superficie);
+  box-shadow: var(--sombra-cartao);
   color: var(--cor-primaria);
+}
+
+.icone svg {
+  width: 20px;
+  height: 20px;
 }
 
 .titulo {

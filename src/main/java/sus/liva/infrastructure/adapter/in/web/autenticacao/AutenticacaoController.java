@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import sus.liva.application.exception.NaoAutenticadoException;
+import sus.liva.application.port.in.AcessoPorLink;
+import sus.liva.application.port.in.AcessoPorLinkUseCase;
 import sus.liva.application.port.in.Ator;
 import sus.liva.application.port.in.AutenticacaoUseCase;
 import sus.liva.application.port.in.Papel;
@@ -30,9 +32,20 @@ public class AutenticacaoController {
             + "enviaremos um código para o WhatsApp cadastrado.";
 
     private final AutenticacaoUseCase autenticacao;
+    private final AcessoPorLinkUseCase acessoPorLink;
 
-    public AutenticacaoController(AutenticacaoUseCase autenticacao) {
+    public AutenticacaoController(AutenticacaoUseCase autenticacao, AcessoPorLinkUseCase acessoPorLink) {
         this.autenticacao = autenticacao;
+        this.acessoPorLink = acessoPorLink;
+    }
+
+    public record LinkRecebido(String token) {}
+
+    public record AcessoPorLinkResponse(String token, Instant expiraEm, Usuario usuario, String destino) {
+        static AcessoPorLinkResponse de(AcessoPorLink a) {
+            return new AcessoPorLinkResponse(a.sessao().token(), a.sessao().expiraEm(), Usuario.de(a.sessao().ator(), a.sessao().nome()),
+                    a.destino());
+        }
     }
 
     public record Credenciais(String login, String senha) {}
@@ -74,6 +87,13 @@ public class AutenticacaoController {
     public SessaoResponse ativar(@RequestBody Ativacao request) {
         return SessaoResponse.de(autenticacao.ativarPortal(request.documento(), request.dataNascimento(), request.codigo(),
                 request.senha()));
+    }
+
+    @PostMapping("/link")
+    @Operation(summary = "Entra pelo link enviado no WhatsApp",
+            description = "O link vale por 30 minutos e só pode ser usado uma vez. Devolve a sessão e a página de destino.")
+    public AcessoPorLinkResponse entrarPorLink(@RequestBody LinkRecebido link) {
+        return AcessoPorLinkResponse.de(acessoPorLink.entrar(link.token()));
     }
 
     @GetMapping("/eu")

@@ -5,7 +5,9 @@ import sus.liva.application.exception.NaoEncontradoException;
 import sus.liva.application.port.in.Ator;
 import sus.liva.application.port.in.CadastroDePacienteUseCase;
 import sus.liva.application.port.in.DadosCadastrais;
+import sus.liva.application.port.in.Pagina;
 import sus.liva.application.port.in.Papel;
+import sus.liva.application.port.in.PedidoDePagina;
 import sus.liva.application.port.out.AuditoriaPort;
 import sus.liva.application.port.out.PacienteRepositoryPort;
 import sus.liva.domain.model.Telefone;
@@ -30,6 +32,7 @@ import static sus.liva.application.usecase.ValidacaoCadastral.vazio;
 public class CadastroDePacienteUseCaseImpl implements CadastroDePacienteUseCase {
     private static final int LIMITE_PESQUISA = 20;
     private static final int MINIMO_NOME = 3;
+    private static final int LIMITE_RECENTES = 50;
 
     private final PacienteRepositoryPort pacientes;
     private final Auditor auditor;
@@ -81,13 +84,20 @@ public class CadastroDePacienteUseCaseImpl implements CadastroDePacienteUseCase 
 
     @Override
     public List<CadastroDePaciente> pesquisar(Ator ator, String termo) {
+        int limite = termo == null || termo.isBlank() ? LIMITE_RECENTES : LIMITE_PESQUISA;
+        return pesquisar(ator, termo, new PedidoDePagina(1, limite)).itens();
+    }
+
+    @Override
+    public Pagina<CadastroDePaciente> pesquisar(Ator ator, String termo, PedidoDePagina pedido) {
         Permissoes.exigir(ator, Papel.RECEPCAO, Papel.ADMINISTRADOR, Papel.CLINICO_GERAL);
         String limpo = termo == null ? "" : termo.trim();
+        if (limpo.isEmpty()) return pacientes.cadastrosRecentes(pedido);
         String digitos = limpo.replaceAll("[\\s.\\-/]", "");
-        if (digitos.matches("\\d{11}|\\d{15}")) return pacientes.pesquisarCadastros(null, digitos, LIMITE_PESQUISA);
+        if (digitos.matches("\\d{11}|\\d{15}")) return pacientes.pesquisarCadastros(null, digitos, pedido);
         if (limpo.length() < MINIMO_NOME)
             throw new IllegalArgumentException("Digite ao menos " + MINIMO_NOME + " letras do nome, o CPF ou o Cartão SUS");
-        return pacientes.pesquisarCadastros(limpo, null, LIMITE_PESQUISA);
+        return pacientes.pesquisarCadastros(limpo, null, pedido);
     }
 
     private CadastroDePaciente existente(UUID pacienteId) {

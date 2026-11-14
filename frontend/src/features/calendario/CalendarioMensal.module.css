@@ -39,7 +39,7 @@
   width: 2.5rem;
   height: 2.5rem;
   border: 1px solid var(--cor-borda);
-  border-radius: var(--raio-pilula);
+  border-radius: var(--raio-sm);
   background: var(--cor-superficie);
   color: var(--cor-titulo);
   transition: background var(--transicao);
@@ -97,7 +97,7 @@
   bottom: 18%;
   width: 5px;
   height: 5px;
-  border-radius: var(--raio-pilula);
+  border-radius: var(--raio-circulo);
   background: var(--cor-destaque);
 }
 

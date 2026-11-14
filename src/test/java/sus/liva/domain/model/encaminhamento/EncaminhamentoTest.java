@@ -50,6 +50,8 @@ class EncaminhamentoTest {
 
         assertThat(e.getStatus()).isEqualTo(StatusEncaminhamento.AGENDADO);
         assertThatThrownBy(e::consultaAgendada).isInstanceOf(IllegalStateException.class);
+        assertThat(e.permiteRemarcacao()).isTrue();
+        assertThat(e.permiteAgendamento()).isFalse();
     }
 
     @Test

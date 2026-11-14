@@ -35,7 +35,7 @@
   place-items: center;
   width: 2.5rem;
   height: 2.5rem;
-  border-radius: var(--raio-pilula);
+  border-radius: var(--raio-circulo);
   background: var(--cor-roxo-500);
   font-weight: var(--peso-forte);
 }
@@ -128,7 +128,7 @@
   min-width: 0;
   padding: var(--espaco-3) var(--espaco-4);
   border: 1px solid var(--cor-borda);
-  border-radius: var(--raio-pilula);
+  border-radius: var(--raio-sm);
   background: var(--cor-superficie);
 }
 
@@ -139,7 +139,7 @@
   height: 2.875rem;
   flex-shrink: 0;
   border: none;
-  border-radius: var(--raio-pilula);
+  border-radius: var(--raio-sm);
   background: var(--cor-primaria);
   color: var(--cor-texto-invertido);
   transition: background var(--transicao);

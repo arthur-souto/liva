@@ -51,6 +51,7 @@ public class DispararLembreteUseCaseImpl implements DispararLembreteUseCase {
         String texto = modelos.montar(tipo, p, a);
         List<RegistroMensagem> envios = new ArrayList<>();
         envios.add(enviar(a, p.telefone(), tipo, texto));
+
         if (p.temCuidador())
             envios.add(enviar(a, p.telefoneCuidador(), tipo, modelos.paraCuidador(p, texto)));
 

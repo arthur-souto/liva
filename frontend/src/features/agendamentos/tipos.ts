@@ -5,7 +5,8 @@ export type StatusAgendamento =
   | "CANCELADO"
   | "REAGENDADO"
   | "COMPARECEU"
-  | "FALTOU";
+  | "FALTOU"
+  | "EM_ANDAMENTO";
 
 export type TipoAtendimento = "CONSULTA" | "TRIAGEM" | "EXAME";
 
@@ -39,6 +40,10 @@ export type ListaDaEquipe = {
   inicio: string;
   fim: string;
   total: number;
+  encontrados: number;
+  pagina: number;
+  tamanho: number;
+  totalPaginas: number;
   porStatus: Record<StatusAgendamento, number>;
   agendamentos: AgendamentoDaEquipe[];
 };

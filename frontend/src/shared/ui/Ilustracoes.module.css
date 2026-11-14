@@ -1,0 +1,195 @@
+.ilustracao {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.fundo {
+  fill: var(--cor-primaria-suave);
+}
+
+.fundoQuente {
+  fill: var(--cor-destaque-suave);
+}
+
+.chao {
+  fill: var(--cor-borda);
+}
+
+.papel {
+  fill: var(--cor-superficie);
+  stroke: var(--cor-borda-forte);
+  stroke-width: 1.5;
+}
+
+.primaria {
+  fill: var(--cor-primaria);
+}
+
+.tela {
+  fill: var(--ilustra-mensagem);
+}
+
+.grade {
+  fill: var(--cor-primaria-suave);
+}
+
+.destaque {
+  fill: var(--cor-destaque);
+}
+
+.traco {
+  fill: var(--cor-borda-forte);
+}
+
+.mensagem {
+  fill: var(--ilustra-mensagem);
+}
+
+.ponto {
+  fill: var(--cor-sucesso);
+}
+
+.linhaTexto {
+  fill: var(--cor-borda-forte);
+}
+
+.check,
+.checkVerde {
+  fill: none;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.check {
+  stroke: var(--cor-branco);
+}
+
+.checkVerde {
+  stroke: var(--cor-sucesso);
+}
+
+.roupaRoxa {
+  fill: var(--cor-secundaria);
+}
+
+.roupaLaranja {
+  fill: var(--cor-destaque);
+}
+
+.perna,
+.bracoRoxo,
+.bracoLaranja,
+.bracoPele,
+.bengala {
+  fill: none;
+  stroke-linecap: round;
+}
+
+.perna {
+  stroke: var(--cor-roxo-900);
+  stroke-width: 12;
+}
+
+.bracoRoxo {
+  stroke: var(--cor-secundaria);
+  stroke-width: 10;
+}
+
+.bracoLaranja {
+  stroke: var(--cor-destaque);
+  stroke-width: 10;
+}
+
+.bracoPele {
+  stroke: var(--ilustra-pele-clara);
+  stroke-width: 11;
+}
+
+.bengala {
+  stroke: var(--cor-cinza-600);
+  stroke-width: 4;
+}
+
+.peleClara {
+  fill: var(--ilustra-pele-clara);
+}
+
+.peleMedia {
+  fill: var(--ilustra-pele-media);
+}
+
+.peleEscura {
+  fill: var(--ilustra-pele-escura);
+}
+
+.cabelo {
+  fill: var(--ilustra-cabelo);
+}
+
+.cabeloGrisalho {
+  fill: var(--ilustra-cabelo-grisalho);
+}
+
+.aceno {
+  fill: none;
+  stroke: var(--cor-destaque);
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+
+.caixa {
+  fill: var(--cor-destaque-suave);
+  stroke: var(--cor-destaque);
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+
+.tampa {
+  fill: var(--cor-superficie);
+  stroke: var(--cor-destaque);
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+
+.interrogacao {
+  fill: var(--cor-secundaria);
+  font-family: var(--fonte-marca);
+  font-size: 28px;
+  font-weight: 800;
+}
+
+.cabo {
+  fill: none;
+  stroke: var(--cor-primaria);
+  stroke-width: 8;
+  stroke-linecap: round;
+}
+
+.lente {
+  fill: var(--cor-superficie);
+  stroke: var(--cor-primaria);
+  stroke-width: 6;
+}
+
+.jaleco {
+  fill: var(--cor-superficie);
+  stroke: var(--cor-borda-forte);
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+
+.bracoJaleco {
+  fill: none;
+  stroke: var(--cor-borda-forte);
+  stroke-width: 11;
+  stroke-linecap: round;
+}
+
+.estetoscopio {
+  fill: none;
+  stroke: var(--cor-primaria);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+}

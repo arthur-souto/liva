@@ -92,7 +92,7 @@
   height: 1em;
   border: 2px solid currentColor;
   border-right-color: transparent;
-  border-radius: var(--raio-pilula);
+  border-radius: var(--raio-circulo);
   animation: girar 0.7s linear infinite;
 }
 

@@ -34,8 +34,4 @@
   .titulo {
     font-size: var(--texto-3xl);
   }
-
-  .logo {
-    display: none;
-  }
 }

@@ -1,18 +1,25 @@
 import { requisitar } from "@/shared/api/cliente";
+import type { Pagina } from "@/shared/api/pagina";
 import type {
+  Atendimentos,
   AvaliacaoClinica,
   Consulta,
+  ConsultasDoPortal,
   ConsultaDaAgenda,
   DadosDoPaciente,
   Encaminhamento,
   EncaminhamentoRecebido,
   Especialidade,
   Evolucao,
+  FiltrosDeAtendimentos,
+  FiltrosDeConsultas,
   Historico,
   HorarioDisponivel,
   ItemDaFila,
   NovoEncaminhamento,
   Paciente,
+  Parentesco,
+  PessoaDeConfianca,
   Prioridade,
   Profissional,
   Ramo,
@@ -23,8 +30,14 @@ import type {
 
 const id = encodeURIComponent;
 
-export function pesquisarPacientes(termo: string): Promise<Paciente[]> {
-  return requisitar<Paciente[]>("/pacientes", { parametros: { termo } });
+function comoParametros(filtros: Record<string, string | number | undefined>): Record<string, string | undefined> {
+  return Object.fromEntries(
+    Object.entries(filtros).map(([nome, valor]) => [nome, valor === undefined || valor === "" ? undefined : String(valor)]),
+  );
+}
+
+export function pesquisarPacientesPaginado(termo: string, pagina: number, tamanho = 10): Promise<Pagina<Paciente>> {
+  return requisitar<Pagina<Paciente>>("/pacientes/pagina", { parametros: comoParametros({ termo, pagina, tamanho }) });
 }
 
 export function buscarPaciente(pacienteId: string): Promise<Paciente> {
@@ -43,8 +56,39 @@ export function historicoDoPaciente(pacienteId: string): Promise<Historico> {
   return requisitar<Historico>(`/pacientes/${id(pacienteId)}/historico`);
 }
 
+export function atendimentosDoPaciente(pacienteId: string, filtros: FiltrosDeAtendimentos): Promise<Atendimentos> {
+  return requisitar<Atendimentos>(`/pacientes/${id(pacienteId)}/atendimentos`, { parametros: comoParametros(filtros) });
+}
+
+export function meusAtendimentos(filtros: FiltrosDeAtendimentos): Promise<Atendimentos> {
+  return requisitar<Atendimentos>("/portal/atendimentos", { parametros: comoParametros(filtros) });
+}
+
+export function minhasConsultas(filtros: FiltrosDeConsultas): Promise<ConsultasDoPortal> {
+  return requisitar<ConsultasDoPortal>("/portal/consultas", { parametros: comoParametros(filtros) });
+}
+
 export function meuHistorico(): Promise<Historico> {
   return requisitar<Historico>("/portal/historico");
+}
+
+export function pessoasDeConfianca(pacienteId: string): Promise<PessoaDeConfianca[]> {
+  return requisitar<PessoaDeConfianca[]>(`/pacientes/${id(pacienteId)}/pessoas-de-confianca`);
+}
+
+export function vincularPessoaDeConfianca(
+  pacienteId: string,
+  dados: { nome: string; cpf: string; telefone: string; parentesco: Parentesco; autorizacaoRegistrada: boolean },
+): Promise<PessoaDeConfianca> {
+  return requisitar<PessoaDeConfianca>(`/pacientes/${id(pacienteId)}/pessoas-de-confianca`, { metodo: "POST", corpo: dados });
+}
+
+export function revogarPessoaDeConfianca(pacienteId: string, cuidadorId: string): Promise<void> {
+  return requisitar<void>(`/pacientes/${id(pacienteId)}/pessoas-de-confianca/${id(cuidadorId)}`, { metodo: "DELETE" });
+}
+
+export function minhasRemarcacoes(): Promise<{ limite: number; usadas: number; restantes: number }> {
+  return requisitar("/portal/remarcacoes");
 }
 
 export function registrarChegada(pacienteId: string): Promise<Triagem> {
@@ -127,6 +171,10 @@ export function agendarConsulta(encaminhamentoId: string, profissionalId: string
     corpo: { profissionalId, inicio },
     cabecalhos: { "Idempotency-Key": chave },
   });
+}
+
+export function remarcarConsulta(consultaId: string, profissionalId: string, inicio: string, versao: number): Promise<Consulta> {
+  return requisitar<Consulta>(`/consultas/${id(consultaId)}/remarcar`, { metodo: "POST", corpo: { profissionalId, inicio, versao } });
 }
 
 export function cancelarConsulta(consultaId: string, versao: number): Promise<Consulta> {

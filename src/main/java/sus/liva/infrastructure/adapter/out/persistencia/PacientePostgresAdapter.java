@@ -1,9 +1,13 @@
 package sus.liva.infrastructure.adapter.out.persistencia;
 
-import org.springframework.data.domain.Limit;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import sus.liva.application.exception.NaoEncontradoException;
+import sus.liva.application.port.in.Pagina;
+import sus.liva.application.port.in.PedidoDePagina;
 import sus.liva.application.port.out.PacienteRepositoryPort;
 import sus.liva.domain.model.Telefone;
 import sus.liva.domain.model.paciente.CadastroDePaciente;
@@ -14,6 +18,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Function;
 
 @Component
 public class PacientePostgresAdapter implements PacienteRepositoryPort {
@@ -64,8 +69,24 @@ public class PacientePostgresAdapter implements PacienteRepositoryPort {
 
     @Override
     @Transactional(readOnly = true)
-    public List<CadastroDePaciente> pesquisarCadastros(String nome, String documento, int limite) {
-        return repository.pesquisar(Objects.requireNonNullElse(nome, ""), Objects.requireNonNullElse(documento, ""), Limit.of(limite)).stream().map(PacienteEntity::paraCadastro).toList();
+    public Pagina<CadastroDePaciente> pesquisarCadastros(String nome, String documento, PedidoDePagina pedido) {
+        String n = Objects.requireNonNullElse(nome, "");
+        String d = Objects.requireNonNullElse(documento, "");
+        return pagina(p -> repository.pesquisarPaginado(n, d, p), pedido);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Pagina<CadastroDePaciente> cadastrosRecentes(PedidoDePagina pedido) {
+        return pagina(repository::findAllByOrderByCriadoEmDesc, pedido);
+    }
+
+    private static Pagina<CadastroDePaciente> pagina(Function<Pageable, Page<PacienteEntity>> consulta, PedidoDePagina pedido) {
+        Page<PacienteEntity> encontrada = consulta.apply(PageRequest.of(pedido.numero() - 1, pedido.tamanho()));
+        if (encontrada.isEmpty() && encontrada.getTotalElements() > 0)
+            encontrada = consulta.apply(PageRequest.of(encontrada.getTotalPages() - 1, pedido.tamanho()));
+        return new Pagina<>(encontrada.getContent().stream().map(PacienteEntity::paraCadastro).toList(), encontrada.getNumber() + 1,
+                pedido.tamanho(), encontrada.getTotalElements());
     }
 
     @Override

@@ -16,7 +16,7 @@ export const metadata: Metadata = {
 export default function LayoutRaiz({ children }: { children: ReactNode }) {
   return (
     <html lang="pt-BR" className={`${inter.variable} ${nunito.variable}`}>
-      <body>
+      <body suppressHydrationWarning>
         <Estrutura>{children}</Estrutura>
       </body>
     </html>

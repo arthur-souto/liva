@@ -1,3 +1,5 @@
+import type { Pagina } from "@/shared/api/pagina";
+
 export type Sexo = "MASCULINO" | "FEMININO" | "OUTRO" | "NAO_INFORMADO";
 export type StatusTriagem = "AGUARDANDO_ATENDIMENTO" | "EM_ANDAMENTO" | "FINALIZADA" | "CANCELADA" | "ENCERRADA";
 export type Prioridade = "EMERGENCIA" | "MUITO_URGENTE" | "URGENTE" | "POUCO_URGENTE" | "NAO_URGENTE";
@@ -193,4 +195,53 @@ export type NovoEncaminhamento = {
   modalidade: Modalidade;
   prioridade: Prioridade;
   justificativa: string;
+};
+
+export type Parentesco =
+  "FILHO" | "CONJUGE" | "PAI_OU_MAE" | "IRMAO" | "NETO" | "OUTRO_FAMILIAR" | "RESPONSAVEL_LEGAL" | "CUIDADOR_PROFISSIONAL" | "AMIGO";
+
+export type PessoaDeConfianca = {
+  id: string;
+  nome: string;
+  cpf: string;
+  telefone: string;
+  parentesco: Parentesco;
+  autorizadoEm: string;
+};
+
+export type Atendimento = RamoDoHistorico & { numero: number };
+
+export type Atendimentos = Pagina<Atendimento> & { especialidades: string[]; anos: number[] };
+
+export type FiltrosDeAtendimentos = {
+  especialidade?: string;
+  andamento?: "ABERTO" | "ENCERRADO";
+  ano?: string;
+  pagina?: number;
+  tamanho?: number;
+};
+
+export type ConsultaDoPortal = {
+  consulta: Consulta;
+  encaminhamento: ResumoDoEncaminhamento | null;
+  especialidade: string;
+  profissional: string | null;
+};
+
+export type ConsultasDoPortal = Pagina<ConsultaDoPortal> & {
+  proximas: number;
+  anteriores: number;
+  especialidades: string[];
+  situacoes: StatusConsulta[];
+  anos: number[];
+};
+
+export type FiltrosDeConsultas = {
+  periodo: "PROXIMAS" | "ANTERIORES";
+  especialidade?: string;
+  situacao?: StatusConsulta;
+  ano?: string;
+  busca?: string;
+  pagina?: number;
+  tamanho?: number;
 };

@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarX2, Clock, Inbox, MessageCircle, Phone, RefreshCw } from "lucide-react";
+import { BellRing, CalendarX2, CircleCheck, Clock, Inbox, MessageCircle, Phone, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { listarAgendamentos } from "@/features/agendamentos/api";
@@ -105,7 +105,10 @@ export function PainelAvisos() {
       <CabecalhoPagina titulo="Avisos" subtitulo={`Próximos ${DIAS} dias`} acoes={<AtualizadoHa atualizadoEm={consulta.atualizadoEm} carregando={consulta.carregando} aoAtualizar={consulta.recarregar} />} />
 
       <Cartao espacamento="amplo" className={estilos.hero}>
-        <p className={estilos.heroTitulo}>{pendentes === 0 ? "Você está em dia 💜" : `${pendentes} ${pendentes === 1 ? "aviso pede" : "avisos pedem"} ação`}</p>
+        <p className={estilos.heroTitulo}>
+          {pendentes === 0 ? <CircleCheck size={28} aria-hidden="true" /> : <BellRing size={28} aria-hidden="true" />}
+          {pendentes === 0 ? "Você está em dia" : `${pendentes} ${pendentes === 1 ? "aviso pede" : "avisos pedem"} ação`}
+        </p>
         <p className={estilos.heroTexto}>
           {pendentes === 0
             ? "Nenhum cancelamento ou pedido de remarcação pendente."

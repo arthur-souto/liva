@@ -18,6 +18,7 @@ import sus.liva.application.port.out.ResultadoEnvio;
 import sus.liva.application.port.out.TokenEmitido;
 import sus.liva.application.port.out.TransacaoPort;
 import sus.liva.application.port.out.TriagemRepositoryPort;
+import sus.liva.domain.model.Telefone;
 import sus.liva.domain.model.paciente.Paciente;
 
 import java.security.SecureRandom;
@@ -117,8 +118,25 @@ public class AutenticacaoUseCaseImpl implements AutenticacaoUseCase {
         ResultadoEnvio envio = enviador.enviar(new MensagemSaida(null, paciente.telefone(), null,
                 "ConfirmaSUS: seu código de acesso ao portal é " + codigo + ". Ele vale por "
                         + VALIDADE_DO_CODIGO.toMinutes() + " minutos. Não compartilhe este código com ninguém."));
-        if (!envio.sucesso())
+        if (envio.sucesso())
+            LOG.log(System.Logger.Level.INFO, "Código do portal enviado ao paciente " + paciente.id() + " no telefone final " + finalDoTelefone(paciente.telefone()));
+        else
             LOG.log(System.Logger.Level.WARNING, "Código do portal não enviado ao paciente " + paciente.id() + ": " + envio.erro());
+    }
+
+    private void avisarAtivacao(Paciente paciente) {
+        try {
+            ResultadoEnvio envio = enviador.enviar(new MensagemSaida(null, paciente.telefone(), null, new ModeloMensagens().portalAtivado(paciente)));
+            if (!envio.sucesso())
+                LOG.log(System.Logger.Level.WARNING, "Aviso de ativação do portal não enviado ao paciente " + paciente.id() + ": " + envio.erro());
+        } catch (RuntimeException e) {
+            LOG.log(System.Logger.Level.WARNING, "Aviso de ativação do portal falhou para o paciente " + paciente.id(), e);
+        }
+    }
+
+    private static String finalDoTelefone(Telefone telefone) {
+        if (telefone == null) return "desconhecido";
+        return telefone.e164().substring(telefone.e164().length() - 4);
     }
 
     @Override
@@ -149,6 +167,7 @@ public class AutenticacaoUseCaseImpl implements AutenticacaoUseCase {
         ContaDeAcesso conta = ativada.orElseThrow(() -> new IllegalArgumentException(CODIGO_INVALIDO));
         if (!conta.ativo()) throw new NaoAutenticadoException("Este acesso está desativado. Procure a recepção da unidade.");
         auditor.registrar(conta.ator(), "ATIVAR_PORTAL", "USUARIO", conta.id(), paciente.id());
+        avisarAtivacao(paciente);
         return sessao(conta);
     }
 

@@ -7,9 +7,8 @@ import { ativarPortal, solicitarCodigoDoPortal } from "@/shared/sessao/sessao";
 import { Alerta } from "@/shared/ui/Alerta";
 import { Botao } from "@/shared/ui/Botao";
 import { Campo } from "@/shared/ui/Campo";
-import { Cartao } from "@/shared/ui/Cartao";
-import { Logo } from "@/shared/ui/Logo";
 import estilos from "./FormularioEntrar.module.css";
+import { MolduraDeAcesso } from "./MolduraDeAcesso";
 
 const SENHA_FORTE = /^(?=.*\p{L})(?=.*\d).{8,72}$/u;
 
@@ -69,72 +68,66 @@ export function AtivarPortal() {
   }
 
   return (
-    <div className={estilos.pagina}>
-      <div className={estilos.marca}>
-        <Logo tamanho="grande" />
-        <p className={estilos.slogan}>Seu cuidado, mais perto.</p>
-      </div>
-      <Cartao espacamento="amplo" className={estilos.cartao}>
-        {etapa === "identificacao" ? (
-          <form onSubmit={solicitar} className={estilos.formulario} noValidate>
-            <div>
-              <h1 className={estilos.titulo}>Portal do paciente</h1>
-              <p className={estilos.subtitulo}>Enviaremos um código pelo WhatsApp cadastrado na unidade.</p>
-            </div>
-            {falha && <Alerta tom="perigo">{falha}</Alerta>}
-            <Campo rotulo="CPF ou Cartão SUS" value={documento} onChange={(e) => setDocumento(e.target.value)} inputMode="numeric" autoComplete="username" required />
-            <Campo rotulo="Data de nascimento" type="date" value={nascimento} onChange={(e) => setNascimento(e.target.value)} required />
-            <Botao type="submit" tamanho="grande" larguraTotal carregando={enviando} icone={<Send size={20} aria-hidden="true" />}>
-              Receber código
-            </Botao>
-            <p className={estilos.rodape}>
-              Já tem senha? <a href="/entrar">Entrar</a>
-            </p>
-          </form>
-        ) : (
-          <form onSubmit={ativar} className={estilos.formulario} noValidate>
-            <div>
-              <h1 className={estilos.titulo}>Criar senha</h1>
-              <p className={estilos.subtitulo}>Digite o código recebido e escolha uma senha.</p>
-            </div>
-            {aviso && <Alerta tom="info">{aviso}</Alerta>}
-            {falha && <Alerta tom="perigo">{falha}</Alerta>}
-            <Campo
-              rotulo="Código"
-              value={codigo}
-              onChange={(e) => setCodigo(e.target.value.replace(/\D/g, "").slice(0, 6))}
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              required
-            />
-            <Campo
-              rotulo="Nova senha"
-              type="password"
-              value={senha}
-              onChange={(e) => setSenha(e.target.value)}
-              autoComplete="new-password"
-              dica="De 8 a 72 caracteres, com letras e números."
-              required
-            />
-            <Botao type="submit" tamanho="grande" larguraTotal carregando={enviando} icone={<KeyRound size={20} aria-hidden="true" />}>
-              Ativar e entrar
-            </Botao>
-            <p className={estilos.rodape}>
-              Não recebeu?{" "}
-              <a
-                href="/portal/ativar"
-                onClick={(e) => {
-                  e.preventDefault();
-                  setEtapa("identificacao");
-                  setFalha(null);
-                }}
-              >
-                Pedir outro código
-              </a>
-            </p>
-          </form>
-        )}
-      </Cartao>
-    </div>
+    <MolduraDeAcesso>
+      {etapa === "identificacao" ? (
+        <form onSubmit={solicitar} className={estilos.formulario} noValidate>
+          <div>
+            <h1 className={estilos.titulo}>Portal do paciente</h1>
+            <p className={estilos.subtitulo}>Enviaremos um código pelo WhatsApp cadastrado na unidade.</p>
+          </div>
+          {falha && <Alerta tom="perigo">{falha}</Alerta>}
+          <Campo rotulo="CPF ou Cartão SUS" value={documento} onChange={(e) => setDocumento(e.target.value)} inputMode="numeric" autoComplete="username" required />
+          <Campo rotulo="Data de nascimento" type="date" value={nascimento} onChange={(e) => setNascimento(e.target.value)} required />
+          <Botao type="submit" tamanho="grande" larguraTotal carregando={enviando} icone={<Send size={20} aria-hidden="true" />}>
+            Receber código
+          </Botao>
+          <p className={estilos.rodape}>
+            Já tem senha? <a href="/entrar">Entrar</a>
+          </p>
+        </form>
+      ) : (
+        <form onSubmit={ativar} className={estilos.formulario} noValidate>
+          <div>
+            <h1 className={estilos.titulo}>Criar senha</h1>
+            <p className={estilos.subtitulo}>Digite o código recebido e escolha uma senha.</p>
+          </div>
+          {aviso && <Alerta tom="info">{aviso}</Alerta>}
+          {falha && <Alerta tom="perigo">{falha}</Alerta>}
+          <Campo
+            rotulo="Código"
+            value={codigo}
+            onChange={(e) => setCodigo(e.target.value.replace(/\D/g, "").slice(0, 6))}
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            required
+          />
+          <Campo
+            rotulo="Nova senha"
+            type="password"
+            value={senha}
+            onChange={(e) => setSenha(e.target.value)}
+            autoComplete="new-password"
+            dica="De 8 a 72 caracteres, com letras e números."
+            required
+          />
+          <Botao type="submit" tamanho="grande" larguraTotal carregando={enviando} icone={<KeyRound size={20} aria-hidden="true" />}>
+            Ativar e entrar
+          </Botao>
+          <p className={estilos.rodape}>
+            Não recebeu?{" "}
+            <a
+              href="/portal/ativar"
+              onClick={(e) => {
+                e.preventDefault();
+                setEtapa("identificacao");
+                setFalha(null);
+              }}
+            >
+              Pedir outro código
+            </a>
+          </p>
+        </form>
+      )}
+    </MolduraDeAcesso>
   );
 }

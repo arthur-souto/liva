@@ -1,5 +1,7 @@
 package sus.liva.infrastructure.adapter.out.memoria;
 
+import sus.liva.application.port.in.Pagina;
+import sus.liva.application.port.in.PedidoDePagina;
 import sus.liva.application.port.out.PacienteRepositoryPort;
 import sus.liva.domain.model.Telefone;
 import sus.liva.domain.model.paciente.CadastroDePaciente;
@@ -46,13 +48,17 @@ public class PacienteMemoriaAdapter implements PacienteRepositoryPort {
     }
 
     @Override
-    public List<CadastroDePaciente> pesquisarCadastros(String nome, String documento, int limite) {
-        return dados.values().stream()
+    public Pagina<CadastroDePaciente> pesquisarCadastros(String nome, String documento, PedidoDePagina pedido) {
+        return Pagina.de(dados.values().stream()
                 .filter(p -> documento != null ? documento.equals(p.cpf()) || documento.equals(p.cartaoSus())
-                        : p.nomeCompleto().toLowerCase().startsWith(nome.toLowerCase()))
-                .limit(limite)
+                        : p.nomeCompleto().toLowerCase().contains(nome.toLowerCase()))
                 .map(p -> new CadastroDePaciente(p, 0, Instant.EPOCH, null, null))
-                .toList();
+                .toList(), pedido);
+    }
+
+    @Override
+    public Pagina<CadastroDePaciente> cadastrosRecentes(PedidoDePagina pedido) {
+        return Pagina.de(dados.values().stream().map(p -> new CadastroDePaciente(p, 0, Instant.EPOCH, null, null)).toList(), pedido);
     }
 
     @Override

@@ -1,4 +1,4 @@
-import { CalendarClock, CircleCheck, CircleX, Clock, MessageCircleQuestion, Send } from "lucide-react";
+import { CalendarClock, CircleCheck, CircleX, Clock, MessageCircleQuestion, Send, Stethoscope } from "lucide-react";
 import { classes } from "@/shared/lib/classes";
 import { RESPOSTA_DO_PACIENTE } from "../rotulos";
 import type { StatusAgendamento } from "../tipos";
@@ -12,6 +12,7 @@ const ICONES: Record<StatusAgendamento, typeof Clock> = {
   REAGENDADO: CalendarClock,
   COMPARECEU: CircleCheck,
   FALTOU: CircleX,
+  EM_ANDAMENTO: Stethoscope,
 };
 
 export function RespostaDoPaciente({ status }: { status: StatusAgendamento }) {

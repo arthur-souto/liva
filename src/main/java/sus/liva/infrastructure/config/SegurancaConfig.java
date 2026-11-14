@@ -74,7 +74,7 @@ public class SegurancaConfig implements WebMvcConfigurer {
                 .requestCache(AbstractHttpConfigurer::disable)
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(a -> a
-                        .requestMatchers("/api/auth/entrar", "/api/auth/portal/**", "/api/webhooks/**").permitAll()
+                        .requestMatchers("/api/auth/entrar", "/api/auth/link", "/api/auth/portal/**", "/api/auth/cuidador/**", "/api/webhooks/**").permitAll()
                         .requestMatchers(rotasDeSistema).hasAnyRole(ChaveApiFiltro.PAPEL_SISTEMA, "ADMINISTRADOR", "RECEPCAO")
                         .requestMatchers("/api/**").authenticated()
                         .anyRequest().permitAll())

@@ -3,6 +3,19 @@ package sus.liva.infrastructure.config;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import sus.liva.application.port.in.AcessoPorLinkUseCase;
+import sus.liva.application.port.in.PessoaDeConfiancaUseCase;
+import sus.liva.application.port.out.ConversaPort;
+import sus.liva.application.port.out.CuidadorRepositoryPort;
+import sus.liva.application.port.out.LinkDeAcessoPort;
+import sus.liva.application.port.out.RemarcacaoPort;
+import sus.liva.application.usecase.AcessoPorLinkUseCaseImpl;
+import sus.liva.application.usecase.AssistenteWhatsApp;
+import sus.liva.application.usecase.LembretesParaPessoasDeConfianca;
+import sus.liva.application.usecase.LimiteDeRemarcacoes;
+import sus.liva.application.usecase.LinksDeAcesso;
+import sus.liva.application.usecase.NotificacaoAoPaciente;
+import sus.liva.application.usecase.PessoaDeConfiancaUseCaseImpl;
 import sus.liva.application.port.in.AgendaDeConsultasUseCase;
 import sus.liva.application.port.in.AgendarAtendimentoUseCase;
 import sus.liva.application.port.in.AtendimentoEspecializadoUseCase;
@@ -68,8 +81,11 @@ public class UseCaseConfig {
                                                            PacienteRepositoryPort pacientes,
                                                            RegistroMensagemPort registros,
                                                            EnviadorMensagemPort enviador,
-                                                           ModeloMensagens modelos) {
-        return new DispararLembreteUseCaseImpl(agendamentos, pacientes, registros, enviador, modelos);
+                                                           ModeloMensagens modelos,
+                                                           CuidadorRepositoryPort cuidadores,
+                                                           Clock clock) {
+        return new LembretesParaPessoasDeConfianca(new DispararLembreteUseCaseImpl(agendamentos, pacientes, registros, enviador, modelos),
+                agendamentos, pacientes, cuidadores, registros, enviador, modelos, clock);
     }
 
     @Bean
@@ -92,6 +108,52 @@ public class UseCaseConfig {
     }
 
     @Bean
+    public NotificacaoAoPaciente notificacaoAoPaciente(PacienteRepositoryPort pacientes, EnviadorMensagemPort enviador,
+                                                       RegistroMensagemPort registros, ModeloMensagens modelos,
+                                                       CuidadorRepositoryPort cuidadores, Clock clock) {
+        return new NotificacaoAoPaciente(pacientes, enviador, registros, modelos, cuidadores, clock);
+    }
+
+    @Bean
+    public LimiteDeRemarcacoes limiteDeRemarcacoes(RemarcacaoPort remarcacoes, Clock clock) {
+        return new LimiteDeRemarcacoes(remarcacoes, clock);
+    }
+
+    @Bean
+    public LinksDeAcesso linksDeAcesso(LinkDeAcessoPort links, Clock clock, @Value("${confirmasus.portal.url}") String urlDoPortal) {
+        return new LinksDeAcesso(links, clock, urlDoPortal);
+    }
+
+    @Bean
+    public AcessoPorLinkUseCase acessoPorLinkUseCase(LinkDeAcessoPort links, ContaDeAcessoPort contas, PacienteRepositoryPort pacientes,
+                                                     EmissorDeTokenPort emissor, TransacaoPort transacao, AuditoriaPort auditoria,
+                                                     Clock clock) {
+        return new AcessoPorLinkUseCaseImpl(links, contas, pacientes, emissor, transacao, auditoria, clock);
+    }
+
+    @Bean
+    public AssistenteWhatsApp assistenteWhatsApp(PacienteRepositoryPort pacientes, EncaminhamentoRepositoryPort encaminhamentos,
+                                                 AgendamentoRepositoryPort agendamentos, ProfissionalRepositoryPort profissionais,
+                                                 ContaDeAcessoPort contas, ConversaPort conversas, RegistroMensagemPort registros,
+                                                 AgendaDeConsultasUseCase agenda, LinksDeAcesso links, LimiteDeRemarcacoes limite,
+                                                 NotificacaoAoPaciente notificacao, ModeloMensagens modelos,
+                                                 CuidadorRepositoryPort cuidadores, Clock clock) {
+        return new AssistenteWhatsApp(pacientes, encaminhamentos, agendamentos, profissionais, contas, conversas, registros,
+                agenda, links, limite, notificacao, modelos, cuidadores, clock);
+    }
+
+    @Bean
+    public PessoaDeConfiancaUseCase pessoaDeConfiancaUseCase(CuidadorRepositoryPort cuidadores, PacienteRepositoryPort pacientes,
+                                                             TriagemRepositoryPort triagens, CifradorPort cifrador,
+                                                             EmissorDeTokenPort emissor, EnviadorMensagemPort enviador,
+                                                             NotificacaoAoPaciente notificacao, ModeloMensagens modelos,
+                                                             TransacaoPort transacao, AuditoriaPort auditoria, Clock clock,
+                                                             @Value("${confirmasus.portal.url}") String urlDoPortal) {
+        return new PessoaDeConfiancaUseCaseImpl(cuidadores, pacientes, triagens, cifrador, emissor, enviador, notificacao, modelos,
+                transacao, auditoria, clock, urlDoPortal);
+    }
+
+    @Bean
     public ProcessarRespostaUseCase processarRespostaUseCase(RegistroMensagemPort registros,
                                                              MensagemRecebidaPort recebidas,
                                                              AgendamentoRepositoryPort agendamentos,
@@ -100,9 +162,10 @@ public class UseCaseConfig {
                                                              EnviadorMensagemPort enviador,
                                                              ModeloMensagens modelos,
                                                              TransacaoPort transacao,
-                                                             Clock clock) {
+                                                             Clock clock,
+                                                             AssistenteWhatsApp assistente) {
         return new ProcessarRespostaUseCaseImpl(registros, recebidas, agendamentos, encaminhamentos, pacientes, enviador,
-                modelos, transacao, clock);
+                modelos, transacao, clock, assistente);
     }
 
     @Bean
@@ -135,9 +198,11 @@ public class UseCaseConfig {
                                                              AgendamentoRepositoryPort agendamentos,
                                                              ProfissionalRepositoryPort profissionais,
                                                              DispararLembreteUseCase dispararLembrete,
-                                                             TransacaoPort transacao, AuditoriaPort auditoria, Clock clock) {
+                                                             TransacaoPort transacao, AuditoriaPort auditoria,
+                                                             NotificacaoAoPaciente notificacao, ModeloMensagens modelos,
+                                                             LimiteDeRemarcacoes limite, Clock clock) {
         return new AgendaDeConsultasUseCaseImpl(encaminhamentos, triagens, agendamentos, profissionais, dispararLembrete,
-                transacao, auditoria, clock);
+                transacao, auditoria, notificacao, modelos, limite, clock);
     }
 
     @Bean

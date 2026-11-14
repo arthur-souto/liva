@@ -60,7 +60,7 @@
 .acao {
   width: fit-content;
   padding: var(--espaco-1) var(--espaco-3);
-  border-radius: var(--raio-pilula);
+  border-radius: var(--raio-sm);
   background: var(--cor-destaque);
   color: var(--cor-roxo-950);
   font-size: var(--texto-xs);

@@ -3,7 +3,7 @@
   align-items: center;
   gap: var(--espaco-1);
   padding: 2px var(--espaco-2);
-  border-radius: var(--raio-pilula);
+  border-radius: var(--raio-sm);
   font-size: var(--texto-xs);
   font-weight: var(--peso-semi);
   white-space: nowrap;

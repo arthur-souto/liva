@@ -4,7 +4,7 @@
   gap: var(--espaco-1);
   padding: var(--espaco-1) var(--espaco-2);
   border: none;
-  border-radius: var(--raio-pilula);
+  border-radius: var(--raio-sm);
   background: transparent;
   color: var(--cor-texto-suave);
   font-size: var(--texto-xs);

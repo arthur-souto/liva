@@ -34,7 +34,7 @@
   left: 50%;
   width: 0.24em;
   height: 0.24em;
-  border-radius: var(--raio-pilula);
+  border-radius: var(--raio-circulo);
   background: var(--cor-destaque);
   transform: translateX(-50%);
 }

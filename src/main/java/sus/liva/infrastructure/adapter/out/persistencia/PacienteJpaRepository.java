@@ -1,6 +1,7 @@
 package sus.liva.infrastructure.adapter.out.persistencia;
 
-import org.springframework.data.domain.Limit;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -14,10 +15,18 @@ interface PacienteJpaRepository extends JpaRepository<PacienteEntity, UUID> {
     Optional<PacienteEntity> findByCartaoSus(String cartaoSus);
     List<PacienteEntity> findByTelefone(String telefone);
 
-    @Query("""
+    @Query(value = """
             select p from PacienteEntity p
             where (:documento <> '' and (p.cpf = :documento or p.cartaoSus = :documento))
-               or (:nome <> '' and lower(p.nomeCompleto) like concat(lower(:nome), '%'))
-            order by p.nomeCompleto""")
-    List<PacienteEntity> pesquisar(@Param("nome") String nome, @Param("documento") String documento, Limit limite);
+               or (:nome <> '' and (lower(p.nomeCompleto) like concat('%', lower(:nome), '%')
+                                    or lower(p.nomeSocial) like concat('%', lower(:nome), '%')))
+            order by p.nomeCompleto""",
+            countQuery = """
+            select count(p) from PacienteEntity p
+            where (:documento <> '' and (p.cpf = :documento or p.cartaoSus = :documento))
+               or (:nome <> '' and (lower(p.nomeCompleto) like concat('%', lower(:nome), '%')
+                                    or lower(p.nomeSocial) like concat('%', lower(:nome), '%')))""")
+    Page<PacienteEntity> pesquisarPaginado(@Param("nome") String nome, @Param("documento") String documento, Pageable pagina);
+
+    Page<PacienteEntity> findAllByOrderByCriadoEmDesc(Pageable pagina);
 }

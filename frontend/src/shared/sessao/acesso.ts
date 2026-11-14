@@ -8,6 +8,7 @@ const AREAS: Record<Papel, { inicio: string; prefixos: string[] }> = {
   CLINICO_GERAL: { inicio: "/triagem", prefixos: ["/triagem"] },
   ESPECIALISTA: { inicio: "/especialista", prefixos: ["/especialista"] },
   PACIENTE: { inicio: "/portal", prefixos: ["/portal"] },
+  CUIDADOR: { inicio: "/portal", prefixos: ["/portal"] },
 };
 
 function dentro(caminho: string, prefixo: string): boolean {

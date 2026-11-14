@@ -78,6 +78,10 @@ public class Encaminhamento {
         return modalidade == Modalidade.ELETIVO && status == StatusEncaminhamento.AGUARDANDO_AGENDAMENTO;
     }
 
+    public boolean permiteRemarcacao() {
+        return modalidade == Modalidade.ELETIVO && status == StatusEncaminhamento.AGENDADO;
+    }
+
     public void consultaAgendada() {
         if (!permiteAgendamento())
             throw new IllegalStateException("Este encaminhamento não está liberado para agendamento. Status atual: " + status);

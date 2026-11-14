@@ -9,6 +9,7 @@ export const STATUS: Record<StatusAgendamento, { rotulo: string; tom: Tom }> = {
   REAGENDADO: { rotulo: "Quer outro horário", tom: "destaque" },
   COMPARECEU: { rotulo: "Compareceu", tom: "info" },
   FALTOU: { rotulo: "Faltou", tom: "perigo" },
+  EM_ANDAMENTO: { rotulo: "Em atendimento", tom: "marca" },
 };
 
 export const TIPOS_DE_ATENDIMENTO: Record<TipoAtendimento, string> = {
@@ -45,6 +46,7 @@ export const RESPOSTA_DO_PACIENTE: Record<StatusAgendamento, { texto: string; to
   REAGENDADO: { texto: "Respondeu: quero outro horário", tom: "destaque" },
   COMPARECEU: { texto: "Compareceu ao atendimento", tom: "info" },
   FALTOU: { texto: "Não compareceu", tom: "perigo" },
+  EM_ANDAMENTO: { texto: "Em atendimento agora", tom: "info" },
 };
 
 export const INTERPRETACAO: Record<RespostaPaciente, string> = {

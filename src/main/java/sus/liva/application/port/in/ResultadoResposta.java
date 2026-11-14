@@ -14,6 +14,9 @@ public record ResultadoResposta(boolean aplicada, UUID agendamentoId, StatusAgen
                 orientacaoEnviada ? "Resposta não reconhecida; orientação enviada ao paciente"
                         : "Resposta não reconhecida; falha ao enviar a orientação");
     }
+    public static ResultadoResposta autoatendimento(String etapa, UUID agendamentoId, boolean enviada) {
+        return new ResultadoResposta(false, agendamentoId, null, enviada, "Autoatendimento: " + etapa);
+    }
     public static ResultadoResposta ignorada(String motivo) {
         return new ResultadoResposta(false, null, null, false, motivo);
     }

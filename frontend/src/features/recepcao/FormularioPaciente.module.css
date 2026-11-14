@@ -24,6 +24,38 @@
   accent-color: var(--cor-primaria);
 }
 
+.triagem {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--espaco-3);
+  padding: var(--espaco-4);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-lg);
+  background: var(--cor-superficie-suave);
+  font-size: var(--texto-sm);
+  color: var(--cor-texto-suave);
+  cursor: pointer;
+}
+
+.triagem input {
+  flex-shrink: 0;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-top: 2px;
+  accent-color: var(--cor-primaria);
+}
+
+.triagem span {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-1);
+}
+
+.triagem strong {
+  color: var(--cor-texto);
+  font-size: var(--texto-base);
+}
+
 .acoes {
   display: flex;
   flex-wrap: wrap;

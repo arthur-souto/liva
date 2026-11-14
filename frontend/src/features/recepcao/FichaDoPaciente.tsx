@@ -1,8 +1,9 @@
 "use client";
 
 import { DoorOpen, Pencil } from "lucide-react";
-import { buscarPaciente, cancelarConsulta, historicoDoPaciente, registrarChegada } from "@/features/assistencial/api";
-import { HistoricoDeRamos } from "@/features/assistencial/componentes/HistoricoDeRamos";
+import { useState } from "react";
+import { atendimentosDoPaciente, buscarPaciente, cancelarConsulta, registrarChegada } from "@/features/assistencial/api";
+import { AtendimentosPaginados } from "@/features/assistencial/componentes/AtendimentosPaginados";
 import type { Consulta } from "@/features/assistencial/tipos";
 import { mensagemDeErro } from "@/shared/api/erro";
 import { useAcao } from "@/shared/hooks/useAcao";
@@ -16,26 +17,32 @@ import { CabecalhoPagina } from "@/shared/ui/CabecalhoPagina";
 import { Carregando } from "@/shared/ui/Carregando";
 import { Etiqueta } from "@/shared/ui/Etiqueta";
 import { Secao } from "@/shared/ui/Secao";
+import { PessoasDeConfianca } from "./PessoasDeConfianca";
 import { mascararCartaoSus } from "./validacao";
 import estilos from "./FichaDoPaciente.module.css";
 
-export function FichaDoPaciente({ pacienteId }: { pacienteId: string }) {
+export function FichaDoPaciente({ pacienteId, chegadaFalhou = false }: { pacienteId: string; chegadaFalhou?: boolean }) {
   const paciente = useConsulta(() => buscarPaciente(pacienteId), `paciente-${pacienteId}`);
-  const historico = useConsulta(() => historicoDoPaciente(pacienteId), `historico-${pacienteId}`);
+  const [versao, setVersao] = useState(0);
+  const ultimo = useConsulta(
+    () => atendimentosDoPaciente(pacienteId, { pagina: 1, tamanho: 1 }),
+    `ultimo-atendimento-${pacienteId}-${versao}`,
+  );
   const acao = useAcao();
 
   async function chegada() {
-    if (await acao.executar("chegada", () => registrarChegada(pacienteId))) historico.recarregar();
+    if (await acao.executar("chegada", () => registrarChegada(pacienteId))) setVersao((v) => v + 1);
   }
 
   async function cancelar(consulta: Consulta) {
-    if (await acao.executar(consulta.id, () => cancelarConsulta(consulta.id, consulta.versao))) historico.recarregar();
+    if (await acao.executar(consulta.id, () => cancelarConsulta(consulta.id, consulta.versao))) setVersao((v) => v + 1);
   }
 
   if (paciente.erro) return <Alerta tom="perigo">{mensagemDeErro(paciente.erro)}</Alerta>;
   if (!paciente.dados) return <Carregando linhas={6} />;
   const p = paciente.dados;
-  const emAberto = historico.dados?.ramos.some((r) => r.triagem.status === "AGUARDANDO_ATENDIMENTO" || r.triagem.status === "EM_ANDAMENTO");
+  const status = ultimo.dados?.itens[0]?.triagem.status;
+  const emAberto = status === "AGUARDANDO_ATENDIMENTO" || status === "EM_ANDAMENTO";
 
   return (
     <div className={estilos.ficha}>
@@ -57,6 +64,9 @@ export function FichaDoPaciente({ pacienteId }: { pacienteId: string }) {
           </>
         }
       />
+      {chegadaFalhou && !emAberto && (
+        <Alerta tom="alerta">O paciente foi cadastrado, mas não entrou na fila. Use "Registrar chegada" para incluí-lo na fila.</Alerta>
+      )}
       {acao.falha && <Alerta tom="perigo">{acao.falha}</Alerta>}
 
       <Secao titulo="Cadastro">
@@ -88,17 +98,16 @@ export function FichaDoPaciente({ pacienteId }: { pacienteId: string }) {
         </dl>
       </Secao>
 
+      <PessoasDeConfianca pacienteId={p.id} cpfDoPaciente={p.cpf} />
+
       <Secao titulo="Atendimentos" descricao="Cada triagem é um atendimento independente. A recepção vê só o andamento, sem dados clínicos.">
-        {historico.erro ? <Alerta tom="perigo">{mensagemDeErro(historico.erro)}</Alerta> : null}
-        {historico.carregando && !historico.dados && <Carregando />}
-        {historico.dados && (
-          <HistoricoDeRamos
-            historico={historico.dados}
-            linkParaAgendar={(encaminhamentoId) => `/recepcao/agendar/${encaminhamentoId}?paciente=${p.id}`}
-            aoCancelar={cancelar}
-            cancelando={acao.executando}
-          />
-        )}
+        <AtendimentosPaginados
+          chave={`atendimentos-${p.id}-${versao}`}
+          carregar={(filtros) => atendimentosDoPaciente(p.id, filtros)}
+          linkParaAgendar={(encaminhamentoId) => `/recepcao/agendar/${encaminhamentoId}?paciente=${p.id}`}
+          aoCancelar={cancelar}
+          cancelando={acao.executando}
+        />
       </Secao>
     </div>
   );

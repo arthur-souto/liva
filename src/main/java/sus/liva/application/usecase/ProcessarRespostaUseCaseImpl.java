@@ -38,11 +38,20 @@ public class ProcessarRespostaUseCaseImpl implements ProcessarRespostaUseCase {
     private final ModeloMensagens modelos;
     private final TransacaoPort transacao;
     private final Clock clock;
+    private final AssistenteWhatsApp assistente;
 
     public ProcessarRespostaUseCaseImpl(RegistroMensagemPort registros, MensagemRecebidaPort recebidas,
                                         AgendamentoRepositoryPort agendamentos, EncaminhamentoRepositoryPort encaminhamentos,
                                         PacienteRepositoryPort pacientes, EnviadorMensagemPort enviador,
                                         ModeloMensagens modelos, TransacaoPort transacao, Clock clock) {
+        this(registros, recebidas, agendamentos, encaminhamentos, pacientes, enviador, modelos, transacao, clock, null);
+    }
+
+    public ProcessarRespostaUseCaseImpl(RegistroMensagemPort registros, MensagemRecebidaPort recebidas,
+                                        AgendamentoRepositoryPort agendamentos, EncaminhamentoRepositoryPort encaminhamentos,
+                                        PacienteRepositoryPort pacientes, EnviadorMensagemPort enviador,
+                                        ModeloMensagens modelos, TransacaoPort transacao, Clock clock,
+                                        AssistenteWhatsApp assistente) {
         this.registros = registros;
         this.recebidas = recebidas;
         this.agendamentos = agendamentos;
@@ -52,6 +61,7 @@ public class ProcessarRespostaUseCaseImpl implements ProcessarRespostaUseCase {
         this.modelos = modelos;
         this.transacao = transacao;
         this.clock = clock;
+        this.assistente = assistente;
     }
 
     private record Aplicacao(ResultadoResposta ignorada, Agendamento agendamento, Telefone destino) {
@@ -67,10 +77,25 @@ public class ProcessarRespostaUseCaseImpl implements ProcessarRespostaUseCase {
 
         Instant recebidaEm = Instant.now(clock);
         Optional<RespostaPaciente> resposta = RespostaPaciente.interpretar(texto);
-        ResultadoResposta resultado = resposta.isEmpty() ? orientar(remetente) : responder(remetente, resposta.get());
+        ResultadoResposta resultado;
+        if (paraOAssistente(remetente, texto, resposta)) resultado = assistente.atender(remetente, texto);
+        else resultado = resposta.isEmpty() ? orientar(remetente) : responder(remetente, resposta.get());
         recebidas.salvarRecebida(new MensagemRecebida(vinculo(remetente, resultado), remetente,
                 Objects.requireNonNullElse(texto, ""), idMensagem, resposta.orElse(null), recebidaEm));
         return resultado;
+    }
+
+    private boolean paraOAssistente(Telefone remetente, String texto, Optional<RespostaPaciente> resposta) {
+        if (assistente == null) return false;
+        if (assistente.conversaAtiva(remetente)) return true;
+        if (pedidoPendente(remetente).isEmpty()) return true;
+        return resposta.isEmpty() && assistente.pedidoDeMenu(texto);
+    }
+
+    private Optional<Agendamento> pedidoPendente(Telefone remetente) {
+        return registros.ultimoEnvio(remetente, TipoLembrete.PEDIDO_CONFIRMACAO)
+                .flatMap(r -> agendamentos.buscarAgendamento(r.agendamentoId()))
+                .filter(Agendamento::aguardandoResposta);
     }
 
     private UUID vinculo(Telefone remetente, ResultadoResposta resultado) {
@@ -79,14 +104,28 @@ public class ProcessarRespostaUseCaseImpl implements ProcessarRespostaUseCase {
     }
 
     private ResultadoResposta responder(Telefone remetente, RespostaPaciente resposta) {
+        if (assistente != null && resposta == RespostaPaciente.REAGENDAR) {
+            Optional<Agendamento> pendente = pedidoPendente(remetente).filter(Agendamento::doEncaminhamento);
+            Optional<Paciente> paciente = pendente.flatMap(a -> pacientes.buscarPaciente(a.getPacienteId()));
+            if (paciente.isPresent() && !assistente.podeRemarcar(paciente.get().id())) {
+                assistente.avisarLimite(remetente, paciente.get());
+                return ResultadoResposta.ignorada("Limite de remarcações do mês atingido");
+            }
+        }
         Aplicacao aplicacao = transacao.executar(() -> aplicar(remetente, resposta));
         if (aplicacao.ignorada() != null) return aplicacao.ignorada();
 
         Agendamento a = aplicacao.agendamento();
         boolean retornoEnviado = pacientes.buscarPaciente(a.getPacienteId())
-                .map(p -> enviar(a.getId(), aplicacao.destino(), modelos.retornoResposta(resposta, p, a)))
+                .map(p -> enviar(a.getId(), aplicacao.destino(), retorno(resposta, p, a)))
                 .orElse(false);
         return ResultadoResposta.aplicada(a.getId(), a.getStatus(), retornoEnviado);
+    }
+
+    private String retorno(RespostaPaciente resposta, Paciente paciente, Agendamento a) {
+        if (assistente != null && resposta == RespostaPaciente.REAGENDAR && a.doEncaminhamento())
+            return assistente.retornoDePedidoDeOutroHorario(paciente, a);
+        return modelos.retornoResposta(resposta, paciente, a);
     }
 
     private Aplicacao aplicar(Telefone remetente, RespostaPaciente resposta) {

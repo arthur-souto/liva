@@ -1,6 +1,6 @@
 import { type ErroApi, FalhaApi } from "@/shared/api/erro";
 
-export type Papel = "ADMINISTRADOR" | "RECEPCAO" | "CLINICO_GERAL" | "ESPECIALISTA" | "PACIENTE";
+export type Papel = "ADMINISTRADOR" | "RECEPCAO" | "CLINICO_GERAL" | "ESPECIALISTA" | "PACIENTE" | "CUIDADOR";
 
 export type Usuario = {
   id: string;
@@ -10,7 +10,7 @@ export type Usuario = {
   pacienteId: string | null;
 };
 
-export const ROTAS_PUBLICAS = ["/entrar", "/portal/ativar"];
+export const ROTAS_PUBLICAS = ["/entrar", "/portal/ativar", "/acesso", "/cuidador"];
 
 export const ROTULOS_DE_PAPEL: Record<Papel, string> = {
   ADMINISTRADOR: "Administração",
@@ -18,6 +18,7 @@ export const ROTULOS_DE_PAPEL: Record<Papel, string> = {
   CLINICO_GERAL: "Clínico geral",
   ESPECIALISTA: "Especialista",
   PACIENTE: "Paciente",
+  CUIDADOR: "Pessoa de confiança",
 };
 
 export function rotaPublica(caminho: string): boolean {
@@ -74,4 +75,20 @@ export function solicitarCodigoDoPortal(documento: string, dataNascimento: strin
 
 export function ativarPortal(documento: string, dataNascimento: string, codigo: string, senha: string): Promise<{ usuario: Usuario }> {
   return enviar("/api/sessao/portal/ativar", "POST", { documento, dataNascimento, codigo, senha });
+}
+
+export function entrarPorLink(token: string): Promise<{ usuario: Usuario; destino?: string }> {
+  return enviar("/api/sessao/link", "POST", { token });
+}
+
+export function solicitarCodigoDoCuidador(cpfDoCuidador: string, cpfDoPaciente: string): Promise<{ mensagem: string }> {
+  return enviar("/api/sessao/cuidador/codigo", "POST", { cpfDoCuidador, cpfDoPaciente });
+}
+
+export function ativarCuidador(cpfDoCuidador: string, cpfDoPaciente: string, codigo: string, senha: string): Promise<{ usuario: Usuario }> {
+  return enviar("/api/sessao/cuidador/ativar", "POST", { cpfDoCuidador, cpfDoPaciente, codigo, senha });
+}
+
+export function entrarComoCuidador(cpfDoCuidador: string, cpfDoPaciente: string, senha: string): Promise<{ usuario: Usuario }> {
+  return enviar("/api/sessao/cuidador/entrar", "POST", { cpfDoCuidador, cpfDoPaciente, senha });
 }

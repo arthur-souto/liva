@@ -13,7 +13,7 @@
 
 .etapa {
   height: var(--espaco-1);
-  border-radius: var(--raio-pilula);
+  border-radius: var(--raio-sm);
   background: var(--cor-borda);
   transition: background var(--transicao);
 }
@@ -126,7 +126,7 @@
 
 .rodape {
   position: sticky;
-  bottom: calc(var(--altura-navegacao-inferior) + var(--espaco-3));
+  bottom: var(--espaco-3);
   display: flex;
   gap: var(--espaco-3);
   padding-top: var(--espaco-2);

@@ -38,7 +38,7 @@
   width: 1.75rem;
   height: 1.75rem;
   border: 2px solid var(--cor-borda-forte);
-  border-radius: var(--raio-pilula);
+  border-radius: var(--raio-circulo);
   background: var(--cor-superficie);
   font-size: var(--texto-xs);
   font-weight: var(--peso-forte);

@@ -17,6 +17,7 @@ import { Botao, BotaoLink } from "@/shared/ui/Botao";
 import { CabecalhoPagina } from "@/shared/ui/CabecalhoPagina";
 import { Carregando } from "@/shared/ui/Carregando";
 import { EstadoVazio } from "@/shared/ui/EstadoVazio";
+import { ProfissionalComPrancheta } from "@/shared/ui/Ilustracoes";
 import { Etiqueta } from "@/shared/ui/Etiqueta";
 import estilos from "./FilaDeTriagem.module.css";
 
@@ -38,7 +39,7 @@ export function FilaDeTriagem() {
 
   return (
     <div className={estilos.pagina}>
-      <CabecalhoPagina titulo="Triagem" subtitulo="Pacientes por ordem de chegada. Ao atender, a triagem fica sob sua responsabilidade." />
+      <CabecalhoPagina titulo="Triagem" subtitulo="Registro da triagem feita na unidade. Pacientes por ordem de chegada; ao iniciar o registro, ele fica sob sua responsabilidade." />
       <div className={estilos.status}>
         <AtualizadoHa atualizadoEm={fila.atualizadoEm} carregando={fila.carregando} aoAtualizar={fila.recarregar} />
       </div>
@@ -65,7 +66,12 @@ export function FilaDeTriagem() {
       <section className={estilos.grupo} aria-label="Aguardando triagem">
         <h2 className={estilos.titulo}>Aguardando ({aguardando.length})</h2>
         {fila.dados && aguardando.length === 0 && (
-          <EstadoVazio icone={<Users size={28} aria-hidden="true" />} titulo="Ninguém aguardando" descricao="A recepção registra a chegada dos pacientes." />
+          <EstadoVazio
+            ilustracao={<ProfissionalComPrancheta />}
+            icone={<Users size={28} aria-hidden="true" />}
+            titulo="Ninguém aguardando"
+            descricao="A recepção registra a chegada dos pacientes."
+          />
         )}
         <ol className={estilos.lista}>
           {aguardando.map((item, posicao) => (
@@ -78,7 +84,7 @@ export function FilaDeTriagem() {
                 carregando={acao.executando === item.triagemId}
                 onClick={() => atender(item)}
               >
-                Atender
+                Registrar triagem
               </Botao>
             </li>
           ))}

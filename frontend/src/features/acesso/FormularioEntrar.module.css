@@ -1,30 +1,3 @@
-.pagina {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--espaco-6);
-  min-height: 100dvh;
-  padding: var(--espaco-6) var(--espaco-4);
-}
-
-.marca {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--espaco-2);
-}
-
-.slogan {
-  font-size: var(--texto-sm);
-  color: var(--cor-secundaria);
-}
-
-.cartao {
-  width: 100%;
-  max-width: 26rem;
-}
-
 .formulario {
   display: flex;
   flex-direction: column;
@@ -32,21 +5,24 @@
 }
 
 .titulo {
-  font-size: var(--texto-2xl);
+  font-size: var(--texto-3xl);
+  font-weight: var(--peso-semi);
   color: var(--cor-titulo);
   line-height: var(--altura-linha-titulo);
+  letter-spacing: -0.01em;
 }
 
 .subtitulo {
-  margin-top: var(--espaco-1);
+  margin-top: var(--espaco-2);
   font-size: var(--texto-sm);
   color: var(--cor-texto-suave);
 }
 
 .rodape {
+  padding-top: var(--espaco-5);
+  border-top: 1px solid var(--cor-borda);
   font-size: var(--texto-sm);
   color: var(--cor-texto-suave);
-  text-align: center;
 }
 
 .rodape a {
