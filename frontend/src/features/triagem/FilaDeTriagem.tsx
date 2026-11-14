@@ -19,6 +19,7 @@ import { Carregando } from "@/shared/ui/Carregando";
 import { EstadoVazio } from "@/shared/ui/EstadoVazio";
 import { ProfissionalComPrancheta } from "@/shared/ui/Ilustracoes";
 import { Etiqueta } from "@/shared/ui/Etiqueta";
+import { LinkDeAjuda } from "@/shared/ui/LinkDeAjuda";
 import estilos from "./FilaDeTriagem.module.css";
 
 export function FilaDeTriagem() {
@@ -39,7 +40,11 @@ export function FilaDeTriagem() {
 
   return (
     <div className={estilos.pagina}>
-      <CabecalhoPagina titulo="Triagem" subtitulo="Registro da triagem feita na unidade. Pacientes por ordem de chegada; ao iniciar o registro, ele fica sob sua responsabilidade." />
+      <CabecalhoPagina
+        titulo="Triagem"
+        subtitulo="Registro da triagem feita na unidade. Pacientes por ordem de chegada; ao iniciar o registro, ele fica sob sua responsabilidade."
+        acoes={<LinkDeAjuda topico="fila-triagem" />}
+      />
       <div className={estilos.status}>
         <AtualizadoHa atualizadoEm={fila.atualizadoEm} carregando={fila.carregando} aoAtualizar={fila.recarregar} />
       </div>

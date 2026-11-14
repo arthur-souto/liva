@@ -15,6 +15,7 @@ import { Carregando } from "@/shared/ui/Carregando";
 import { Chip } from "@/shared/ui/Chip";
 import { EstadoVazio } from "@/shared/ui/EstadoVazio";
 import { Paginacao } from "@/shared/ui/Paginacao";
+import { LinkDeAjuda } from "@/shared/ui/LinkDeAjuda";
 import { listarAgendamentos } from "./api";
 import { ListaAgendamentos } from "./componentes/ListaAgendamentos";
 import { STATUS } from "./rotulos";
@@ -82,7 +83,12 @@ export function PainelAgendamentos() {
       <CabecalhoPagina
         titulo="Agendamentos"
         subtitulo="Status e resposta de cada paciente"
-        acoes={<AtualizadoHa atualizadoEm={consulta.atualizadoEm} carregando={consulta.carregando} aoAtualizar={consulta.recarregar} />}
+        acoes={
+          <>
+            <LinkDeAjuda topico="agendamentos" />
+            <AtualizadoHa atualizadoEm={consulta.atualizadoEm} carregando={consulta.carregando} aoAtualizar={consulta.recarregar} />
+          </>
+        }
       />
 
       <div className={estilos.filtros}>

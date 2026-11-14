@@ -1,0 +1,116 @@
+.areas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: var(--espaco-3);
+}
+
+.area {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--espaco-3);
+  padding: var(--espaco-3) var(--espaco-4);
+  border: 2px solid transparent;
+  border-radius: var(--raio-lg);
+  background: var(--cor-superficie);
+  box-shadow: var(--sombra-cartao);
+  color: var(--cor-texto);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease;
+}
+
+.area:hover {
+  transform: translateY(-2px);
+}
+
+.area:focus-visible {
+  outline: none;
+  box-shadow: var(--sombra-foco);
+}
+
+.ativa {
+  border-color: var(--cor-primaria);
+  background: var(--cor-superficie-suave);
+}
+
+.iconeArea {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: var(--raio-md);
+  background: var(--cor-superficie-destaque);
+  color: var(--cor-primaria);
+}
+
+.ativa .iconeArea {
+  background: var(--cor-primaria);
+  color: var(--cor-texto-invertido);
+}
+
+.textoArea {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-1);
+  min-width: 0;
+}
+
+.textoArea strong {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espaco-2);
+  color: var(--cor-titulo);
+}
+
+.textoArea > span {
+  font-size: var(--texto-xs);
+  color: var(--cor-texto-suave);
+}
+
+.textoArea > .contagem {
+  color: var(--cor-secundaria);
+  font-weight: var(--peso-semi);
+}
+
+.sua {
+  padding: 0 var(--espaco-2);
+  border-radius: var(--raio-sm);
+  background: var(--cor-destaque-suave);
+  color: var(--cor-texto);
+  font-size: var(--texto-xs);
+  font-weight: var(--peso-semi);
+}
+
+.tituloArea {
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-2);
+  margin: var(--espaco-2) 0 0;
+  color: var(--cor-titulo);
+  font-size: var(--texto-xl);
+  animation: entrar 320ms ease-out;
+}
+
+@keyframes entrar {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .area,
+  .tituloArea {
+    animation: none;
+    transition: none;
+  }
+}

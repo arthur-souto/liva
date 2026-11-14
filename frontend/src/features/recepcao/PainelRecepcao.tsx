@@ -23,6 +23,7 @@ import { Paginacao } from "@/shared/ui/Paginacao";
 import { Etiqueta } from "@/shared/ui/Etiqueta";
 import { Secao } from "@/shared/ui/Secao";
 import { Segmentado } from "@/shared/ui/Segmentado";
+import { LinkDeAjuda } from "@/shared/ui/LinkDeAjuda";
 import estilos from "./PainelRecepcao.module.css";
 
 type Aba = "pacientes" | "fila";
@@ -74,9 +75,12 @@ export function PainelRecepcao({ triagemRecente }: { triagemRecente: string | nu
         titulo="Recepção"
         subtitulo="Encontre o paciente, cadastre se for a primeira vez e registre a chegada."
         acoes={
-          <BotaoLink href="/recepcao/novo" icone={<UserPlus size={18} aria-hidden="true" />}>
-            Novo paciente
-          </BotaoLink>
+          <>
+            <LinkDeAjuda topico="buscar-paciente" />
+            <BotaoLink href="/recepcao/novo" icone={<UserPlus size={18} aria-hidden="true" />}>
+              Novo paciente
+            </BotaoLink>
+          </>
         }
       />
 

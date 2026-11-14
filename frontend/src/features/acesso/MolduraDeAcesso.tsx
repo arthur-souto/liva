@@ -15,7 +15,7 @@ export function MolduraDeAcesso({ children }: { children: ReactNode }) {
     <div className={estilos.moldura}>
       <section className={estilos.vitrine} aria-hidden="true">
         <Image
-          src="/login/profissional-saude.webp"
+          src="/login/triagem-pressao.webp"
           alt=""
           fill
           priority
@@ -35,7 +35,7 @@ export function MolduraDeAcesso({ children }: { children: ReactNode }) {
               ))}
             </ul>
           </div>
-          <p className={estilos.credito}>Foto: Ocho Artex Media / Unsplash</p>
+          <p className={estilos.credito}>Foto: CDC / Unsplash</p>
         </div>
       </section>
 

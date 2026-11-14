@@ -18,6 +18,7 @@ import { EstadoVazio } from "@/shared/ui/EstadoVazio";
 import { ProfissionalComPrancheta } from "@/shared/ui/Ilustracoes";
 import { Etiqueta } from "@/shared/ui/Etiqueta";
 import { Secao } from "@/shared/ui/Secao";
+import { LinkDeAjuda } from "@/shared/ui/LinkDeAjuda";
 import estilos from "./PainelEspecialista.module.css";
 
 const DIAS_DA_AGENDA = 7;
@@ -62,7 +63,11 @@ export function PainelEspecialista() {
 
   return (
     <div className={estilos.pagina}>
-      <CabecalhoPagina titulo="Minha agenda" subtitulo="Consultas dos próximos 7 dias e encaminhamentos da sua especialidade." />
+      <CabecalhoPagina
+        titulo="Minha agenda"
+        subtitulo="Consultas dos próximos 7 dias e encaminhamentos da sua especialidade."
+        acoes={<LinkDeAjuda topico="minha-agenda" />}
+      />
       <div className={estilos.status}>
         <AtualizadoHa atualizadoEm={agenda.atualizadoEm} carregando={agenda.carregando || recebidos.carregando} aoAtualizar={atualizar} />
       </div>

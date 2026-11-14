@@ -22,6 +22,7 @@ import { EstadoVazio } from "@/shared/ui/EstadoVazio";
 import { Etiqueta } from "@/shared/ui/Etiqueta";
 import { Paginacao } from "@/shared/ui/Paginacao";
 import { Segmentado } from "@/shared/ui/Segmentado";
+import { LinkDeAjuda } from "@/shared/ui/LinkDeAjuda";
 import { confirmarPresenca, painelDaFila, processarFila, registrarAceite, registrarRecusa } from "./api";
 import { GavetaDaEntrada } from "./GavetaDaEntrada";
 import { ListaDeMovimentacoes } from "./ListaDeMovimentacoes";
@@ -142,6 +143,7 @@ export function PainelDaFila() {
         }
         acoes={
           <div className={estilos.acoesTopo}>
+            <LinkDeAjuda topico="como-a-fila-funciona" />
             <AtualizadoHa atualizadoEm={painel.atualizadoEm} carregando={painel.carregando} aoAtualizar={painel.recarregar} />
             {p?.podeIntervir && (
               <Botao

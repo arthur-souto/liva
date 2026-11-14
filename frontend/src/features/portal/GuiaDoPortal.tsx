@@ -1,37 +1,23 @@
 import {
+  CalendarCheck,
   CalendarClock,
   CalendarPlus,
   CalendarX,
-  CircleHelp,
   History,
   House,
   KeyRound,
-  type LucideIcon,
+  ListOrdered,
   MessageCircle,
   ShieldCheck,
+  Sparkles,
 } from "lucide-react";
-import type { ReactNode } from "react";
 import { Alerta } from "@/shared/ui/Alerta";
 import { Banner } from "@/shared/ui/Banner";
-import { BotaoLink } from "@/shared/ui/Botao";
-import { Cartao } from "@/shared/ui/Cartao";
+import { Guia, type TopicoDoGuia } from "@/shared/ui/Guia";
 import { GuiaDoWhatsApp } from "./GuiaDoWhatsApp";
 import { PessoaComCelular, PessoasDeMaosDadas, PessoasNoPortal } from "@/shared/ui/Ilustracoes";
-import estilos from "./GuiaDoPortal.module.css";
 
-type Topico = {
-  id: string;
-  Icone: LucideIcon;
-  titulo: string;
-  resumo: string;
-  passos: string[];
-  dica?: string;
-  link?: { href: string; texto: string };
-  ilustracao?: ReactNode;
-  extra?: ReactNode;
-};
-
-const TOPICOS: Topico[] = [
+const TOPICOS: TopicoDoGuia[] = [
   {
     id: "acesso",
     Icone: KeyRound,
@@ -99,6 +85,50 @@ const TOPICOS: Topico[] = [
     ],
   },
   {
+    id: "confirmar",
+    Icone: CalendarCheck,
+    titulo: "Confirmar presença",
+    resumo: "Alguns dias antes da consulta, a Liva pergunta pelo WhatsApp se você consegue ir.",
+    passos: [
+      "Você recebe a mensagem “Você consegue ir?” com três opções.",
+      "Responda 1 se vai, 2 se não vai conseguir ou 3 se quer outro horário. Também pode responder por escrito.",
+      "Se responder 2, o horário é liberado e oferecido para outra pessoa da fila.",
+      "Se responder 3, você recebe um link que abre o portal para escolher um novo horário. Isso conta como uma remarcação do mês.",
+      "Na véspera chega um lembrete com o endereço e o preparo, se houver.",
+    ],
+    dica: "Ficar sem responder não cancela a sua consulta. Mas responder ajuda a unidade a não deixar horários vazios.",
+  },
+  {
+    id: "fila",
+    Icone: ListOrdered,
+    titulo: "Acompanhar a fila",
+    resumo: "Veja a sua posição, quantas pessoas estão na frente e uma previsão de quando sai a vaga.",
+    passos: [
+      "Abra “Minha fila” no menu. Cada encaminhamento aparece em um cartão separado.",
+      "O círculo mostra quanto tempo falta, mais ou menos, pelo ritmo de vagas das últimas semanas.",
+      "A faixa de pessoas mostra quem está na sua frente. Passe o mouse ou toque em cada pessoa para ver a posição.",
+      "A linha do tempo mostra a triagem, a entrada na fila, hoje, a consulta marcada e a previsão da vaga.",
+      "A ordem segue a prioridade definida na triagem e, depois, a data de entrada. Quem tem prioridade maior pode passar na frente.",
+    ],
+    dica: "A previsão é uma estimativa e pode mudar. Se você já tem consulta marcada, a fila serve para antecipar se surgir um horário mais cedo.",
+    link: { href: "/portal/fila", texto: "Ver minha fila" },
+  },
+  {
+    id: "vaga",
+    Icone: Sparkles,
+    titulo: "Quando aparece uma vaga",
+    resumo: "Se alguém libera um horário, ele é oferecido para a próxima pessoa da fila.",
+    passos: [
+      "A oferta aparece no topo do portal e chega no seu WhatsApp, com o dia, o horário, o profissional e o local.",
+      "O relógio no cartão mostra quanto tempo você tem para responder.",
+      "Toque em “Aceitar vaga” para ficar com o horário. A consulta já fica confirmada.",
+      "Se você já tem consulta marcada, o botão é “Trocar para este horário”: a consulta antiga passa para o novo horário e você continua com uma só.",
+      "Se não puder, toque em “Não posso neste horário”. Você continua na fila na mesma posição.",
+      "Pelo WhatsApp, responda ACEITO para ficar com a vaga ou NÃO POSSO.",
+    ],
+    dica: "Se o prazo acabar sem resposta, a vaga vai para a próxima pessoa e você continua na fila, sem perder o lugar.",
+  },
+  {
     id: "historico",
     Icone: History,
     titulo: "Ver o seu histórico",
@@ -143,77 +173,19 @@ const TOPICOS: Topico[] = [
 
 export function GuiaDoPortal() {
   return (
-    <div className={estilos.pagina}>
-      <Banner titulo="Como usar o portal" ilustracao={<PessoasNoPortal />}>
-        Um passo a passo de tudo o que você consegue fazer pelo portal e pelo WhatsApp. Escolha um assunto abaixo.
-      </Banner>
-
-      <nav aria-label="Assuntos do guia">
-        <ul className={estilos.indice}>
-          {TOPICOS.map(({ id, Icone, titulo, resumo }) => (
-            <li key={id}>
-              <a href={`#${id}`} className={estilos.atalho}>
-                <span className={estilos.icone} aria-hidden="true">
-                  <Icone size={20} />
-                </span>
-                <span className={estilos.textoAtalho}>
-                  <strong>{titulo}</strong>
-                  <span>{resumo}</span>
-                </span>
-              </a>
-            </li>
-          ))}
-        </ul>
-      </nav>
-
-      {TOPICOS.map(({ id, Icone, titulo, resumo, passos, dica, link, ilustracao, extra }) => (
-        <Cartao key={id} como="section" espacamento="amplo" id={id} className={estilos.topico} aria-labelledby={`${id}-titulo`}>
-          <div className={ilustracao ? estilos.comIlustracao : undefined}>
-            <div className={estilos.conteudo}>
-              <header className={estilos.cabecalhoTopico}>
-                <span className={estilos.icone} aria-hidden="true">
-                  <Icone size={20} />
-                </span>
-                <div>
-                  <h2 id={`${id}-titulo`} className={estilos.titulo}>
-                    {titulo}
-                  </h2>
-                  <p className={estilos.resumo}>{resumo}</p>
-                </div>
-              </header>
-              <ol className={estilos.passos}>
-                {passos.map((passo, indice) => (
-                  <li key={passo}>
-                    <span className={estilos.numero} aria-hidden="true">
-                      {indice + 1}
-                    </span>
-                    <span>{passo}</span>
-                  </li>
-                ))}
-              </ol>
-              {dica && (
-                <p className={estilos.dica}>
-                  <CircleHelp size={16} aria-hidden="true" />
-                  <span>{dica}</span>
-                </p>
-              )}
-              {link && (
-                <div>
-                  <BotaoLink href={link.href} variante="contorno" tamanho="pequeno">
-                    {link.texto}
-                  </BotaoLink>
-                </div>
-              )}
-            </div>
-            {ilustracao && <div className={estilos.ilustracaoTopico}>{ilustracao}</div>}
-          </div>
-          {extra}
-        </Cartao>
-      ))}
-
-      <Alerta tom="info" titulo="Ainda com dúvida?">
-        A recepção da sua unidade de saúde ajuda com o cadastro, a troca do telefone e o acesso ao portal.
-      </Alerta>
-    </div>
+    <Guia
+      rotulo="Assuntos do guia"
+      topicos={TOPICOS}
+      cabecalho={
+        <Banner titulo="Como usar o portal" ilustracao={<PessoasNoPortal />}>
+          Um passo a passo de tudo o que você consegue fazer pelo portal e pelo WhatsApp. Escolha um assunto abaixo.
+        </Banner>
+      }
+      rodape={
+        <Alerta tom="info" titulo="Ainda com dúvida?">
+          A recepção da sua unidade de saúde ajuda com o cadastro, a troca do telefone e o acesso ao portal.
+        </Alerta>
+      }
+    />
   );
 }

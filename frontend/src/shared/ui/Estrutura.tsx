@@ -46,6 +46,7 @@ const ITENS: Item[] = [
   { href: "/calendario", rotulo: "Calendário", Icone: CalendarDays },
   { href: "/conversas", rotulo: "Conversas", Icone: MessageCircle },
   { href: "/avisos", rotulo: "Avisos", Icone: Bell },
+  { href: "/ajuda", rotulo: "Como usar", Icone: BookOpen },
 ];
 
 const CHAVE_RECOLHIDO = "liva-menu-recolhido";

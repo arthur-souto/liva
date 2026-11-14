@@ -1,12 +1,12 @@
 import type { Papel } from "./sessao";
 
-const EQUIPE_ADMINISTRATIVA = ["/recepcao", "/filas", "/agendamentos", "/agendar", "/calendario", "/conversas", "/avisos"];
+const EQUIPE_ADMINISTRATIVA = ["/ajuda", "/recepcao", "/filas", "/agendamentos", "/agendar", "/calendario", "/conversas", "/avisos"];
 
 const AREAS: Record<Papel, { inicio: string; prefixos: string[] }> = {
   ADMINISTRADOR: { inicio: "/", prefixos: EQUIPE_ADMINISTRATIVA },
   RECEPCAO: { inicio: "/", prefixos: EQUIPE_ADMINISTRATIVA },
-  CLINICO_GERAL: { inicio: "/triagem", prefixos: ["/triagem"] },
-  ESPECIALISTA: { inicio: "/especialista", prefixos: ["/especialista", "/filas"] },
+  CLINICO_GERAL: { inicio: "/triagem", prefixos: ["/triagem", "/ajuda"] },
+  ESPECIALISTA: { inicio: "/especialista", prefixos: ["/especialista", "/filas", "/ajuda"] },
   PACIENTE: { inicio: "/portal", prefixos: ["/portal"] },
   CUIDADOR: { inicio: "/portal", prefixos: ["/portal"] },
 };
