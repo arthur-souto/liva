@@ -15,6 +15,7 @@ spring:
       ddl-auto: validate
   flyway:
     enabled: true
+    locations: ${FLYWAY_LOCATIONS:classpath:db/migration,classpath:db/demo}
 
 server:
   port: 8081
@@ -40,9 +41,6 @@ confirmasus:
     cron: ${DISPARO_DIARIO_CRON:0 0 8 * * *}
   whatsapp:
     provedor: ${WHATSAPP_PROVEDOR:console}
-  demo:
-    telefone: "51993953661"
-    senha: ${DEMO_SENHA:}
   atendimento-teste:
     habilitado: ${ATENDIMENTO_TESTE_HABILITADO:true}
   webhook:

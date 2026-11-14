@@ -74,9 +74,10 @@ src/main/java/sus/liva
     │   └── teste/                      Endpoints de teste de atendimento (desligáveis)
     ├── adapter/out/persistencia        Postgres via JPA: *Entity (mapeamento), *JpaRepository, *PostgresAdapter (portas)
     ├── adapter/out/whatsapp            EvolutionEnviadorAdapter (real) e ConsoleEnviadorAdapter (fake)
-    └── config                          UseCaseConfig (beans), DemoDataConfig, OpenApiConfig
+    └── config                          UseCaseConfig (beans), SegurancaConfig, OpenApiConfig
 
 src/main/resources/db/migration       Migrações do Flyway (V1__schema_inicial.sql)
+src/main/resources/db/demo            Dados de demonstração (R__dados_demo.sql), aplicados pelo Flyway
 src/test/.../adapter/out/memoria      Repositórios em memória, usados como fakes nos testes unitários
 ```
 
@@ -157,7 +158,7 @@ Toda a configuração vem do arquivo `.env` na raiz do projeto. Ele é lido **ta
 |---|---|---|
 | `API_KEY` | Liva | Chave do header `X-API-Key` para as rotas de sistema (`/api/agendamentos`, `/api/mensagens`, `/api/disparos`, `/api/teste`). **Obrigatória**: sem ela a Liva não sobe. Gere com `openssl rand -hex 32` |
 | `JWT_SEGREDO` | Liva | Segredo HS256 dos tokens de sessão (mínimo 32 caracteres). **Obrigatório**. Gere com `openssl rand -hex 32` |
-| `DEMO_SENHA` | Liva | Senha dos usuários de demonstração (veja abaixo). Vazia: os usuários não são criados |
+| `FLYWAY_LOCATIONS` | Liva | Pastas de migração. Padrão `classpath:db/migration,classpath:db/demo`; use só `classpath:db/migration` para subir sem dados de demonstração |
 | `CORS_ORIGENS_PERMITIDAS` | Liva | Origens do front-end que podem chamar a API pelo navegador, separadas por vírgula. Padrão `http://localhost:3000` |
 | `WHATSAPP_PROVEDOR` | Liva | `evolution` envia de verdade; `console` só escreve a mensagem no log (padrão) |
 | `EVOLUTION_URL` | Liva | URL da Evolution. Padrão `http://localhost:8080` |
@@ -249,7 +250,7 @@ Todas as chamadas a `/api/**` precisam do header `X-API-Key`. Para os exemplos a
 export API_KEY=$(grep '^API_KEY=' .env | cut -d= -f2)
 ```
 
-Ao subir, o Flyway aplica as migrações pendentes. Na primeira vez, a Liva também cria um agendamento de demonstração (`3f2b8c1e-7a4d-4c9b-9e21-5d6f0a8b1c02`, paciente Maria da Silva) com o telefone de `confirmasus.demo.telefone` no `application.yaml`; nas próximas, ele é mantido como está. Para testes, prefira criar atendimentos novos pelo endpoint de teste.
+Ao subir, o Flyway aplica as migrações pendentes e o `db/demo/R__dados_demo.sql`, que carrega os dados de demonstração (veja [Usuários de demonstração](#usuários-de-demonstração)). Os inserts são idempotentes: registros que já existem são mantidos como estão. Os testes automatizados usam só `db/migration`.
 
 ---
 
@@ -420,16 +421,19 @@ Quem monta a resposta: `GlobalExceptionHandler` (erros dentro dos controllers), 
 
 #### Usuários de demonstração
 
-Com `DEMO_SENHA` definida no `.env`, a Liva cria na subida (todos com essa senha):
+Criados pelo `db/demo/R__dados_demo.sql`. As senhas estão gravadas só como hash BCrypt; a senha de demonstração é combinada com a equipe e não fica no repositório.
 
-| Login | Papel |
-|---|---|
-| `admin@liva.demo` | Administração |
-| `recepcao@liva.demo` | Recepção |
-| `clinico@liva.demo` | Clínico geral (Dr. Paulo Mendes) |
-| `ortopedia@liva.demo` | Especialista em Ortopedia (Dra. Ana Ribeiro) |
-| `cardiologia@liva.demo` | Especialista em Cardiologia (Dr. Carlos Lima) |
-| `plantao@liva.demo` | Plantão / pronto atendimento (Dra. Júlia Costa) |
+| Login | Papel | O que já aparece |
+|---|---|---|
+| `admin@liva.demo` | Administração | Fila, pacientes e agendamentos |
+| `recepcao@liva.demo` | Recepção | Fila com 3 pacientes, 8 pacientes cadastrados |
+| `clinico@liva.demo` | Clínico geral (Dr. Paulo Mendes) | João e Ana aguardando; Pedro em triagem com ele |
+| `ortopedia@liva.demo` | Especialista em Ortopedia (Dra. Ana Ribeiro) | Roberto Santos confirmado para hoje às 14:00 |
+| `cardiologia@liva.demo` | Especialista em Cardiologia (Dr. Carlos Lima) | Francisco Lima em consulta agora; Carla Nunes em 3 dias; Maria aguardando agendamento |
+| `plantao@liva.demo` | Plantão / pronto atendimento (Dra. Júlia Costa) | Luiza Martins, emergência, aguardando recebimento |
+| `12345678909` | Paciente (Maria da Silva) | Um atendimento encerrado com ortopedia e um com cardiologia liberado para agendar no portal |
+
+As datas são relativas ao dia em que o banco foi criado. Todos os pacientes de demonstração usam o mesmo telefone, então lembretes automáticos só vão para esse número.
 
 Ortopedia e Cardiologia atendem de segunda a sexta, das 08:00 às 12:00 e das 13:30 às 17:00, em horários de 30 min.
 

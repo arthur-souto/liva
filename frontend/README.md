@@ -77,7 +77,7 @@ src/
 
 ## Roteiro do fluxo assistencial
 
-Usuários `*@liva.demo` com a senha de `DEMO_SENHA` (ver README da raiz).
+Usuários de demonstração do `db/demo/R__dados_demo.sql` (ver README da raiz). A fila, o plantão, as agendas e o portal da paciente Maria (`12345678909`) já começam com dados.
 
 1. **Recepção** (`recepcao@liva.demo`): cadastre o paciente com consentimento e registre a chegada.
 2. **Triagem** (`clinico@liva.demo`): atenda o primeiro da fila, registre avaliação, sinais vitais e prioridade. Encaminhe para uma especialidade (eletivo) e, em caso grave, para o plantão (imediato). Finalize.
