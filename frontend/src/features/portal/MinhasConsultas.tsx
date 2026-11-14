@@ -8,6 +8,7 @@ import type { FiltrosDeConsultas, StatusConsulta } from "@/features/assistencial
 import { mensagemDeErro } from "@/shared/api/erro";
 import { useAtrasado } from "@/shared/hooks/useAtrasado";
 import { useConsulta } from "@/shared/hooks/useConsulta";
+import { usuarioAtual } from "@/shared/sessao/sessao";
 import { Alerta } from "@/shared/ui/Alerta";
 import { BarraDeFiltros } from "@/shared/ui/BarraDeFiltros";
 import { BotaoLink } from "@/shared/ui/Botao";
@@ -29,6 +30,7 @@ const SEM_FILTROS = { busca: "", especialidade: "", situacao: "", ano: "" };
 
 export function MinhasConsultas() {
   const [periodo, setPeriodo] = useState<Periodo>("PROXIMAS");
+  const usuario = useConsulta(usuarioAtual, "usuario");
   const [filtros, setFiltros] = useState(SEM_FILTROS);
   const [pagina, setPagina] = useState(1);
   const busca = useAtrasado(filtros.busca.trim());
@@ -156,7 +158,12 @@ export function MinhasConsultas() {
           <ul className={estilos.lista}>
             {dados.itens.map((item) => (
               <li key={item.consulta.id}>
-                <CartaoDeConsulta item={item} nomeProfissional={item.profissional ?? undefined} aoAlterar={recarregar} />
+                <CartaoDeConsulta
+                  item={item}
+                  nomeProfissional={item.profissional ?? undefined}
+                  aoAlterar={recarregar}
+                  comAnotacoes={usuario.dados?.papel === "PACIENTE"}
+                />
               </li>
             ))}
           </ul>

@@ -1,9 +1,10 @@
 "use client";
 
-import { CalendarClock, CalendarPlus, MapPin, Navigation, Stethoscope, XCircle } from "lucide-react";
+import { CalendarClock, CalendarPlus, ChevronDown, ChevronUp, MapPin, Navigation, Stethoscope, XCircle } from "lucide-react";
 import { useState } from "react";
 import { cancelarConsulta } from "@/features/assistencial/api";
 import { registrarMotivo } from "@/features/faltas/api";
+import { TIPOS_DE_ATENDIMENTO } from "@/features/agendamentos/rotulos";
 import { MOTIVOS, ORDEM_DOS_MOTIVOS } from "@/features/faltas/rotulos";
 import type { MotivoDeAusencia } from "@/features/faltas/tipos";
 import { NATUREZAS, STATUS_DA_CONSULTA, nomeDaEspecialidade } from "@/features/assistencial/rotulos";
@@ -15,6 +16,7 @@ import { Botao, BotaoLink } from "@/shared/ui/Botao";
 import { Chip } from "@/shared/ui/Chip";
 import { Etiqueta } from "@/shared/ui/Etiqueta";
 import { type ConsultaDoPaciente, linkComoChegar, linkDeRemarcacao, linkParaAgenda, podeCancelar, podeRemarcar } from "./consultas";
+import { AnotacoesDaConsulta } from "./AnotacoesDaConsulta";
 import estilos from "./CartaoDeConsulta.module.css";
 
 type Props = {
@@ -22,15 +24,22 @@ type Props = {
   nomeProfissional?: string;
   destaque?: boolean;
   aoAlterar: () => void;
+  comAnotacoes?: boolean;
 };
 
-export function CartaoDeConsulta({ item, nomeProfissional, destaque = false, aoAlterar }: Props) {
+export function CartaoDeConsulta({ item, nomeProfissional, destaque = false, aoAlterar, comAnotacoes = false }: Props) {
   const { consulta, encaminhamento } = item;
   const [confirmando, setConfirmando] = useState(false);
   const [motivo, setMotivo] = useState<MotivoDeAusencia | null>(null);
+  const [vendoAnotacoes, setVendoAnotacoes] = useState(false);
+  const temAnotacoes = comAnotacoes && consulta.status === "COMPARECEU" && consulta.triagemId !== null;
   const acao = useAcao();
   const dia = dataDe(consulta.inicio);
-  const titulo = encaminhamento ? nomeDaEspecialidade(encaminhamento.especialidade) : NATUREZAS[consulta.natureza];
+  const titulo = encaminhamento
+    ? nomeDaEspecialidade(encaminhamento.especialidade)
+    : consulta.tipo === "EXAME"
+      ? TIPOS_DE_ATENDIMENTO.EXAME
+      : NATUREZAS[consulta.natureza];
 
   async function cancelar() {
     const cancelada = await acao.executar("cancelar", async () => {
@@ -83,6 +92,22 @@ export function CartaoDeConsulta({ item, nomeProfissional, destaque = false, aoA
               Salvar na agenda do celular
             </a>
           </p>
+        )}
+
+        {temAnotacoes && consulta.triagemId && (
+          <>
+            <Botao
+              variante="fantasma"
+              tamanho="pequeno"
+              className={estilos.alternar}
+              icone={vendoAnotacoes ? <ChevronUp size={16} aria-hidden="true" /> : <ChevronDown size={16} aria-hidden="true" />}
+              aria-expanded={vendoAnotacoes}
+              onClick={() => setVendoAnotacoes((atual) => !atual)}
+            >
+              {vendoAnotacoes ? "Ocultar anotações" : "Ver anotações do profissional"}
+            </Botao>
+            {vendoAnotacoes && <AnotacoesDaConsulta triagemId={consulta.triagemId} consultaId={consulta.id} />}
+          </>
         )}
 
         {acao.falha && <Alerta tom="perigo">{acao.falha}</Alerta>}

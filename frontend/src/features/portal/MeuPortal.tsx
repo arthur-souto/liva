@@ -2,6 +2,7 @@
 
 import { ArrowRight, CalendarCheck, CalendarPlus, CalendarX, ClipboardList, Inbox, ListOrdered } from "lucide-react";
 import Link from "next/link";
+import { DetalhesDoAtendimento } from "@/features/assistencial/componentes/DetalhesDoAtendimento";
 import { PRIORIDADES, nomeDaEspecialidade } from "@/features/assistencial/rotulos";
 import { CartaoDeOferta } from "@/features/fila/CartaoDeOferta";
 import { useMinhaFila } from "@/features/fila/useMinhaFila";
@@ -33,6 +34,9 @@ export function MeuPortal() {
   const { proximas } = h ? separar(consultasDoHistorico(h)) : { proximas: [] };
   const pendentes = h ? paraAgendar(h) : [];
   const [primeira, ...demais] = proximas;
+  const ultimo = h?.ramos
+    .filter((r) => r.acessoClinico && (r.triagem.status === "FINALIZADA" || r.triagem.status === "ENCERRADA"))
+    .sort((a, b) => b.triagem.chegadaEm.localeCompare(a.triagem.chegadaEm))[0];
   const naFila = fila.dados?.filas.filter((f) => f.status === "AGUARDANDO").length ?? 0;
 
   function aposResponder() {
@@ -124,6 +128,20 @@ export function MeuPortal() {
         </Secao>
       )}
 
+      {ultimo && (
+        <Secao
+          titulo="Seu último atendimento"
+          descricao={`O que a equipe registrou a partir da triagem de ${formatarInstante(ultimo.triagem.chegadaEm)}.`}
+          acoes={
+            <Link href="/portal/historico" className={estilos.link}>
+              Histórico completo <ArrowRight size={16} aria-hidden="true" />
+            </Link>
+          }
+        >
+          <DetalhesDoAtendimento triagemId={ultimo.triagem.id} />
+        </Secao>
+      )}
+
       {h && (
         <div className={estilos.atalhos}>
           <Link href="/portal/consultas" className={estilos.atalho}>
@@ -146,7 +164,7 @@ export function MeuPortal() {
             <ClipboardList size={22} aria-hidden="true" />
             <span>
               <strong>Histórico</strong>
-              Triagens, encaminhamentos e desfechos
+              Triagens, encaminhamentos e anotações da equipe
             </span>
             <ArrowRight size={18} aria-hidden="true" />
           </Link>

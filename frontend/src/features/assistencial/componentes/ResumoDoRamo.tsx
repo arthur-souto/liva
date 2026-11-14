@@ -4,7 +4,7 @@ import { MODALIDADES, NATUREZAS, PRIORIDADES, STATUS_DA_CONSULTA, STATUS_DA_TRIA
 import type { Ramo, SinaisVitais } from "../tipos";
 import estilos from "./ResumoDoRamo.module.css";
 
-const CAMPOS_DA_AVALIACAO = [
+export const CAMPOS_DA_AVALIACAO = [
   ["queixaPrincipal", "Queixa principal"],
   ["sintomas", "Sintomas"],
   ["historicoClinico", "Histórico clínico"],
@@ -12,7 +12,7 @@ const CAMPOS_DA_AVALIACAO = [
   ["observacoes", "Observações"],
 ] as const;
 
-function sinais(s: SinaisVitais | null): [string, string][] {
+export function sinais(s: SinaisVitais | null): [string, string][] {
   if (!s) return [];
   const itens: [string, string | null][] = [
     ["Pressão", s.pressaoSistolica && s.pressaoDiastolica ? `${s.pressaoSistolica}/${s.pressaoDiastolica} mmHg` : null],

@@ -41,6 +41,7 @@ import sus.liva.application.port.out.EncaminhamentoRepositoryPort;
 import sus.liva.application.port.out.ProfissionalRepositoryPort;
 import sus.liva.domain.model.Telefone;
 import sus.liva.domain.model.agendamento.Agendamento;
+import sus.liva.domain.model.agendamento.EvolucaoClinica;
 import sus.liva.domain.model.agendamento.NaturezaConsulta;
 import sus.liva.domain.model.agendamento.StatusAgendamento;
 import sus.liva.domain.model.agendamento.TipoLembrete;
@@ -270,6 +271,8 @@ class FluxoAssistencialIntegracaoTest {
 
         assertThat(encerrada.getStatus()).isEqualTo(StatusTriagem.ENCERRADA);
         assertThat(triagens.detalhar(especialista, t.getId()).evolucoes()).hasSize(3);
+        assertThat(triagens.detalhar(portal, t.getId()).evolucoes()).extracting(EvolucaoClinica::texto)
+                .contains("Edema leve, solicitado raio-x", "Retorno com exame", "Exame normal");
         assertThat(jdbc.queryForObject("SELECT count(*) FROM auditoria WHERE paciente_id = ?", Integer.class, paciente)).isGreaterThan(5);
     }
 
@@ -336,6 +339,7 @@ class FluxoAssistencialIntegracaoTest {
 
         assertThatThrownBy(() -> agenda.agendar(intruso, e.getId(), ortopedista.id(), AS_14, null)).isInstanceOf(AcessoNegadoException.class);
         assertThatThrownBy(() -> historico.historico(intruso, dono)).isInstanceOf(AcessoNegadoException.class);
+        assertThatThrownBy(() -> triagens.detalhar(intruso, t.getId())).isInstanceOf(AcessoNegadoException.class);
         assertThatThrownBy(() -> cadastro.buscar(intruso, dono)).isInstanceOf(AcessoNegadoException.class);
         assertThatThrownBy(() -> triagens.iniciar(recepcao, t.getId())).isInstanceOf(AcessoNegadoException.class);
         assertThatThrownBy(() -> cadastro.cadastrar(clinicoAtor, dados("X", cpfValido()))).isInstanceOf(AcessoNegadoException.class);

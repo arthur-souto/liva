@@ -1,12 +1,14 @@
 "use client";
 
-import { CalendarPlus, ClipboardList, MapPin, XCircle } from "lucide-react";
+import { CalendarPlus, ChevronDown, ChevronUp, ClipboardList, MapPin, XCircle } from "lucide-react";
+import { useState } from "react";
 import { formatarDataHora, formatarInstante } from "@/shared/lib/datas";
 import { BotaoLink, Botao } from "@/shared/ui/Botao";
 import { EstadoVazio } from "@/shared/ui/EstadoVazio";
 import { Etiqueta } from "@/shared/ui/Etiqueta";
 import { NATUREZAS, PRIORIDADES, STATUS_DA_CONSULTA, STATUS_DA_TRIAGEM, STATUS_DO_ENCAMINHAMENTO, nomeDaEspecialidade } from "../rotulos";
 import type { Consulta, RamoDoHistorico, StatusConsulta } from "../tipos";
+import { DetalhesDoAtendimento } from "./DetalhesDoAtendimento";
 import estilos from "./HistoricoDeRamos.module.css";
 
 const CANCELAVEIS: StatusConsulta[] = ["AGENDADO", "AGUARDANDO_RESPOSTA", "CONFIRMADO"];
@@ -16,9 +18,29 @@ type Props = {
   linkParaAgendar?: (encaminhamentoId: string) => string;
   aoCancelar?: (consulta: Consulta) => void;
   cancelando?: string | null;
+  comDetalhes?: boolean;
 };
 
-export function HistoricoDeRamos({ ramos, linkParaAgendar, aoCancelar, cancelando }: Props) {
+function Detalhes({ triagemId }: { triagemId: string }) {
+  const [aberto, setAberto] = useState(false);
+  return (
+    <>
+      <Botao
+        variante="fantasma"
+        tamanho="pequeno"
+        className={estilos.alternar}
+        icone={aberto ? <ChevronUp size={16} aria-hidden="true" /> : <ChevronDown size={16} aria-hidden="true" />}
+        aria-expanded={aberto}
+        onClick={() => setAberto((atual) => !atual)}
+      >
+        {aberto ? "Ocultar o que foi registrado" : "Ver o que foi registrado"}
+      </Botao>
+      {aberto && <DetalhesDoAtendimento triagemId={triagemId} />}
+    </>
+  );
+}
+
+export function HistoricoDeRamos({ ramos, linkParaAgendar, aoCancelar, cancelando, comDetalhes }: Props) {
   if (ramos.length === 0)
     return <EstadoVazio icone={<ClipboardList size={28} aria-hidden="true" />} titulo="Nenhuma triagem ainda" descricao="Os atendimentos aparecem aqui depois da triagem." />;
 
@@ -78,6 +100,7 @@ export function HistoricoDeRamos({ ramos, linkParaAgendar, aoCancelar, canceland
               </ul>
             </div>
           ))}
+          {comDetalhes && ramo.acessoClinico && <Detalhes triagemId={ramo.triagem.id} />}
         </li>
       ))}
     </ol>

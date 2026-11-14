@@ -1,3 +1,4 @@
+import type { TipoAtendimento } from "@/features/agendamentos/tipos";
 import type { Pagina } from "@/shared/api/pagina";
 
 export type Sexo = "MASCULINO" | "FEMININO" | "OUTRO" | "NAO_INFORMADO";
@@ -115,6 +116,7 @@ export type Consulta = {
   duracaoMinutos: number;
   natureza: NaturezaConsulta;
   status: StatusConsulta;
+  tipo: TipoAtendimento;
   unidade: string;
   endereco: string;
   versao: number;

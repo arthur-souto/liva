@@ -25,9 +25,10 @@ type Props = {
   linkParaAgendar?: (encaminhamentoId: string) => string;
   aoCancelar?: (consulta: Consulta) => void;
   cancelando?: string | null;
+  comDetalhes?: boolean;
 };
 
-export function AtendimentosPaginados({ chave, carregar, linkParaAgendar, aoCancelar, cancelando }: Props) {
+export function AtendimentosPaginados({ chave, carregar, linkParaAgendar, aoCancelar, cancelando, comDetalhes }: Props) {
   const [filtros, setFiltros] = useState(SEM_FILTROS);
   const [pagina, setPagina] = useState(1);
   const pedido: FiltrosDeAtendimentos = {
@@ -92,7 +93,15 @@ export function AtendimentosPaginados({ chave, carregar, linkParaAgendar, aoCanc
           descricao="Tente outra combinação ou limpe os filtros."
         />
       ) : (
-        dados && <HistoricoDeRamos ramos={dados.itens} linkParaAgendar={linkParaAgendar} aoCancelar={aoCancelar} cancelando={cancelando} />
+        dados && (
+          <HistoricoDeRamos
+            ramos={dados.itens}
+            linkParaAgendar={linkParaAgendar}
+            aoCancelar={aoCancelar}
+            cancelando={cancelando}
+            comDetalhes={comDetalhes}
+          />
+        )
       )}
       {dados && <Paginacao {...dados} irPara={setPagina} carregando={consulta.carregando} item={["atendimento", "atendimentos"]} />}
     </div>
