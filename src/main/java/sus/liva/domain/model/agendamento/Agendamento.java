@@ -122,6 +122,12 @@ public class Agendamento {
         status = resposta.getStatusResultante();
     }
 
+    public void confirmarPresenca() {
+        if (status != StatusAgendamento.AGENDADO && status != StatusAgendamento.AGUARDANDO_RESPOSTA)
+            throw new IllegalStateException("Não é possível confirmar a presença em uma consulta com status " + status);
+        status = StatusAgendamento.CONFIRMADO;
+    }
+
     public UUID getId() {
         return id;
     }

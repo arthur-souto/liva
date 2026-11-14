@@ -14,6 +14,7 @@ import sus.liva.domain.model.paciente.Paciente;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
@@ -39,21 +40,29 @@ public class NotificacaoAoPaciente {
     }
 
     public void notificar(UUID agendamentoId, UUID pacienteId, Function<Paciente, String> texto) {
+        notificar(agendamentoId, pacienteId, texto, texto);
+    }
+
+    public boolean notificar(UUID agendamentoId, UUID pacienteId, Function<Paciente, String> paraPaciente,
+                             Function<Paciente, String> paraAcompanhantes) {
         try {
-            pacientes.buscarPaciente(pacienteId).filter(Paciente::consentimento).ifPresent(p -> {
-                String mensagem = texto.apply(p);
-                Set<String> avisados = new HashSet<>();
-                avisados.add(p.telefone().chaveComparacao());
-                enviar(agendamentoId, p.telefone(), mensagem);
-                if (p.temCuidador() && avisados.add(p.telefoneCuidador().chaveComparacao()))
-                    enviar(agendamentoId, p.telefoneCuidador(), modelos.paraCuidador(p, mensagem));
-                for (CuidadorVinculado vinculado : cuidadores.cuidadoresDoPaciente(p.id()))
-                    if (avisados.add(vinculado.cuidador().telefone().chaveComparacao()))
-                        enviar(agendamentoId, vinculado.cuidador().telefone(),
-                                modelos.paraPessoaDeConfianca(vinculado.cuidador().nome(), p, mensagem));
-            });
+            Optional<Paciente> paciente = pacientes.buscarPaciente(pacienteId).filter(Paciente::consentimento);
+            if (paciente.isEmpty()) return false;
+            Paciente p = paciente.get();
+            Set<String> avisados = new HashSet<>();
+            avisados.add(p.telefone().chaveComparacao());
+            boolean enviada = enviar(agendamentoId, p.telefone(), paraPaciente.apply(p));
+            String mensagem = paraAcompanhantes.apply(p);
+            if (p.temCuidador() && avisados.add(p.telefoneCuidador().chaveComparacao()))
+                enviar(agendamentoId, p.telefoneCuidador(), modelos.paraCuidador(p, mensagem));
+            for (CuidadorVinculado vinculado : cuidadores.cuidadoresDoPaciente(p.id()))
+                if (avisados.add(vinculado.cuidador().telefone().chaveComparacao()))
+                    enviada |= enviar(agendamentoId, vinculado.cuidador().telefone(),
+                            modelos.paraPessoaDeConfianca(vinculado.cuidador().nome(), p, mensagem));
+            return enviada;
         } catch (RuntimeException e) {
             LOG.log(System.Logger.Level.WARNING, "Falha ao notificar o paciente " + pacienteId + " pelo WhatsApp", e);
+            return false;
         }
     }
 

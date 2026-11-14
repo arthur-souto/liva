@@ -3,8 +3,10 @@ package sus.liva.application.usecase;
 import sus.liva.domain.model.agendamento.Agendamento;
 import sus.liva.domain.model.agendamento.RespostaPaciente;
 import sus.liva.domain.model.agendamento.TipoLembrete;
+import sus.liva.domain.model.fila.AcaoSemResposta;
 import sus.liva.domain.model.paciente.Paciente;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -14,6 +16,18 @@ public class ModeloMensagens {
     private static final Locale PT_BR = Locale.forLanguageTag("pt-BR");
     private static final DateTimeFormatter DATA = DateTimeFormatter.ofPattern("dd/MM (EEEE)", PT_BR);
     private static final DateTimeFormatter HORA = DateTimeFormatter.ofPattern("HH:mm");
+
+    private final Duration prazoDeConfirmacao;
+    private final AcaoSemResposta semResposta;
+
+    public ModeloMensagens() {
+        this(Duration.ofHours(24), AcaoSemResposta.MANTER);
+    }
+
+    public ModeloMensagens(Duration prazoDeConfirmacao, AcaoSemResposta semResposta) {
+        this.prazoDeConfirmacao = prazoDeConfirmacao;
+        this.semResposta = semResposta;
+    }
 
     public String montar(TipoLembrete tipo, Paciente p, Agendamento a) {
         String data = a.getDataHora().format(DATA);
@@ -31,14 +45,25 @@ public class ModeloMensagens {
                 1 - Sim, vou
                 2 - Não vou conseguir
                 3 - Quero outro horário
-                Responda com o número ou por escrito.""".formatted(
-                    p.nomeCompleto(), a.getUnidade(), data, hora);
+                Responda com o número ou por escrito até %s.""".formatted(
+                    p.nomeCompleto(), a.getUnidade(), data, hora, quando(a.getDataHora().minus(prazoDeConfirmacao)));
             case LEMBRETE_VESPERA -> {
                 String t = "Lembrete: amanhã, %s, às %s, você tem atendimento na %s.\nEndereço: %s"
                         .formatted(data, hora, a.getUnidade(), a.getEndereco());
                 if (a.getPreparo() != null && !a.getPreparo().isBlank()) t += "\nPreparo: " + a.getPreparo();
                 yield t + "\nSe não puder ir, responda 2 para liberar a vaga para outra pessoa.";
             }
+            case AVISO_FINAL_CONFIRMACAO -> """
+                Olá, %s! Ainda não recebemos a sua resposta sobre o atendimento na %s em %s, às %s.
+                Você consegue ir?
+                1 - Sim, vou
+                2 - Não vou conseguir
+                3 - Quero outro horário
+                Responda até %s. %s""".formatted(
+                    primeiroNome(p), a.getUnidade(), data, hora, quando(a.getDataHora().minus(prazoDeConfirmacao)),
+                    semResposta == AcaoSemResposta.LIBERAR
+                            ? "Sem resposta, o horário pode ser oferecido a outra pessoa, mas você continua na fila do seu encaminhamento."
+                            : "Sem resposta, a equipe da unidade pode entrar em contato com você.");
         };
     }
 
@@ -195,6 +220,50 @@ public class ModeloMensagens {
             4 - Cancelar consulta
             0 - Sair
             Responda com o número da opção.""".formatted(primeiroNome(nomeDoCuidador), nome(p));
+    }
+
+    public String ofertaDeVaga(Paciente p, String especialidade, String profissional, String unidade, String endereco,
+                               LocalDateTime inicio, LocalDateTime respondaAte, LocalDateTime antecipaDe, String link) {
+        String antes = antecipaDe == null ? "" : "\nSua consulta atual é em %s. Se aceitar, ela é trocada por este novo horário.".formatted(quando(antecipaDe));
+        return """
+            Olá, %s! Uma vaga de %s ficou disponível para você.
+            Quando: %s
+            Com: %s
+            Onde: %s, %s%s
+            Responda ACEITO para ficar com a vaga ou NÃO POSSO se este horário não der.
+            Você também pode responder pelo portal: %s
+            A oferta vale até %s. Se não puder, você continua na fila do seu encaminhamento na mesma posição.""".formatted(
+                primeiroNome(p), especialidade, quando(inicio), profissional, unidade, endereco, antes, link, quando(respondaAte));
+    }
+
+    public String vagaConfirmada(Paciente p, Agendamento nova, LocalDateTime anterior) {
+        String troca = anterior == null ? "" : "\nA consulta de %s foi liberada para outra pessoa.".formatted(quando(anterior));
+        return """
+            Pronto, %s! A vaga é sua e a sua presença já está confirmada.
+            Quando: %s
+            Onde: %s, %s%s
+            Leve seu cartão do SUS e um documento com foto.""".formatted(
+                primeiroNome(p), quando(nova), nova.getUnidade(), nova.getEndereco(), troca);
+    }
+
+    public String ofertaIndisponivel(Paciente p) {
+        return """
+            %s, esta vaga não está mais disponível. Você continua na fila do seu encaminhamento, na mesma posição.
+            Avisaremos por aqui quando surgir outro horário.""".formatted(primeiroNome(p));
+    }
+
+    public String ofertaRecusada(Paciente p) {
+        return """
+            Tudo bem, %s. Registramos que este horário não dá para você.
+            Você continua na fila do seu encaminhamento, na mesma posição.""".formatted(primeiroNome(p));
+    }
+
+    public String consultaLiberadaSemConfirmacao(Paciente p, Agendamento a) {
+        return """
+            Olá, %s. Como não recebemos a sua confirmação, o horário de %s na %s foi liberado para outra pessoa.
+            Seu encaminhamento continua válido e você segue na fila, sem perder a sua posição.
+            Para marcar de novo, envie MENU ou procure a recepção da unidade.""".formatted(
+                primeiroNome(p), quando(a), a.getUnidade());
     }
 
     private static String primeiroNome(String nome) {

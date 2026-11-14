@@ -588,16 +588,16 @@ class FluxoAssistencialIntegracaoTest {
         return dadosComTelefone(nome, cpf, telefoneAleatorio());
     }
 
-    private static DadosCadastrais dadosComTelefone(String nome, String cpf, String telefone) {
+    static DadosCadastrais dadosComTelefone(String nome, String cpf, String telefone) {
         return new DadosCadastrais(nome, null, cpf, null, LocalDate.of(1980, 5, 20), Sexo.FEMININO, null, telefone,
                 null, null, null, null, null, null, true);
     }
 
-    private static String telefoneAleatorio() {
+    static String telefoneAleatorio() {
         return "119" + ThreadLocalRandom.current().nextInt(10_000_000, 99_999_999);
     }
 
-    private static String cpfValido() {
+    static String cpfValido() {
         int[] d = new int[11];
         for (int i = 0; i < 9; i++) d[i] = ThreadLocalRandom.current().nextInt(10);
         d[9] = digito(d, 9);
@@ -614,17 +614,17 @@ class FluxoAssistencialIntegracaoTest {
         return resto == 10 ? 0 : resto;
     }
 
-    private record Resultado<T>(T valor, Throwable erro) {
+    record Resultado<T>(T valor, Throwable erro) {
         boolean sucesso() {
             return erro == null;
         }
     }
 
-    private interface Tarefa<T> {
+    interface Tarefa<T> {
         Callable<T> para(int indice);
     }
 
-    private static <T> List<Resultado<T>> emParalelo(int quantidade, Tarefa<T> tarefa) throws InterruptedException {
+    static <T> List<Resultado<T>> emParalelo(int quantidade, Tarefa<T> tarefa) throws InterruptedException {
         CountDownLatch largada = new CountDownLatch(1);
         try (ExecutorService executor = Executors.newFixedThreadPool(quantidade)) {
             List<Future<T>> futuros = new ArrayList<>();

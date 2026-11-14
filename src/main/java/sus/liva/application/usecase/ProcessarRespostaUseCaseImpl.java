@@ -39,6 +39,7 @@ public class ProcessarRespostaUseCaseImpl implements ProcessarRespostaUseCase {
     private final TransacaoPort transacao;
     private final Clock clock;
     private final AssistenteWhatsApp assistente;
+    private final RespostaDeOfertaPeloWhatsApp ofertas;
 
     public ProcessarRespostaUseCaseImpl(RegistroMensagemPort registros, MensagemRecebidaPort recebidas,
                                         AgendamentoRepositoryPort agendamentos, EncaminhamentoRepositoryPort encaminhamentos,
@@ -52,6 +53,14 @@ public class ProcessarRespostaUseCaseImpl implements ProcessarRespostaUseCase {
                                         PacienteRepositoryPort pacientes, EnviadorMensagemPort enviador,
                                         ModeloMensagens modelos, TransacaoPort transacao, Clock clock,
                                         AssistenteWhatsApp assistente) {
+        this(registros, recebidas, agendamentos, encaminhamentos, pacientes, enviador, modelos, transacao, clock, assistente, null);
+    }
+
+    public ProcessarRespostaUseCaseImpl(RegistroMensagemPort registros, MensagemRecebidaPort recebidas,
+                                        AgendamentoRepositoryPort agendamentos, EncaminhamentoRepositoryPort encaminhamentos,
+                                        PacienteRepositoryPort pacientes, EnviadorMensagemPort enviador,
+                                        ModeloMensagens modelos, TransacaoPort transacao, Clock clock,
+                                        AssistenteWhatsApp assistente, RespostaDeOfertaPeloWhatsApp ofertas) {
         this.registros = registros;
         this.recebidas = recebidas;
         this.agendamentos = agendamentos;
@@ -62,6 +71,7 @@ public class ProcessarRespostaUseCaseImpl implements ProcessarRespostaUseCase {
         this.transacao = transacao;
         this.clock = clock;
         this.assistente = assistente;
+        this.ofertas = ofertas;
     }
 
     private record Aplicacao(ResultadoResposta ignorada, Agendamento agendamento, Telefone destino) {
@@ -77,8 +87,10 @@ public class ProcessarRespostaUseCaseImpl implements ProcessarRespostaUseCase {
 
         Instant recebidaEm = Instant.now(clock);
         Optional<RespostaPaciente> resposta = RespostaPaciente.interpretar(texto);
+        Optional<ResultadoResposta> daOferta = ofertas == null ? Optional.empty() : ofertas.responder(remetente, texto);
         ResultadoResposta resultado;
-        if (paraOAssistente(remetente, texto, resposta)) resultado = assistente.atender(remetente, texto);
+        if (daOferta.isPresent()) resultado = daOferta.get();
+        else if (paraOAssistente(remetente, texto, resposta)) resultado = assistente.atender(remetente, texto);
         else resultado = resposta.isEmpty() ? orientar(remetente) : responder(remetente, resposta.get());
         recebidas.salvarRecebida(new MensagemRecebida(vinculo(remetente, resultado), remetente,
                 Objects.requireNonNullElse(texto, ""), idMensagem, resposta.orElse(null), recebidaEm));

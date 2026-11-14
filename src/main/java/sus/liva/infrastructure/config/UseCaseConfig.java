@@ -65,15 +65,84 @@ import sus.liva.application.usecase.ModeloMensagens;
 import sus.liva.application.usecase.ProcessarRespostaUseCaseImpl;
 import sus.liva.application.usecase.TriagemUseCaseImpl;
 
+import sus.liva.application.port.in.ConfirmacaoDeEntregaUseCase;
+import sus.liva.application.port.in.FilaDeEsperaUseCase;
+import sus.liva.application.port.out.FilaDeEsperaRepositoryPort;
+import sus.liva.application.usecase.ConfirmacaoDeEntregaUseCaseImpl;
+import sus.liva.application.usecase.FilaDeEsperaUseCaseImpl;
+import sus.liva.application.usecase.ProcessarFilaUseCaseImpl;
+import sus.liva.application.usecase.ReservaDeVaga;
+import sus.liva.application.usecase.RespostaDeOfertaPeloWhatsApp;
+import sus.liva.domain.model.agendamento.AntecedenciaDosLembretes;
+import sus.liva.domain.model.fila.AcaoSemResposta;
+import sus.liva.domain.model.fila.PoliticaDaFila;
+
 import java.time.Clock;
+import java.time.Duration;
 import java.time.ZoneId;
 
 @Configuration
 public class UseCaseConfig {
 
     @Bean
-    public ModeloMensagens modeloMensagens() {
-        return new ModeloMensagens();
+    public PoliticaDaFila politicaDaFila(@Value("${confirmasus.fila.prazo-confirmacao}") Duration prazoDeConfirmacao,
+                                         @Value("${confirmasus.fila.aviso-final}") Duration avisoFinal,
+                                         @Value("${confirmasus.fila.sem-resposta}") AcaoSemResposta semResposta,
+                                         @Value("${confirmasus.fila.exigir-entrega}") boolean exigirEntrega,
+                                         @Value("${confirmasus.fila.prazo-oferta}") Duration prazoDaOferta,
+                                         @Value("${confirmasus.fila.antecedencia-minima}") Duration antecedenciaMinima,
+                                         @Value("${confirmasus.fila.ofertas-por-vaga}") int ofertasPorVaga,
+                                         @Value("${confirmasus.fila.espera-sem-candidato}") Duration esperaSemCandidato) {
+        return new PoliticaDaFila(prazoDeConfirmacao, avisoFinal, semResposta, exigirEntrega, prazoDaOferta, antecedenciaMinima,
+                ofertasPorVaga, esperaSemCandidato);
+    }
+
+    @Bean
+    public ModeloMensagens modeloMensagens(PoliticaDaFila politica) {
+        return new ModeloMensagens(politica.prazoDeConfirmacao(), politica.semResposta());
+    }
+
+    @Bean
+    public ReservaDeVaga reservaDeVaga(FilaDeEsperaRepositoryPort fila, AgendamentoRepositoryPort agendamentos,
+                                       EncaminhamentoRepositoryPort encaminhamentos, ProfissionalRepositoryPort profissionais,
+                                       TransacaoPort transacao, NotificacaoAoPaciente notificacao, ModeloMensagens modelos,
+                                       Clock clock) {
+        return new ReservaDeVaga(fila, agendamentos, encaminhamentos, profissionais, transacao, notificacao, modelos, clock);
+    }
+
+    @Bean
+    public ProcessarFilaUseCaseImpl processarFilaUseCase(FilaDeEsperaRepositoryPort fila, AgendamentoRepositoryPort agendamentos,
+                                                         EncaminhamentoRepositoryPort encaminhamentos,
+                                                         ProfissionalRepositoryPort profissionais,
+                                                         DispararLembreteUseCase dispararLembrete, NotificacaoAoPaciente notificacao,
+                                                         LinksDeAcesso links, ModeloMensagens modelos, TransacaoPort transacao,
+                                                         PoliticaDaFila politica, Clock clock,
+                                                         @Value("${confirmasus.portal.url}") String urlDoPortal,
+                                                         @Value("${confirmasus.fila.oferta-imediata}") boolean ofertaImediata) {
+        return new ProcessarFilaUseCaseImpl(fila, agendamentos, encaminhamentos, profissionais, dispararLembrete, notificacao, links,
+                modelos, transacao, politica, clock, urlDoPortal, ofertaImediata);
+    }
+
+    @Bean
+    public FilaDeEsperaUseCase filaDeEsperaUseCase(FilaDeEsperaRepositoryPort fila, AgendamentoRepositoryPort agendamentos,
+                                                   PacienteRepositoryPort pacientes, ProfissionalRepositoryPort profissionais,
+                                                   ReservaDeVaga reserva, ProcessarFilaUseCaseImpl processamento, TransacaoPort transacao,
+                                                   PoliticaDaFila politica, AuditoriaPort auditoria, Clock clock) {
+        return new FilaDeEsperaUseCaseImpl(fila, agendamentos, pacientes, profissionais, reserva, processamento, transacao, politica,
+                auditoria, clock);
+    }
+
+    @Bean
+    public RespostaDeOfertaPeloWhatsApp respostaDeOfertaPeloWhatsApp(FilaDeEsperaRepositoryPort fila, AssistenteWhatsApp assistente,
+                                                                     ReservaDeVaga reserva, ProcessarFilaUseCaseImpl processamento,
+                                                                     NotificacaoAoPaciente notificacao, RegistroMensagemPort registros,
+                                                                     ModeloMensagens modelos, Clock clock) {
+        return new RespostaDeOfertaPeloWhatsApp(fila, assistente, reserva, processamento, notificacao, registros, modelos, clock);
+    }
+
+    @Bean
+    public ConfirmacaoDeEntregaUseCase confirmacaoDeEntregaUseCase(RegistroMensagemPort registros, Clock clock) {
+        return new ConfirmacaoDeEntregaUseCaseImpl(registros, clock);
     }
 
     @Bean
@@ -98,8 +167,15 @@ public class UseCaseConfig {
                                                                AgendamentoRepositoryPort agendamentos,
                                                                DispararLembreteUseCase dispararLembrete,
                                                                TransacaoPort transacao,
-                                                               Clock clock) {
-        return new AgendarAtendimentoUseCaseImpl(pacientes, agendamentos, dispararLembrete, transacao, clock);
+                                                               Clock clock,
+                                                               AntecedenciaDosLembretes antecedencia) {
+        return new AgendarAtendimentoUseCaseImpl(pacientes, agendamentos, dispararLembrete, transacao, clock, antecedencia);
+    }
+
+    @Bean
+    public AntecedenciaDosLembretes antecedenciaDosLembretes(@Value("${confirmasus.lembretes.pedido-dias-antes}") int pedido,
+                                                             @Value("${confirmasus.lembretes.vespera-dias-antes}") int vespera) {
+        return new AntecedenciaDosLembretes(pedido, vespera);
     }
 
     @Bean
@@ -163,9 +239,10 @@ public class UseCaseConfig {
                                                              ModeloMensagens modelos,
                                                              TransacaoPort transacao,
                                                              Clock clock,
-                                                             AssistenteWhatsApp assistente) {
+                                                             AssistenteWhatsApp assistente,
+                                                             RespostaDeOfertaPeloWhatsApp ofertas) {
         return new ProcessarRespostaUseCaseImpl(registros, recebidas, agendamentos, encaminhamentos, pacientes, enviador,
-                modelos, transacao, clock, assistente);
+                modelos, transacao, clock, assistente, ofertas);
     }
 
     @Bean
@@ -200,9 +277,10 @@ public class UseCaseConfig {
                                                              DispararLembreteUseCase dispararLembrete,
                                                              TransacaoPort transacao, AuditoriaPort auditoria,
                                                              NotificacaoAoPaciente notificacao, ModeloMensagens modelos,
-                                                             LimiteDeRemarcacoes limite, Clock clock) {
+                                                             LimiteDeRemarcacoes limite, Clock clock,
+                                                             FilaDeEsperaRepositoryPort fila) {
         return new AgendaDeConsultasUseCaseImpl(encaminhamentos, triagens, agendamentos, profissionais, dispararLembrete,
-                transacao, auditoria, notificacao, modelos, limite, clock);
+                transacao, auditoria, notificacao, modelos, limite, clock, fila);
     }
 
     @Bean
@@ -242,8 +320,9 @@ public class UseCaseConfig {
 
     @Bean
     public DispararLembretesDoDiaUseCase dispararLembretesDoDiaUseCase(AgendamentoRepositoryPort agendamentos,
-                                                                       DispararLembreteUseCase dispararLembrete) {
-        return new DispararLembretesDoDiaUseCaseImpl(agendamentos, dispararLembrete);
+                                                                       DispararLembreteUseCase dispararLembrete,
+                                                                       AntecedenciaDosLembretes antecedencia) {
+        return new DispararLembretesDoDiaUseCaseImpl(agendamentos, dispararLembrete, antecedencia);
     }
 
     @Bean

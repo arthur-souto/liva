@@ -43,6 +43,22 @@ confirmasus:
     cron: ${DISPARO_DIARIO_CRON:0 0 8 * * *}
   whatsapp:
     provedor: ${WHATSAPP_PROVEDOR:console}
+  lembretes:
+    pedido-dias-antes: ${LEMBRETE_PEDIDO_DIAS_ANTES:3}
+    vespera-dias-antes: ${LEMBRETE_VESPERA_DIAS_ANTES:1}
+  fila:
+    automacao:
+      habilitada: ${FILA_AUTOMACAO_HABILITADA:true}
+      intervalo: ${FILA_INTERVALO:PT1M}
+    oferta-imediata: ${FILA_OFERTA_IMEDIATA:${FILA_AUTOMACAO_HABILITADA:true}}
+    prazo-confirmacao: ${FILA_PRAZO_CONFIRMACAO:PT24H}
+    aviso-final: ${FILA_AVISO_FINAL:PT6H}
+    sem-resposta: ${FILA_SEM_RESPOSTA:MANTER}
+    exigir-entrega: ${FILA_EXIGIR_ENTREGA:true}
+    prazo-oferta: ${FILA_PRAZO_OFERTA:PT2H}
+    antecedencia-minima: ${FILA_ANTECEDENCIA_MINIMA:PT3H}
+    ofertas-por-vaga: ${FILA_OFERTAS_POR_VAGA:5}
+    espera-sem-candidato: ${FILA_ESPERA_SEM_CANDIDATO:PT10M}
   atendimento-teste:
     habilitado: ${ATENDIMENTO_TESTE_HABILITADO:true}
   webhook:

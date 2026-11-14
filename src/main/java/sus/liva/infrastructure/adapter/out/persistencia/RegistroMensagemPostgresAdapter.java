@@ -52,6 +52,12 @@ public class RegistroMensagemPostgresAdapter implements RegistroMensagemPort {
     }
 
     @Override
+    @Transactional
+    public boolean marcarEntregue(String idExterno, Instant em) {
+        return repository.marcarEntregue(idExterno, em) > 0;
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public List<RegistroMensagem> enviadasDoAgendamento(UUID agendamentoId) {
         return repository.findByAgendamentoIdOrderByEnviadoEmAscIdAsc(agendamentoId).stream()

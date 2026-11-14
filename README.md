@@ -175,6 +175,19 @@ Toda a configuração vem do arquivo `.env` na raiz do projeto. Ele é lido **ta
 | `FUSO_HORARIO` | Liva | Fuso usado para saber qual é "hoje" e para o horário do agendador. Padrão `America/Sao_Paulo` |
 | `DISPARO_DIARIO_HABILITADO` | Liva | `false` desliga o disparo automático. Padrão `true` |
 | `DISPARO_DIARIO_CRON` | Liva | Quando a rotina diária roda (cron do Spring, com segundos). Padrão `0 0 8 * * *` (todo dia às 08:00). `-` desliga |
+| `LEMBRETE_PEDIDO_DIAS_ANTES` | Liva | Quantos dias antes da consulta sai o pedido de confirmação. Padrão `3` |
+| `LEMBRETE_VESPERA_DIAS_ANTES` | Liva | Quantos dias antes sai o lembrete da véspera. Padrão `1` |
+| `FILA_AUTOMACAO_HABILITADA` | Liva | `false` desliga o ciclo automático da fila (ofertas, prazos e aviso final). Padrão `true` |
+| `FILA_OFERTA_IMEDIATA` | Liva | Depois de um aceite, recusa ou retomada, oferece a próxima vaga na hora (envia WhatsApp). Padrão: o mesmo valor de `FILA_AUTOMACAO_HABILITADA` |
+| `FILA_INTERVALO` | Liva | Intervalo entre ciclos da fila (ISO-8601). Padrão `PT1M` |
+| `FILA_PRAZO_CONFIRMACAO` | Liva | Até quanto tempo antes da consulta a pessoa deve confirmar. Padrão `PT24H` |
+| `FILA_AVISO_FINAL` | Liva | Quanto tempo antes do fim do prazo sai o aviso final para quem não respondeu. Padrão `PT6H` |
+| `FILA_SEM_RESPOSTA` | Liva | O que fazer quando o prazo vence sem resposta: `MANTER` (padrão, a consulta continua) ou `LIBERAR` (cancela e oferece a vaga) |
+| `FILA_EXIGIR_ENTREGA` | Liva | Com `LIBERAR`, só libera se a Evolution confirmou a entrega do pedido. Padrão `true` |
+| `FILA_PRAZO_OFERTA` | Liva | Tempo para responder a uma vaga oferecida. Padrão `PT2H` |
+| `FILA_ANTECEDENCIA_MINIMA` | Liva | Não oferece vagas que começam antes disso; a oferta expira nesse limite. Padrão `PT3H` |
+| `FILA_OFERTAS_POR_VAGA` | Liva | Máximo de pessoas a quem a mesma vaga é oferecida, uma de cada vez. Padrão `5` |
+| `FILA_ESPERA_SEM_CANDIDATO` | Liva | Quanto esperar para tentar de novo uma vaga sem ninguém elegível. Padrão `PT10M` |
 
 Portas:
 
@@ -230,8 +243,10 @@ curl -H "apikey: $EVOLUTION_API_KEY" localhost:8080/instance/connectionState/$EV
 source .env
 curl -X POST localhost:8080/webhook/set/$EVOLUTION_INSTANCIA \
   -H "apikey: $EVOLUTION_API_KEY" -H "Content-Type: application/json" \
-  -d "{\"webhook\": {\"enabled\": true, \"url\": \"$WEBHOOK_URL?token=$WEBHOOK_TOKEN\", \"byEvents\": false, \"base64\": false, \"events\": [\"MESSAGES_UPSERT\"]}}"
+  -d "{\"webhook\": {\"enabled\": true, \"url\": \"$WEBHOOK_URL?token=$WEBHOOK_TOKEN\", \"byEvents\": false, \"base64\": false, \"events\": [\"MESSAGES_UPSERT\", \"MESSAGES_UPDATE\"]}}"
 ```
+
+`MESSAGES_UPSERT` traz as respostas dos pacientes. `MESSAGES_UPDATE` traz a confirmação de entrega (`DELIVERY_ACK`/`READ`), usada pela fila para não tratar falha de entrega como falta de resposta.
 
 O `docker-compose.yml` já mapeia `host.docker.internal` para o host, então o container alcança a Liva na porta 8081.
 
@@ -362,6 +377,14 @@ Fluxo assistencial (exige `Authorization: Bearer`; a permissão por papel está 
 | `POST` | `/api/consultas/{id}/iniciar` · `/finalizar` · `/evolucoes` · `/falta` · `/remarcar` · `/cancelar` | Atendimento e mudanças na consulta (com `versao`) |
 | `GET` | `/api/portal/historico` | Histórico do paciente logado |
 | `GET` | `/api/catalogo/especialidades` · `/api/catalogo/especialistas?especialidade=` | Catálogo para os encaminhamentos |
+| `GET` | `/api/portal/fila` | Posição do paciente em cada fila e as vagas oferecidas a ele |
+| `POST` | `/api/portal/fila/ofertas/{id}/aceitar` · `/recusar` | Resposta do paciente à vaga (409 se a vaga não estiver mais disponível) |
+| `GET` | `/api/filas?especialidade=&profissional=&unidade=&pagina=&tamanho=` | Painel: indicadores, fila paginada, vagas, ofertas, sem confirmação e movimentações |
+| `GET` | `/api/filas/entradas/{id}` | Posição, ofertas e histórico de uma entrada |
+| `POST` | `/api/filas/entradas/{id}/pausar` · `/retomar` | Intervenção auditada da equipe (`{"motivo"}` para pausar) |
+| `POST` | `/api/filas/ofertas/{id}/aceitar` · `/recusar` | A equipe registra a resposta dada por telefone ou na unidade |
+| `POST` | `/api/filas/consultas/{id}/confirmar-presenca` | Confirmação de presença assistida pela recepção |
+| `POST` | `/api/filas/processar` | Executa agora o ciclo da fila |
 
 ### Erros
 
@@ -446,10 +469,11 @@ Ortopedia e Cardiologia atendem de segunda a sexta, das 08:00 às 12:00 e das 13
 | Tipo | Quando (rotina do dia) | Conteúdo |
 |---|---|---|
 | `CONFIRMACAO_AGENDAMENTO` | Ao criar o agendamento | Data, hora, endereço, documentos |
-| `PEDIDO_CONFIRMACAO` | 3 dias antes | Pergunta "Você consegue ir? 1, 2 ou 3". Muda o status para `AGUARDANDO_RESPOSTA` |
-| `LEMBRETE_VESPERA` | 1 dia antes | Data, hora, endereço e preparo |
+| `PEDIDO_CONFIRMACAO` | `LEMBRETE_PEDIDO_DIAS_ANTES` (padrão 3 dias antes) | Pergunta "Você consegue ir? 1, 2 ou 3". Muda o status para `AGUARDANDO_RESPOSTA` |
+| `AVISO_FINAL_CONFIRMACAO` | `FILA_AVISO_FINAL` antes do fim do prazo de confirmação | Último aviso para quem ainda não respondeu ao pedido (ciclo da fila) |
+| `LEMBRETE_VESPERA` | `LEMBRETE_VESPERA_DIAS_ANTES` (padrão 1 dia antes) | Data, hora, endereço e preparo |
 
-A antecedência de cada lembrete vem de `TipoLembrete.getDiasAntes()`.
+A antecedência do pedido e da véspera vem de `AntecedenciaDosLembretes` (variáveis acima); o padrão continua em `TipoLembrete.getDiasAntes()`.
 
 ### Agendamento e cadastro do paciente
 
@@ -502,6 +526,22 @@ A resposta só é aplicada se o agendamento estiver `AGUARDANDO_RESPOSTA`; respo
 
 **Histórico**: toda mensagem enviada (lembretes, retornos, orientações e avulsas) é gravada em `registros_mensagem` com o `id` devolvido pela Evolution. Quando a Evolution devolve no webhook uma mensagem que a própria Liva enviou (acontece ao testar com o próprio número), ela é reconhecida pelo `id` e ignorada.
 
+### Fila de espera e reaproveitamento de vagas
+
+A fila não é um sistema à parte: ela nasce dos encaminhamentos que já existem.
+
+- **Uma entrada por necessidade**: cada encaminhamento eletivo de uma triagem finalizada (`AGUARDANDO_AGENDAMENTO` ou `AGENDADO`) gera uma entrada em `entradas_fila`, única por `(encaminhamento, ciclo)`. Duas triagens da mesma pessoa são duas filas independentes; um retorno abre um novo ciclo.
+- **Ordem**: prioridade clínica da triagem, depois data de entrada, depois id. A posição considera quem disputa a mesma especialidade e o mesmo profissional (ou qualquer um).
+- **Vagas liberadas**: consultas futuras `CANCELADO`/`REAGENDADO` cujo horário continua livre viram `vagas_liberadas` (origem cancelamento, sem confirmação ou antecipação). A agenda (`agendamentos` com a constraint `EXCLUDE`) continua sendo a fonte da verdade da capacidade.
+- **Oferta**: o ciclo oferece cada vaga à próxima pessoa elegível, uma de cada vez, pelo WhatsApp (com link de acesso ao portal) e no portal. Quem liberou o horário não o recebe de volta. Enquanto a oferta está ativa, o horário fica reservado e some dos horários livres.
+- **Aceitar**: em uma transação curta, trava oferta → vaga → entrada → consulta atual → encaminhamento, cria a nova consulta já `CONFIRMADO`, cancela a antiga (que vira uma nova vaga, em cascata) e marca a vaga como reaproveitada. Aceite repetido devolve a mesma consulta.
+- **Recusar ou deixar expirar** não tira ninguém da fila nem muda a posição; a vaga segue para a próxima pessoa. A mesma vaga nunca é oferecida duas vezes à mesma entrada e para depois de `FILA_OFERTAS_POR_VAGA` tentativas.
+- **Pelo WhatsApp**: "ACEITO", "aceitar", "quero a vaga" aceitam; "NÃO POSSO", "recuso" recusam. São palavras diferentes das respostas 1/2/3 do pedido de confirmação.
+- **Silêncio não é cancelamento**: com `FILA_SEM_RESPOSTA=MANTER` a consulta continua e o painel mostra "mantida sem resposta" (ou "sem contato" se a mensagem não foi entregue). Com `LIBERAR`, só libera quando a entrega foi confirmada; a pessoa volta para a fila com a data de entrada original.
+- **Concorrência**: `SELECT ... FOR UPDATE` onde há disputa, `FOR UPDATE SKIP LOCKED` nos passos do ciclo, índices únicos parciais (uma oferta ativa por vaga e por entrada; uma vaga aberta por horário) e nenhuma chamada ao WhatsApp dentro de transação. Os passos guardam o estado no banco, então o ciclo pode rodar em mais de uma instância e retoma ofertas não enviadas depois de reiniciar.
+- **Automação desligada**: com `FILA_AUTOMACAO_HABILITADA=false` nada é enviado sozinho. O painel `/filas` ainda atualiza a fila, registra vagas e expira ofertas vencidas (só no banco) toda vez que é aberto; ofertas novas só saem pelo botão "Processar agora".
+- **Telas**: `/portal/fila` (posição por encaminhamento e a oferta com contagem regressiva) e `/filas` (indicadores, fila paginada, vagas, ofertas, consultas sem confirmação, movimentações e intervenções auditadas). O especialista vê só a própria especialidade.
+
 ### Telefones
 
 `Telefone.de(...)` aceita `(11) 98765-4321`, `11987654321` ou `5511987654321` e normaliza para `+5511987654321`. O WhatsApp às vezes identifica números brasileiros **sem o 9º dígito** (ex.: `555193953661@s.whatsapp.net`); por isso a comparação usa `chaveComparacao()` (DDD + 8 últimos dígitos). O webhook também entende remetentes no formato `@lid`, usando `remoteJidAlt`.
@@ -537,6 +577,7 @@ Os testes de persistência e o `LivaApplicationTests` sobem um Postgres temporá
 | `LivaApplicationTests` | Contexto Spring sobe com Flyway, validação do schema e agendador registrado |
 | `TriagemTest`, `EncaminhamentoTest`, `ConsultaTest`, `DisponibilidadeTest` | Máquinas de estado da triagem, do encaminhamento e da consulta; transições inválidas; geração de horários |
 | `SegurancaIntegracaoTest` | Spring Security real com MockMvc: 401 sem token, token adulterado, API key só nas rotas de sistema, permissões por papel, bloqueio após 5 senhas erradas, portal sem código antes da triagem, fluxo completo pela API (cadastro → triagem → encaminhamento → código pelo WhatsApp → ativação → código não reutilizável → horários → agendamento idempotente → agenda do especialista → cancelamento com versão) |
+| `FilaDeEsperaIntegracaoTest` | No Postgres real: uma fila por ramo e ordem por prioridade, oferta e aceite que antecipa a consulta com oferta em cascata, recusa e expiração sem perder a posição, aceites e agendamento simultâneos no mesmo horário, ciclos concorrentes (uma oferta por vaga), horário ocupado durante a oferta, "ACEITO" repetido pelo WhatsApp, política sem resposta (manter, liberar só com entrega confirmada, confirmação na recepção), retomada após reinício, permissões por papel |
 | `FluxoAssistencialIntegracaoTest` | No Postgres real, com relógio controlado: cadastro e CPF duplicado (inclusive simultâneo), conflito de versão, portal só após a primeira triagem finalizada, fila única por paciente, fluxo completo até a alta com retorno, caso grave ao plantão, segunda triagem como ramo independente, acessos negados, mesmo horário disputado por 5 pacientes ao mesmo tempo (só um reserva), idempotência, rollback da remarcação, resposta pelo WhatsApp liberando o encaminhamento, falta |
 
 ---
@@ -598,6 +639,7 @@ Se a internet ou o WhatsApp falharem no palco, use `WHATSAPP_PROVEDOR=console` e
 - **Envio de lembretes sem garantia de entrega**: no disparo, a mensagem é enviada e depois o registro é gravado. Se a Liva cair entre os dois passos, o envio não fica registrado. Para garantir isso seria necessário o padrão Outbox.
 - **Agendamentos de amanhã criados depois da rotina das 08:00** não recebem o lembrete da véspera (só a confirmação e o pedido).
 - **Respostas por áudio** não são interpretadas (a mensagem pede número ou texto).
+- **Com a automação da fila ligada**, as vagas canceladas dos dados de demonstração são oferecidas pelo WhatsApp aos telefones cadastrados. Use `WHATSAPP_PROVEDOR=console` ou `FILA_AUTOMACAO_HABILITADA=false` se não quiser mensagens reais.
 - **Agendador em uma única instância**: com mais de uma Liva rodando, todas executariam a rotina ao mesmo tempo. O `jaEnviado` reduz, mas não elimina, envios duplicados; para escalar seria preciso um lock distribuído (ex.: ShedLock).
 - **`REAGENDADO`** apenas registra a intenção; o reagendamento em si é feito pela equipe.
 - **Uma única chave de API** para todos os clientes, sem usuários nem perfis. Para várias equipes/unidades seria preciso autenticação por usuário (ex.: Spring Security com JWT).

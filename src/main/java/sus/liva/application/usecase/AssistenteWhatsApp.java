@@ -353,7 +353,7 @@ public class AssistenteWhatsApp {
         return profissionais.buscarEspecialidade(codigo).map(Especialidade::nome).orElse(codigo);
     }
 
-    private List<Paciente> pacientesDoTelefone(Telefone telefone) {
+    List<Paciente> pacientesDoTelefone(Telefone telefone) {
         Stream<Paciente> proprios = telefones(telefone).flatMap(t -> pacientes.buscarPorTelefone(t).stream()).filter(Paciente::consentimento);
         Stream<Paciente> dependentes = cuidadoresDoTelefone(telefone)
                 .flatMap(c -> cuidadores.dependentesDe(c.id()).stream())
@@ -391,7 +391,7 @@ public class AssistenteWhatsApp {
         return Optional.empty();
     }
 
-    private Ator ator(Telefone remetente, Paciente paciente) {
+    Ator ator(Telefone remetente, Paciente paciente) {
         Optional<Cuidador> cuidador = cuidadorFalando(remetente, paciente);
         if (cuidador.isPresent()) return Ator.cuidador(cuidador.get().id(), paciente.id());
         return contas.buscarPorPaciente(paciente.id()).map(ContaDeAcesso::ator).orElse(Ator.paciente(paciente.id(), paciente.id()));

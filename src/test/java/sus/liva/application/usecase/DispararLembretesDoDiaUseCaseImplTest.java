@@ -7,6 +7,7 @@ import sus.liva.application.port.out.MensagemSaida;
 import sus.liva.application.port.out.ResultadoEnvio;
 import sus.liva.domain.model.Telefone;
 import sus.liva.domain.model.agendamento.Agendamento;
+import sus.liva.domain.model.agendamento.AntecedenciaDosLembretes;
 import sus.liva.domain.model.agendamento.StatusAgendamento;
 import sus.liva.domain.model.agendamento.TipoAtendimento;
 import sus.liva.domain.model.agendamento.TipoLembrete;
@@ -64,6 +65,22 @@ class DispararLembretesDoDiaUseCaseImplTest {
         assertThat(registros.jaEnviado(daVespera.getId(), TipoLembrete.LEMBRETE_VESPERA)).isTrue();
         assertThat(agendamentos.buscarAgendamento(doPedido.getId()).orElseThrow().getStatus())
                 .isEqualTo(StatusAgendamento.AGUARDANDO_RESPOSTA);
+    }
+
+    @Test
+    void usaAAntecedenciaConfiguradaParaOPedidoEAVespera() {
+        DispararLembretesDoDiaUseCaseImpl configurado = new DispararLembretesDoDiaUseCaseImpl(agendamentos,
+                new DispararLembreteUseCaseImpl(agendamentos, pacientes, registros, enviador, new ModeloMensagens()),
+                new AntecedenciaDosLembretes(2, 0));
+        Agendamento doPedido = agendar(HOJE.plusDays(2), paciente.id());
+        Agendamento deHoje = agendar(HOJE, paciente.id());
+        Agendamento doPadrao = agendar(DIA_DO_PEDIDO, paciente.id());
+
+        configurado.dispararPendentes(HOJE);
+
+        assertThat(registros.jaEnviado(doPedido.getId(), TipoLembrete.PEDIDO_CONFIRMACAO)).isTrue();
+        assertThat(registros.jaEnviado(deHoje.getId(), TipoLembrete.LEMBRETE_VESPERA)).isTrue();
+        assertThat(registros.jaEnviado(doPadrao.getId(), TipoLembrete.PEDIDO_CONFIRMACAO)).isFalse();
     }
 
     @Test

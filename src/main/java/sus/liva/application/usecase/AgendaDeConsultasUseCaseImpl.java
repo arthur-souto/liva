@@ -11,6 +11,7 @@ import sus.liva.application.port.in.RemarcacoesDoMes;
 import sus.liva.application.port.out.AgendamentoRepositoryPort;
 import sus.liva.application.port.out.AuditoriaPort;
 import sus.liva.application.port.out.EncaminhamentoRepositoryPort;
+import sus.liva.application.port.out.FilaDeEsperaRepositoryPort;
 import sus.liva.application.port.out.ProfissionalRepositoryPort;
 import sus.liva.application.port.out.TransacaoPort;
 import sus.liva.application.port.out.TriagemRepositoryPort;
@@ -19,6 +20,7 @@ import sus.liva.domain.model.agendamento.NaturezaConsulta;
 import sus.liva.domain.model.agendamento.StatusAgendamento;
 import sus.liva.domain.model.agendamento.TipoLembrete;
 import sus.liva.domain.model.encaminhamento.Encaminhamento;
+import sus.liva.domain.model.fila.VagaLiberada;
 import sus.liva.domain.model.profissional.Disponibilidade;
 import sus.liva.domain.model.profissional.Profissional;
 import sus.liva.domain.model.triagem.StatusTriagem;
@@ -48,6 +50,7 @@ public class AgendaDeConsultasUseCaseImpl implements AgendaDeConsultasUseCase {
     private final NotificacaoAoPaciente notificacao;
     private final ModeloMensagens modelos;
     private final LimiteDeRemarcacoes limite;
+    private final FilaDeEsperaRepositoryPort fila;
     private final Clock clock;
 
     public AgendaDeConsultasUseCaseImpl(EncaminhamentoRepositoryPort encaminhamentos, TriagemRepositoryPort triagens,
@@ -55,6 +58,15 @@ public class AgendaDeConsultasUseCaseImpl implements AgendaDeConsultasUseCase {
                                         DispararLembreteUseCase dispararLembrete, TransacaoPort transacao,
                                         AuditoriaPort auditoria, NotificacaoAoPaciente notificacao, ModeloMensagens modelos,
                                         LimiteDeRemarcacoes limite, Clock clock) {
+        this(encaminhamentos, triagens, agendamentos, profissionais, dispararLembrete, transacao, auditoria, notificacao, modelos, limite,
+                clock, null);
+    }
+
+    public AgendaDeConsultasUseCaseImpl(EncaminhamentoRepositoryPort encaminhamentos, TriagemRepositoryPort triagens,
+                                        AgendamentoRepositoryPort agendamentos, ProfissionalRepositoryPort profissionais,
+                                        DispararLembreteUseCase dispararLembrete, TransacaoPort transacao,
+                                        AuditoriaPort auditoria, NotificacaoAoPaciente notificacao, ModeloMensagens modelos,
+                                        LimiteDeRemarcacoes limite, Clock clock, FilaDeEsperaRepositoryPort fila) {
         this.encaminhamentos = encaminhamentos;
         this.triagens = triagens;
         this.agendamentos = agendamentos;
@@ -65,6 +77,7 @@ public class AgendaDeConsultasUseCaseImpl implements AgendaDeConsultasUseCase {
         this.notificacao = notificacao;
         this.modelos = modelos;
         this.limite = limite;
+        this.fila = fila;
         this.clock = clock;
     }
 
@@ -88,11 +101,15 @@ public class AgendaDeConsultasUseCaseImpl implements AgendaDeConsultasUseCase {
                             de.atStartOfDay().minusDays(1), fim.plusDays(1).atStartOfDay()).stream()
                     .filter(c -> c.getStatus().ocupaAgenda())
                     .toList();
+            List<VagaLiberada> emOferta = fila == null ? List.of()
+                    : fila.vagasEmOfertaParaOutros(profissional.id(), de.atStartOfDay(), fim.plusDays(1).atStartOfDay(),
+                    encaminhamento.getPacienteId());
             for (Disponibilidade d : profissionais.disponibilidadesDe(profissional.id()))
                 for (LocalDate dia = de; !dia.isAfter(fim); dia = dia.plusDays(1))
                     for (LocalDateTime horario : d.horariosEm(dia)) {
                         LocalDateTime termino = horario.plusMinutes(d.duracaoMinutos());
-                        if (horario.isAfter(agora) && ocupadas.stream().noneMatch(c -> sobrepoe(c, horario, termino)))
+                        if (horario.isAfter(agora) && ocupadas.stream().noneMatch(c -> sobrepoe(c, horario, termino))
+                                && emOferta.stream().noneMatch(v -> v.getInicio().isBefore(termino) && v.getFim().isAfter(horario)))
                             livres.add(new HorarioDisponivel(profissional.id(), profissional.nome(), horario, termino));
                     }
         }
@@ -118,6 +135,7 @@ public class AgendaDeConsultasUseCaseImpl implements AgendaDeConsultasUseCase {
                 throw new IllegalStateException("A triagem deste encaminhamento não permite novos agendamentos");
             Profissional profissional = profissional(profissionalId);
             int duracao = duracaoNaAgenda(profissional, inicio);
+            exigirForaDeOferta(profissional, inicio, duracao, e.getPacienteId());
             boolean jaAtendido = agendamentos.consultasDoEncaminhamento(e.getId()).stream()
                     .anyMatch(c -> c.getStatus() == StatusAgendamento.COMPARECEU);
             Agendamento consulta = Agendamento.consulta(UUID.randomUUID(), e, profissional, inicio, duracao,
@@ -148,6 +166,7 @@ public class AgendaDeConsultasUseCaseImpl implements AgendaDeConsultasUseCase {
             Encaminhamento e = encaminhamentoParaAtualizar(atual.getEncaminhamentoId());
             Profissional profissional = profissional(profissionalId);
             int duracao = duracaoNaAgenda(profissional, inicio);
+            exigirForaDeOferta(profissional, inicio, duracao, atual.getPacienteId());
             atual.cancelar();
             agendamentos.salvarAgendamento(atual);
             Agendamento remarcada = Agendamento.consulta(UUID.randomUUID(), e, profissional, inicio, duracao, atual.getNatureza(), null);
@@ -201,6 +220,11 @@ public class AgendaDeConsultasUseCaseImpl implements AgendaDeConsultasUseCase {
                 .findFirst()
                 .map(Disponibilidade::duracaoMinutos)
                 .orElseThrow(() -> new IllegalArgumentException("Este horário não faz parte da agenda do profissional"));
+    }
+
+    private void exigirForaDeOferta(Profissional profissional, LocalDateTime inicio, int duracao, UUID pacienteId) {
+        if (fila != null && fila.horarioEmOfertaParaOutro(profissional.id(), inicio, inicio.plusMinutes(duracao), pacienteId))
+            throw new ConflitoException("Este horário está reservado para outra pessoa da fila de espera. Escolha outro horário.");
     }
 
     private Optional<Agendamento> repetido(String chave, UUID encaminhamentoId) {

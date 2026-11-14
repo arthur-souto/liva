@@ -10,6 +10,7 @@ import sus.liva.application.port.out.PacienteRepositoryPort;
 import sus.liva.application.port.out.TransacaoPort;
 import sus.liva.domain.model.Telefone;
 import sus.liva.domain.model.agendamento.Agendamento;
+import sus.liva.domain.model.agendamento.AntecedenciaDosLembretes;
 import sus.liva.domain.model.agendamento.StatusAgendamento;
 import sus.liva.domain.model.agendamento.TipoLembrete;
 import sus.liva.domain.model.paciente.Paciente;
@@ -33,9 +34,17 @@ public class AgendarAtendimentoUseCaseImpl implements AgendarAtendimentoUseCase 
     private final DispararLembreteUseCase dispararLembrete;
     private final TransacaoPort transacao;
     private final Clock clock;
+    private final AntecedenciaDosLembretes antecedencia;
 
     public AgendarAtendimentoUseCaseImpl(PacienteRepositoryPort pacientes, AgendamentoRepositoryPort agendamentos,
                                          DispararLembreteUseCase dispararLembrete, TransacaoPort transacao, Clock clock) {
+        this(pacientes, agendamentos, dispararLembrete, transacao, clock, AntecedenciaDosLembretes.padrao());
+    }
+
+    public AgendarAtendimentoUseCaseImpl(PacienteRepositoryPort pacientes, AgendamentoRepositoryPort agendamentos,
+                                         DispararLembreteUseCase dispararLembrete, TransacaoPort transacao, Clock clock,
+                                         AntecedenciaDosLembretes antecedencia) {
+        this.antecedencia = antecedencia;
         this.pacientes = pacientes;
         this.agendamentos = agendamentos;
         this.dispararLembrete = dispararLembrete;
@@ -103,7 +112,7 @@ public class AgendarAtendimentoUseCaseImpl implements AgendarAtendimentoUseCase 
     }
 
     private boolean dentroDoPrazoDoPedido(LocalDate data) {
-        return !data.isAfter(LocalDate.now(clock).plusDays(TipoLembrete.PEDIDO_CONFIRMACAO.getDiasAntes()));
+        return !data.isAfter(LocalDate.now(clock).plusDays(antecedencia.pedidoDeConfirmacao()));
     }
 
     private ResultadoDisparo notificar(UUID agendamentoId, TipoLembrete tipo) {

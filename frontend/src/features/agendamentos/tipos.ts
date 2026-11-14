@@ -10,7 +10,7 @@ export type StatusAgendamento =
 
 export type TipoAtendimento = "CONSULTA" | "TRIAGEM" | "EXAME";
 
-export type TipoLembrete = "CONFIRMACAO_AGENDAMENTO" | "PEDIDO_CONFIRMACAO" | "LEMBRETE_VESPERA";
+export type TipoLembrete = "CONFIRMACAO_AGENDAMENTO" | "PEDIDO_CONFIRMACAO" | "AVISO_FINAL_CONFIRMACAO" | "LEMBRETE_VESPERA";
 
 export type Agendamento = {
   id: string;

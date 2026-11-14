@@ -25,11 +25,15 @@ export const LEMBRETES: Record<TipoLembrete, { rotulo: string; descricao: string
   },
   PEDIDO_CONFIRMACAO: {
     rotulo: "Pedido de confirmação",
-    descricao: "Pergunta \"Você consegue ir?\" com as opções 1, 2 e 3. Enviado 3 dias antes.",
+    descricao: "Pergunta \"Você consegue ir?\" com as opções 1, 2 e 3. Enviado dias antes, conforme a configuração da unidade.",
+  },
+  AVISO_FINAL_CONFIRMACAO: {
+    rotulo: "Aviso final de confirmação",
+    descricao: "Último aviso antes do prazo de confirmação, para quem ainda não respondeu.",
   },
   LEMBRETE_VESPERA: {
     rotulo: "Lembrete da véspera",
-    descricao: "Data, horário, endereço e preparo. Enviado 1 dia antes.",
+    descricao: "Data, horário, endereço e preparo. Enviado na véspera, conforme a configuração da unidade.",
   },
 };
 

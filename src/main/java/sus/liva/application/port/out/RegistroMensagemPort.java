@@ -16,4 +16,5 @@ public interface RegistroMensagemPort {
     boolean enviadaPelaLiva(String idExterno);
     boolean enviadaDesde(Telefone destino, String texto, Instant desde);
     List<RegistroMensagem> enviadasDoAgendamento(UUID agendamentoId);
+    boolean marcarEntregue(String idExterno, Instant em);
 }

@@ -1,8 +1,10 @@
 "use client";
 
-import { ArrowRight, CalendarCheck, CalendarPlus, CalendarX, ClipboardList, Inbox } from "lucide-react";
+import { ArrowRight, CalendarCheck, CalendarPlus, CalendarX, ClipboardList, Inbox, ListOrdered } from "lucide-react";
 import Link from "next/link";
 import { PRIORIDADES, nomeDaEspecialidade } from "@/features/assistencial/rotulos";
+import { CartaoDeOferta } from "@/features/fila/CartaoDeOferta";
+import { useMinhaFila } from "@/features/fila/useMinhaFila";
 import { mensagemDeErro } from "@/shared/api/erro";
 import { useConsulta } from "@/shared/hooks/useConsulta";
 import { formatarInstante } from "@/shared/lib/datas";
@@ -22,6 +24,7 @@ import estilos from "./Portal.module.css";
 
 export function MeuPortal() {
   const historico = usePortal();
+  const fila = useMinhaFila();
   const usuario = useConsulta(usuarioAtual, "usuario");
   const cuidando = usuario.dados?.papel === "CUIDADOR";
   const nomes = useNomesDosProfissionais(historico.dados);
@@ -30,6 +33,12 @@ export function MeuPortal() {
   const { proximas } = h ? separar(consultasDoHistorico(h)) : { proximas: [] };
   const pendentes = h ? paraAgendar(h) : [];
   const [primeira, ...demais] = proximas;
+  const naFila = fila.dados?.filas.filter((f) => f.status === "AGUARDANDO").length ?? 0;
+
+  function aposResponder() {
+    fila.recarregar();
+    historico.recarregar();
+  }
 
   return (
     <div className={estilos.pagina}>
@@ -47,6 +56,9 @@ export function MeuPortal() {
           no seu WhatsApp e no da pessoa cuidada.
         </Alerta>
       )}
+      {fila.ofertas.map((o) => (
+        <CartaoDeOferta key={o.id} oferta={o} agora={fila.agora} aoAceitar={aposResponder} aoRecusar={aposResponder} />
+      ))}
       {historico.erro ? <Alerta tom="perigo">{mensagemDeErro(historico.erro)}</Alerta> : null}
       {!h && !historico.erro && <Carregando linhas={5} />}
 
@@ -119,6 +131,14 @@ export function MeuPortal() {
             <span>
               <strong>Minhas consultas</strong>
               Próximas, realizadas e canceladas
+            </span>
+            <ArrowRight size={18} aria-hidden="true" />
+          </Link>
+          <Link href="/portal/fila" className={estilos.atalho}>
+            <ListOrdered size={22} aria-hidden="true" />
+            <span>
+              <strong>Minha fila</strong>
+              {naFila > 0 ? `Você está em ${naFila} ${naFila === 1 ? "fila" : "filas"}` : "Posição e vagas oferecidas"}
             </span>
             <ArrowRight size={18} aria-hidden="true" />
           </Link>

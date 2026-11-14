@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
+import sus.liva.application.port.in.ConfirmacaoDeEntregaUseCase;
 import sus.liva.application.port.in.ProcessarRespostaUseCase;
 import sus.liva.application.port.in.ResultadoResposta;
 import sus.liva.domain.model.Telefone;
@@ -24,6 +26,7 @@ import tools.jackson.databind.json.JsonMapper;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Stream;
 
 @RestController
@@ -33,15 +36,25 @@ public class EvolutionWebhookController {
     private static final Logger log = LoggerFactory.getLogger(EvolutionWebhookController.class);
     private static final JsonMapper JSON = JsonMapper.builder().build();
     private static final String SUFIXO_CONTATO = "@s.whatsapp.net";
+    private static final Set<String> ENTREGUE = Set.of("DELIVERY_ACK", "READ", "PLAYED", "3", "4", "5");
 
     private final ProcessarRespostaUseCase processarResposta;
+    private final ConfirmacaoDeEntregaUseCase entregas;
     private final String token;
     private final boolean aceitarProprias;
 
     public EvolutionWebhookController(ProcessarRespostaUseCase processarResposta,
                                       @Value("${confirmasus.webhook.token:}") String token,
                                       @Value("${confirmasus.webhook.aceitar-mensagens-proprias:false}") boolean aceitarProprias) {
+        this(processarResposta, null, token, aceitarProprias);
+    }
+
+    @Autowired
+    public EvolutionWebhookController(ProcessarRespostaUseCase processarResposta, ConfirmacaoDeEntregaUseCase entregas,
+                                      @Value("${confirmasus.webhook.token:}") String token,
+                                      @Value("${confirmasus.webhook.aceitar-mensagens-proprias:false}") boolean aceitarProprias) {
         this.processarResposta = processarResposta;
+        this.entregas = entregas;
         this.token = token;
         this.aceitarProprias = aceitarProprias;
     }
@@ -73,6 +86,7 @@ public class EvolutionWebhookController {
 
     private ResultadoResposta interpretarEvento(JsonNode evento) {
         if (evento.isMissingNode()) return ResultadoResposta.ignorada("Payload inválido");
+        if ("messages.update".equals(evento.path("event").asString(""))) return registrarEntregas(evento.path("data"));
         if (!"messages.upsert".equals(evento.path("event").asString(""))) return ResultadoResposta.ignorada("Evento ignorado");
 
         JsonNode dados = evento.path("data");
@@ -87,6 +101,16 @@ public class EvolutionWebhookController {
         if (texto == null) return ResultadoResposta.ignorada("Mensagem sem texto");
 
         return processarResposta.processar(remetente.get(), texto, chave.path("id").asString(null));
+    }
+
+    private ResultadoResposta registrarEntregas(JsonNode dados) {
+        if (entregas == null) return ResultadoResposta.ignorada("Evento ignorado");
+        long confirmadas = (dados.isArray() ? dados.valueStream() : Stream.of(dados))
+                .filter(item -> ENTREGUE.contains(item.path("status").asString(item.path("update").path("status").asString(""))))
+                .map(item -> item.path("keyId").asString(item.path("key").path("id").asString(null)))
+                .filter(entregas::registrarEntrega)
+                .count();
+        return ResultadoResposta.ignorada("Confirmação de entrega registrada em " + confirmadas + " mensagem(ns)");
     }
 
     private static Optional<Telefone> extrairTelefone(JsonNode chave) {

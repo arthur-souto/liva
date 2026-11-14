@@ -33,6 +33,11 @@ public class RegistroMensagemMemoriaAdapter implements RegistroMensagemPort {
     }
 
     @Override
+    public boolean marcarEntregue(String idExterno, Instant em) {
+        return enviadaPelaLiva(idExterno);
+    }
+
+    @Override
     public boolean enviadaDesde(Telefone destino, String texto, Instant desde) {
         String chave = destino.chaveComparacao();
         return dados.stream().anyMatch(r -> r.sucesso() && texto.equals(r.texto())
