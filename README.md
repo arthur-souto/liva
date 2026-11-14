@@ -631,6 +631,8 @@ Webhook Evolution [evento=messages.upsert, jid=555193953661@s.whatsapp.net, jidA
 
 O pitch de 5 minutos, com falas, tempos, plano B e perguntas prováveis, está em [docs/APRESENTACAO.md](docs/APRESENTACAO.md). O cenário da demonstração é montado com `scripts/preparar-apresentacao.sh +55DDDNUMERO`.
 
+O diagrama relacional do banco, com todas as tabelas, colunas e chaves, está em [docs/DIAGRAMA_DO_BANCO.md](docs/DIAGRAMA_DO_BANCO.md). Para gerar de novo depois de uma migração, com o banco no ar: `python3 scripts/diagrama-do-banco.py`.
+
 Preparação (antes de subir ao palco):
 
 1. `docker compose up -d` e confira `curl localhost:8080/instance/connectionState/liva -H "apikey: $EVOLUTION_API_KEY"` → `open`.
