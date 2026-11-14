@@ -1,0 +1,34 @@
+spring:
+  application:
+    name: liva
+  config:
+    import: optional:file:.env[.properties]
+  datasource:
+    url: jdbc:postgresql://${LIVA_DB_HOST:localhost}:${LIVA_DB_PORT:5433}/${LIVA_DB_NAME:liva}
+    username: ${LIVA_DB_USER:liva}
+    password: ${LIVA_DB_PASSWORD:}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+
+server:
+  port: 8081
+
+confirmasus:
+  whatsapp:
+    provedor: ${WHATSAPP_PROVEDOR:console}
+  demo:
+    telefone: "51993953661"
+  atendimento-teste:
+    habilitado: ${ATENDIMENTO_TESTE_HABILITADO:true}
+  webhook:
+    token: ${WEBHOOK_TOKEN:}
+    aceitar-mensagens-proprias: ${WEBHOOK_ACEITAR_MENSAGENS_PROPRIAS:false}
+
+evolution:
+  url: ${EVOLUTION_URL:http://localhost:8080}
+  api-key: ${EVOLUTION_API_KEY}
+  instancia: ${EVOLUTION_INSTANCIA:liva}

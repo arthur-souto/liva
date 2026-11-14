@@ -1,0 +1,15 @@
+package sus.liva.application.port.in;
+
+import sus.liva.domain.model.agendamento.StatusAgendamento;
+
+import java.util.UUID;
+
+public record ResultadoResposta(boolean aplicada, UUID agendamentoId, StatusAgendamento status,
+                                boolean retornoEnviado, String motivo) {
+    public static ResultadoResposta aplicada(UUID agendamentoId, StatusAgendamento status, boolean retornoEnviado) {
+        return new ResultadoResposta(true, agendamentoId, status, retornoEnviado, null);
+    }
+    public static ResultadoResposta ignorada(String motivo) {
+        return new ResultadoResposta(false, null, null, false, motivo);
+    }
+}
