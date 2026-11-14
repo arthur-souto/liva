@@ -118,6 +118,15 @@ public class AgendaDeConsultasUseCaseImpl implements AgendaDeConsultasUseCase {
     }
 
     @Override
+    public boolean possuiAgenda(Ator ator, UUID encaminhamentoId) {
+        Permissoes.exigir(ator, Papel.PACIENTE, Papel.CUIDADOR, Papel.RECEPCAO);
+        Encaminhamento encaminhamento = encaminhamentos.buscarEncaminhamento(encaminhamentoId)
+                .orElseThrow(() -> new NaoEncontradoException("Encaminhamento não encontrado: " + encaminhamentoId));
+        Permissoes.exigirPacienteProprio(ator, encaminhamento.getPacienteId());
+        return candidatos(encaminhamento).stream().anyMatch(p -> !profissionais.disponibilidadesDe(p.id()).isEmpty());
+    }
+
+    @Override
     public Agendamento agendar(Ator ator, UUID encaminhamentoId, UUID profissionalId, LocalDateTime inicio, String chaveIdempotencia) {
         Permissoes.exigir(ator, Papel.PACIENTE, Papel.CUIDADOR, Papel.RECEPCAO);
         if (chaveIdempotencia != null && !chaveIdempotencia.matches(FORMATO_CHAVE))

@@ -208,6 +208,25 @@ class FluxoAssistencialIntegracaoTest {
     }
 
     @Test
+    void indicaQuandoAEspecialidadeDoEncaminhamentoAindaNaoTemAgenda() {
+        String semAgenda = "AGENDA_" + Long.toString(ThreadLocalRandom.current().nextLong(Long.MAX_VALUE), 36).toUpperCase();
+        jdbc.update("INSERT INTO especialidades (codigo, nome, plantao) VALUES (?, ?, FALSE)", semAgenda, "Especialidade " + semAgenda);
+        profissional(TipoProfissional.ESPECIALISTA, semAgenda);
+        UUID paciente = novoPaciente();
+        Ator portal = Ator.paciente(UUID.randomUUID(), paciente);
+        Encaminhamento e = encaminhamentoLiberado(paciente, semAgenda);
+
+        assertThat(agenda.possuiAgenda(portal, e.getId())).isFalse();
+        assertThat(agenda.horariosDisponiveis(portal, e.getId(), SEGUNDA, SEGUNDA.plusDays(6))).isEmpty();
+
+        especialistaComAgenda(semAgenda);
+        assertThat(agenda.possuiAgenda(portal, e.getId())).isTrue();
+        assertThat(agenda.possuiAgenda(recepcao, e.getId())).isTrue();
+        assertThatThrownBy(() -> agenda.possuiAgenda(Ator.paciente(UUID.randomUUID(), novoPaciente()), e.getId()))
+                .isInstanceOf(AcessoNegadoException.class);
+    }
+
+    @Test
     void fluxoCompletoDoEncaminhamentoAteAlta() {
         Profissional ortopedista = especialistaComAgenda("ORTOPEDIA");
         Ator especialista = Ator.profissional(UUID.randomUUID(), Papel.ESPECIALISTA, ortopedista.id());

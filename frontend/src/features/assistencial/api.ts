@@ -161,6 +161,10 @@ export function cancelarEncaminhamento(encaminhamentoId: string, motivo: string)
   return requisitar<Encaminhamento>(`/encaminhamentos/${id(encaminhamentoId)}/cancelar`, { metodo: "POST", corpo: { motivo } });
 }
 
+export function agendaDoEncaminhamento(encaminhamentoId: string): Promise<{ possuiAgenda: boolean }> {
+  return requisitar<{ possuiAgenda: boolean }>(`/encaminhamentos/${id(encaminhamentoId)}/agenda`);
+}
+
 export function horariosDisponiveis(encaminhamentoId: string, inicio: string, fim: string): Promise<HorarioDisponivel[]> {
   return requisitar<HorarioDisponivel[]>(`/encaminhamentos/${id(encaminhamentoId)}/horarios`, { parametros: { inicio, fim } });
 }

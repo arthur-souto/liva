@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarCheck2, ChevronLeft, ChevronRight, Clock, Moon, Sun, Sunrise, UserRound } from "lucide-react";
+import { CalendarCheck2, CalendarX2, ChevronLeft, ChevronRight, Clock, Moon, Sun, Sunrise, UserRound } from "lucide-react";
 import { useState } from "react";
 import { mensagemDeErro } from "@/shared/api/erro";
 import { useAcao } from "@/shared/hooks/useAcao";
@@ -11,7 +11,7 @@ import { Alerta } from "@/shared/ui/Alerta";
 import { Botao } from "@/shared/ui/Botao";
 import { Carregando } from "@/shared/ui/Carregando";
 import { EstadoVazio } from "@/shared/ui/EstadoVazio";
-import { agendarConsulta, horariosDisponiveis, remarcarConsulta } from "../api";
+import { agendaDoEncaminhamento, agendarConsulta, horariosDisponiveis, remarcarConsulta } from "../api";
 import type { Consulta, HorarioDisponivel } from "../tipos";
 import estilos from "./EscolhaDeHorario.module.css";
 
@@ -75,6 +75,7 @@ export function EscolhaDeHorario({ encaminhamentoId, remarcacao, aoAgendar }: Pr
   const [escolha, setEscolha] = useState<Escolha | null>(null);
   const fim = adicionarDias(inicio, DIAS_POR_PAGINA - 1);
   const horarios = useConsulta(() => horariosDisponiveis(encaminhamentoId, inicio, fim), `${encaminhamentoId}-${inicio}`);
+  const agendaAberta = useConsulta(() => agendaDoEncaminhamento(encaminhamentoId), `agenda-${encaminhamentoId}`);
   const acao = useAcao();
 
   const dias = diasDaSemana(inicio);
@@ -107,6 +108,15 @@ export function EscolhaDeHorario({ encaminhamentoId, remarcacao, aoAgendar }: Pr
       horarios.recarregar();
     }
   }
+
+  if (agendaAberta.dados?.possuiAgenda === false)
+    return (
+      <EstadoVazio
+        icone={<CalendarX2 size={28} aria-hidden="true" />}
+        titulo="Ainda não há agenda para esta especialidade"
+        descricao="O encaminhamento continua válido. Assim que um especialista abrir a agenda na unidade, os horários aparecem aqui."
+      />
+    );
 
   return (
     <div className={estilos.escolha}>

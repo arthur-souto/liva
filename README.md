@@ -385,6 +385,7 @@ Fluxo assistencial (exige `Authorization: Bearer`; a permissão por papel está 
 | `POST` | `/api/filas/ofertas/{id}/aceitar` · `/recusar` | A equipe registra a resposta dada por telefone ou na unidade |
 | `POST` | `/api/filas/consultas/{id}/confirmar-presenca` | Confirmação de presença assistida pela recepção |
 | `POST` | `/api/filas/processar` | Executa agora o ciclo da fila |
+| `GET` | `/api/encaminhamentos/{id}/agenda` | `{"possuiAgenda"}`: se algum especialista da especialidade tem agenda aberta. Sem agenda, a tela de horários avisa em vez de mostrar semanas vazias |
 | `GET` | `/api/faltas?semanas=12` | Prevenção de faltas: evolução semanal (só semanas completas), motivos dos últimos 90 dias, faltas por especialidade e consultas dos próximos 7 dias ordenadas pelo risco de falta |
 | `POST` | `/api/consultas/{id}/ligacao` | Resultado da ligação de prevenção (`{"resultado"}`: `CONFIRMOU`, que também confirma a presença, `VAI_REMARCAR` ou `NAO_ATENDEU`, que soma 10 pontos ao risco) |
 | `POST` | `/api/consultas/{id}/motivo-de-ausencia` | Registra o motivo de uma falta ou cancelamento (`{"motivo"}`: `ESQUECI`, `TRANSPORTE`, `TRABALHO`, `SAUDE`, `NAO_PRECISA`, `OUTRO`) pelo portal ou pela equipe |
@@ -622,6 +623,8 @@ Webhook Evolution [evento=messages.upsert, jid=555193953661@s.whatsapp.net, jidA
 ---
 
 ## Roteiro da apresentação
+
+O pitch de 5 minutos, com falas, tempos, plano B e perguntas prováveis, está em [docs/APRESENTACAO.md](docs/APRESENTACAO.md). O cenário da demonstração é montado com `scripts/preparar-apresentacao.sh +55DDDNUMERO`.
 
 Preparação (antes de subir ao palco):
 

@@ -69,6 +69,14 @@ public class EncaminhamentoController {
         return agenda.horariosDisponiveis(ator, id, inicio, fim);
     }
 
+    public record AgendaResponse(boolean possuiAgenda) {}
+
+    @GetMapping("/{id}/agenda")
+    @Operation(summary = "Indica se algum especialista atende este encaminhamento com agenda aberta")
+    public AgendaResponse agenda(Ator ator, @PathVariable UUID id) {
+        return new AgendaResponse(agenda.possuiAgenda(ator, id));
+    }
+
     @PostMapping("/{id}/consultas")
     @Operation(summary = "Agenda a consulta inicial ou de retorno",
             description = "Envie o header Idempotency-Key para repetir a requisição com segurança. "
