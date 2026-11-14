@@ -385,6 +385,9 @@ Fluxo assistencial (exige `Authorization: Bearer`; a permissão por papel está 
 | `POST` | `/api/filas/ofertas/{id}/aceitar` · `/recusar` | A equipe registra a resposta dada por telefone ou na unidade |
 | `POST` | `/api/filas/consultas/{id}/confirmar-presenca` | Confirmação de presença assistida pela recepção |
 | `POST` | `/api/filas/processar` | Executa agora o ciclo da fila |
+| `GET` | `/api/faltas?semanas=12` | Prevenção de faltas: evolução semanal (só semanas completas), motivos dos últimos 90 dias, faltas por especialidade e consultas dos próximos 7 dias ordenadas pelo risco de falta |
+| `POST` | `/api/consultas/{id}/ligacao` | Resultado da ligação de prevenção (`{"resultado"}`: `CONFIRMOU`, que também confirma a presença, `VAI_REMARCAR` ou `NAO_ATENDEU`, que soma 10 pontos ao risco) |
+| `POST` | `/api/consultas/{id}/motivo-de-ausencia` | Registra o motivo de uma falta ou cancelamento (`{"motivo"}`: `ESQUECI`, `TRANSPORTE`, `TRABALHO`, `SAUDE`, `NAO_PRECISA`, `OUTRO`) pelo portal ou pela equipe |
 
 ### Erros
 
@@ -542,6 +545,15 @@ A fila não é um sistema à parte: ela nasce dos encaminhamentos que já existe
 - **Automação desligada**: com `FILA_AUTOMACAO_HABILITADA=false` nada é enviado sozinho. O painel `/filas` ainda atualiza a fila, registra vagas e expira ofertas vencidas (só no banco) toda vez que é aberto; ofertas novas só saem pelo botão "Processar agora".
 - **Telas**: `/portal/fila` (posição por encaminhamento e a oferta com contagem regressiva) e `/filas` (indicadores, fila paginada, vagas, ofertas, consultas sem confirmação, movimentações e intervenções auditadas). O especialista vê só a própria especialidade.
 
+### Prevenção de faltas
+
+- **Risco de falta** (`RiscoDeFalta`): cada consulta dos próximos 7 dias recebe de 0 a 100 pontos. Cada falta nos últimos 12 meses soma 25 (até 2), WhatsApp não entregue soma 25, pedido de confirmação sem resposta soma 20, consulta marcada há mais de 30 dias soma 15, 2 ou mais cancelamentos em 90 dias somam 10 e primeira consulta soma 5. Quem compareceu 3 vezes ou mais sem faltar perde 10, e quem confirmou presença perde 40. Alto a partir de 50, médio a partir de 25.
+- **Motivo da ausência**: ao registrar uma falta, a Liva manda pelo WhatsApp uma pergunta com 6 opções e um link para remarcar. Depois de um cancelamento pelo WhatsApp (opção 2), pergunta o motivo também. O paciente responde pelo número ou por escrito (“sem dinheiro pro ônibus” vira Transporte). Texto não reconhecido reenvia as opções, no máximo a cada 5 minutos, e “MENU” volta ao assistente. No portal, o motivo é opcional ao cancelar.
+- **Como chegar e agenda do celular**: a confirmação do agendamento e o lembrete da véspera trazem um link do Google Maps com o endereço da unidade. A confirmação e o cartão da consulta no portal também trazem um link para salvar a consulta na agenda do Google.
+- **Ligação de prevenção**: na lista “Ligar primeiro”, a equipe registra se a pessoa confirmou, vai remarcar ou não atendeu. Confirmar pela ligação confirma a presença; não atender soma 10 pontos ao risco.
+- **Impacto**: o painel estima quantas consultas deixaram de ficar vazias nas últimas 4 semanas, somando as faltas a menos (comparadas ao ritmo do início do período) às vagas reaproveitadas pela fila.
+- A tela **Prevenção de faltas** (`/faltas`, recepção e administração) mostra a lista “Ligar primeiro”, a evolução semanal, os motivos com uma ação sugerida e as faltas por especialidade. O seed `R__faltas_demo.sql` cria 12 semanas de histórico para a demonstração.
+
 ### Telefones
 
 `Telefone.de(...)` aceita `(11) 98765-4321`, `11987654321` ou `5511987654321` e normaliza para `+5511987654321`. O WhatsApp às vezes identifica números brasileiros **sem o 9º dígito** (ex.: `555193953661@s.whatsapp.net`); por isso a comparação usa `chaveComparacao()` (DDD + 8 últimos dígitos). O webhook também entende remetentes no formato `@lid`, usando `remoteJidAlt`.
@@ -629,6 +641,18 @@ Demonstração (~5 minutos):
 | 5 | Repita o passo 1 com o mesmo CPF e outra data, e responda **3** | `pacienteNovo: false`; status `REAGENDADO` aparece para a equipe com `status=REAGENDADO` |
 | 6 | `POST /api/disparos/executar` | A rotina diária: lembretes pendentes saem uma única vez (rode duas vezes: a segunda envia 0) |
 | 7 | Chamada sem `X-API-Key` | `401` no formato padrão de erro |
+
+Prevenção de faltas pela tela da equipe (~3 minutos, entrando como administração):
+
+| # | Ação | O que mostrar |
+|---|---|---|
+| 1 | Abra **Prevenção de faltas** | O destaque de consultas que deixaram de ficar vazias, a queda da taxa de faltas e as vagas reaproveitadas |
+| 2 | Em **Ligar primeiro**, aponte a primeira pessoa | A nota de risco e os motivos: faltas anteriores, pedido sem resposta, WhatsApp não entregue |
+| 3 | Toque em **Confirmou** | A pessoa passa para "Confirmado" e cai para o fim da lista |
+| 4 | Na seguinte, toque em **Não atendeu** | A nota sobe 10 pontos e aparece "Não atendeu a ligação" |
+| 5 | Mostre **Por que as pessoas faltam** | Transporte e trabalho na frente, cada um com a ação sugerida para a unidade |
+| 6 | Registre uma falta na agenda do especialista com o seu número | No celular chega "Sentimos sua falta", com o link para remarcar; responda **2** e o motivo Transporte entra no painel |
+| 7 | Mostre a confirmação de um agendamento no celular | Os links "Como chegar" e "Salvar na agenda do celular" |
 
 Se a internet ou o WhatsApp falharem no palco, use `WHATSAPP_PROVEDOR=console` e `POST /api/teste/atendimentos/respostas` para simular as respostas: o fluxo e os status são os mesmos, e as mensagens aparecem no log com `[WHATSAPP FAKE]`.
 

@@ -1,6 +1,16 @@
 import type { Papel } from "./sessao";
 
-const EQUIPE_ADMINISTRATIVA = ["/ajuda", "/recepcao", "/filas", "/agendamentos", "/agendar", "/calendario", "/conversas", "/avisos"];
+const EQUIPE_ADMINISTRATIVA = [
+  "/ajuda",
+  "/recepcao",
+  "/filas",
+  "/faltas",
+  "/agendamentos",
+  "/agendar",
+  "/calendario",
+  "/conversas",
+  "/avisos",
+];
 
 const AREAS: Record<Papel, { inicio: string; prefixos: string[] }> = {
   ADMINISTRADOR: { inicio: "/", prefixos: EQUIPE_ADMINISTRATIVA },

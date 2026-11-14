@@ -357,7 +357,7 @@ export const AREAS: Area[] = [
     id: "comunicacao",
     rotulo: "Agenda e WhatsApp",
     Icone: MessageCircle,
-    descricao: "Agendamentos, lembretes, avisos de cancelamento e conversas.",
+    descricao: "Agendamentos, prevenção de faltas, lembretes, avisos e conversas.",
     topicos: [
       {
         id: "agendamentos",
@@ -371,6 +371,22 @@ export const AREAS: Area[] = [
           "Abra um agendamento para ver o histórico no WhatsApp e os lembretes.",
         ],
         link: { href: "/agendamentos", texto: "Abrir agendamentos" },
+      },
+      {
+        id: "prevencao-de-faltas",
+        Icone: ShieldCheck,
+        titulo: "Prevenir faltas",
+        resumo: "Quem tem mais chance de faltar, por que as pessoas faltam e como a taxa evolui.",
+        passos: [
+          "Abra “Prevenção de faltas” no menu.",
+          "Em “Ligar primeiro”, as consultas dos próximos 7 dias aparecem da maior para a menor chance de falta. Ligue para quem está em vermelho.",
+          "Depois de ligar, registre o resultado: “Confirmou” já confirma a presença, “Vai remarcar” lembra a equipe de remarcar e “Não atendeu” aumenta a chance de falta.",
+          "A chance considera faltas anteriores, pedido de confirmação sem resposta, WhatsApp não entregue e consulta marcada há muito tempo. Quem confirmou cai para o fim da lista.",
+          "Depois de uma falta, a Liva pergunta o motivo pelo WhatsApp e manda um link para remarcar. O mesmo acontece quando o paciente cancela.",
+          "Em “Por que as pessoas faltam”, cada motivo traz uma ação sugerida para a unidade.",
+        ],
+        dica: "A confirmação do agendamento leva os links “Como chegar” e “Salvar na agenda do celular”. O lembrete da véspera também leva “Como chegar”.",
+        link: { href: "/faltas", texto: "Abrir prevenção de faltas" },
       },
       {
         id: "lembretes",

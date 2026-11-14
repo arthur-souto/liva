@@ -50,3 +50,23 @@ export function paraAgendar(historico: Historico): ResumoDoEncaminhamento[] {
 export function linkDeRemarcacao(item: ConsultaDoPaciente): string {
   return `/portal/agendar/${item.consulta.encaminhamentoId}?remarcar=${item.consulta.id}&versao=${item.consulta.versao}`;
 }
+
+function horarioDaAgenda(dataHora: string): string {
+  return dataHora.slice(0, 19).replace(/[-:]/g, "");
+}
+
+export function linkParaAgenda(item: ConsultaDoPaciente, titulo: string): string {
+  const { consulta } = item;
+  const parametros = new URLSearchParams({
+    action: "TEMPLATE",
+    text: `${titulo} na ${consulta.unidade}`,
+    dates: `${horarioDaAgenda(consulta.inicio)}/${horarioDaAgenda(consulta.fim)}`,
+    location: `${consulta.endereco}, ${consulta.unidade}`,
+    details: "Leve seu cartão do SUS e um documento com foto.",
+  });
+  return `https://calendar.google.com/calendar/render?${parametros}`;
+}
+
+export function linkComoChegar(item: ConsultaDoPaciente): string {
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${item.consulta.endereco}, ${item.consulta.unidade}`)}`;
+}

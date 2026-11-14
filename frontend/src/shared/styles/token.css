@@ -65,6 +65,11 @@
   --ilustra-cabelo-grisalho: var(--cor-cinza-300);
   --ilustra-mensagem: #dcf8c6;
 
+  --grafico-compareceu: #0f8a5f;
+  --grafico-faltou: var(--cor-vermelho-700);
+  --grafico-cancelou: var(--cor-roxo-500);
+  --grafico-grade: var(--cor-cinza-200);
+
   --fonte-base: var(--fonte-inter), system-ui, -apple-system, "Segoe UI", sans-serif;
   --fonte-marca: var(--fonte-nunito), var(--fonte-base);
 

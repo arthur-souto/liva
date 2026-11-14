@@ -15,6 +15,8 @@ import sus.liva.application.usecase.LembretesParaPessoasDeConfianca;
 import sus.liva.application.usecase.LimiteDeRemarcacoes;
 import sus.liva.application.usecase.LinksDeAcesso;
 import sus.liva.application.usecase.NotificacaoAoPaciente;
+import sus.liva.application.usecase.PerguntaDeMotivo;
+import sus.liva.application.usecase.PrevencaoDeFaltasUseCaseImpl;
 import sus.liva.application.usecase.PessoaDeConfiancaUseCaseImpl;
 import sus.liva.application.port.in.AgendaDeConsultasUseCase;
 import sus.liva.application.port.in.AgendarAtendimentoUseCase;
@@ -30,10 +32,12 @@ import sus.liva.application.port.in.EncaminhamentoUseCase;
 import sus.liva.application.port.in.EnviarMensagemUseCase;
 import sus.liva.application.port.in.HistoricoDoPacienteUseCase;
 import sus.liva.application.port.in.ListarAgendamentosUseCase;
+import sus.liva.application.port.in.PrevencaoDeFaltasUseCase;
 import sus.liva.application.port.in.ProcessarRespostaUseCase;
 import sus.liva.application.port.in.TriagemUseCase;
 import sus.liva.application.port.out.AgendamentoRepositoryPort;
 import sus.liva.application.port.out.AuditoriaPort;
+import sus.liva.application.port.out.AusenciaRepositoryPort;
 import sus.liva.application.port.out.CifradorPort;
 import sus.liva.application.port.out.CodigoDoPortalPort;
 import sus.liva.application.port.out.ContaDeAcessoPort;
@@ -240,9 +244,23 @@ public class UseCaseConfig {
                                                              TransacaoPort transacao,
                                                              Clock clock,
                                                              AssistenteWhatsApp assistente,
-                                                             RespostaDeOfertaPeloWhatsApp ofertas) {
+                                                             RespostaDeOfertaPeloWhatsApp ofertas,
+                                                             PerguntaDeMotivo motivos) {
         return new ProcessarRespostaUseCaseImpl(registros, recebidas, agendamentos, encaminhamentos, pacientes, enviador,
-                modelos, transacao, clock, assistente, ofertas);
+                modelos, transacao, clock, assistente, ofertas, motivos);
+    }
+
+    @Bean
+    public PerguntaDeMotivo perguntaDeMotivo(AusenciaRepositoryPort ausencias, PacienteRepositoryPort pacientes,
+                                             NotificacaoAoPaciente notificacao, ModeloMensagens modelos, LinksDeAcesso links,
+                                             RegistroMensagemPort registros, Clock clock) {
+        return new PerguntaDeMotivo(ausencias, pacientes, notificacao, modelos, links, registros, clock);
+    }
+
+    @Bean
+    public PrevencaoDeFaltasUseCase prevencaoDeFaltasUseCase(AusenciaRepositoryPort ausencias, AgendamentoRepositoryPort agendamentos,
+                                                             FilaDeEsperaUseCase filaDeEspera, AuditoriaPort auditoria, Clock clock) {
+        return new PrevencaoDeFaltasUseCaseImpl(ausencias, agendamentos, filaDeEspera, auditoria, clock);
     }
 
     @Bean
@@ -289,9 +307,10 @@ public class UseCaseConfig {
                                                                            EvolucaoClinicaPort evolucoes,
                                                                            PacienteRepositoryPort pacientes,
                                                                            TransacaoPort transacao,
-                                                                           AuditoriaPort auditoria, Clock clock) {
+                                                                           AuditoriaPort auditoria, Clock clock,
+                                                                           PerguntaDeMotivo motivos) {
         return new AtendimentoEspecializadoUseCaseImpl(agendamentos, encaminhamentos, evolucoes, pacientes, transacao,
-                auditoria, clock);
+                auditoria, clock, motivos);
     }
 
     @Bean

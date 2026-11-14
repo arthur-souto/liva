@@ -3,9 +3,12 @@ package sus.liva.application.usecase;
 import sus.liva.domain.model.agendamento.Agendamento;
 import sus.liva.domain.model.agendamento.RespostaPaciente;
 import sus.liva.domain.model.agendamento.TipoLembrete;
+import sus.liva.domain.model.ausencia.MotivoDeAusencia;
 import sus.liva.domain.model.fila.AcaoSemResposta;
 import sus.liva.domain.model.paciente.Paciente;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -16,6 +19,10 @@ public class ModeloMensagens {
     private static final Locale PT_BR = Locale.forLanguageTag("pt-BR");
     private static final DateTimeFormatter DATA = DateTimeFormatter.ofPattern("dd/MM (EEEE)", PT_BR);
     private static final DateTimeFormatter HORA = DateTimeFormatter.ofPattern("HH:mm");
+    private static final String MAPA = "https://www.google.com/maps/search/?api=1&query=";
+    private static final String AGENDA = "https://calendar.google.com/calendar/render?action=TEMPLATE";
+    private static final DateTimeFormatter AGENDA_HORARIO = DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss");
+    private static final int DURACAO_PADRAO = 30;
 
     private final Duration prazoDeConfirmacao;
     private final AcaoSemResposta semResposta;
@@ -36,9 +43,11 @@ public class ModeloMensagens {
             case CONFIRMACAO_AGENDAMENTO -> """
                 Olá, %s! Seu atendimento na %s foi agendado para %s, às %s.
                 Endereço: %s
+                Como chegar: %s
+                Salvar na agenda do celular: %s
                 Leve seu cartão do SUS e um documento com foto.
                 Vamos te lembrar alguns dias antes.""".formatted(
-                    p.nomeCompleto(), a.getUnidade(), data, hora, a.getEndereco());
+                    p.nomeCompleto(), a.getUnidade(), data, hora, a.getEndereco(), comoChegar(a), salvarNaAgenda(a));
             case PEDIDO_CONFIRMACAO -> """
                 Olá, %s! Você tem atendimento na %s em %s, às %s.
                 Você consegue ir?
@@ -48,8 +57,8 @@ public class ModeloMensagens {
                 Responda com o número ou por escrito até %s.""".formatted(
                     p.nomeCompleto(), a.getUnidade(), data, hora, quando(a.getDataHora().minus(prazoDeConfirmacao)));
             case LEMBRETE_VESPERA -> {
-                String t = "Lembrete: amanhã, %s, às %s, você tem atendimento na %s.\nEndereço: %s"
-                        .formatted(data, hora, a.getUnidade(), a.getEndereco());
+                String t = "Lembrete: amanhã, %s, às %s, você tem atendimento na %s.\nEndereço: %s\nComo chegar: %s"
+                        .formatted(data, hora, a.getUnidade(), a.getEndereco(), comoChegar(a));
                 if (a.getPreparo() != null && !a.getPreparo().isBlank()) t += "\nPreparo: " + a.getPreparo();
                 yield t + "\nSe não puder ir, responda 2 para liberar a vaga para outra pessoa.";
             }
@@ -264,6 +273,67 @@ public class ModeloMensagens {
             Seu encaminhamento continua válido e você segue na fila, sem perder a sua posição.
             Para marcar de novo, envie MENU ou procure a recepção da unidade.""".formatted(
                 primeiroNome(p), quando(a), a.getUnidade());
+    }
+
+    public String comoChegar(Agendamento a) {
+        return MAPA + codificar(a.getEndereco() + ", " + a.getUnidade());
+    }
+
+    public String salvarNaAgenda(Agendamento a) {
+        LocalDateTime fim = a.getDataHora().plusMinutes(a.getDuracaoMinutos() > 0 ? a.getDuracaoMinutos() : DURACAO_PADRAO);
+        return AGENDA
+                + "&text=" + codificar("Consulta na " + a.getUnidade())
+                + "&dates=" + a.getDataHora().format(AGENDA_HORARIO) + "/" + fim.format(AGENDA_HORARIO)
+                + "&location=" + codificar(a.getEndereco() + ", " + a.getUnidade())
+                + "&details=" + codificar("Leve seu cartão do SUS e um documento com foto.");
+    }
+
+    private static String codificar(String texto) {
+        return URLEncoder.encode(texto, StandardCharsets.UTF_8);
+    }
+
+    public String perguntaAposFalta(Paciente p, Agendamento a, String link, long minutos) {
+        String remarcar = link == null ? "Para marcar de novo, envie MENU ou procure a recepção da unidade."
+                : "Para marcar um novo horário, toque no link (vale por %d minutos): %s. Depois disso, envie MENU.".formatted(minutos, link);
+        return """
+            Olá, %s. Sentimos sua falta no atendimento de %s na %s.
+            %s
+            Pode contar o que aconteceu? Isso ajuda a unidade a melhorar.
+            %s
+            Responda com o número.""".formatted(primeiroNome(p), quando(a), a.getUnidade(), remarcar, opcoesDeMotivo());
+    }
+
+    public String perguntaAposCancelamento(Paciente p) {
+        return """
+            %s, para a unidade se organizar melhor, pode contar por que não vai conseguir ir?
+            %s
+            Responda com o número. Se preferir não responder, tudo bem.""".formatted(primeiroNome(p), opcoesDeMotivo());
+    }
+
+    public String naoEntendiMotivo() {
+        return """
+            Não entendi. Responda só com o número do motivo:
+            %s
+            Se quiser outra coisa, envie MENU.""".formatted(opcoesDeMotivo());
+    }
+
+    public String motivoRegistrado(Paciente p, MotivoDeAusencia motivo) {
+        String complemento = switch (motivo) {
+            case ESQUECI -> "Vamos reforçar os lembretes das suas próximas consultas.";
+            case TRANSPORTE -> "Se precisar, a recepção pode ajudar a encontrar um horário ou unidade mais fácil para você.";
+            case NAO_PRECISA -> "Se voltar a precisar, procure a unidade ou envie MENU.";
+            default -> "Quando quiser marcar de novo, envie MENU.";
+        };
+        return "Obrigado, %s. Anotamos: %s. %s".formatted(primeiroNome(p), motivo.getRotulo().toLowerCase(PT_BR), complemento);
+    }
+
+    private static String opcoesDeMotivo() {
+        StringBuilder t = new StringBuilder();
+        for (MotivoDeAusencia m : MotivoDeAusencia.values()) {
+            if (!t.isEmpty()) t.append('\n');
+            t.append(m.getNumero()).append(" - ").append(m.getRotulo());
+        }
+        return t.toString();
     }
 
     private static String primeiroNome(String nome) {

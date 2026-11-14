@@ -22,6 +22,7 @@ import sus.liva.domain.model.paciente.Paciente;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -40,6 +41,7 @@ public class ProcessarRespostaUseCaseImpl implements ProcessarRespostaUseCase {
     private final Clock clock;
     private final AssistenteWhatsApp assistente;
     private final RespostaDeOfertaPeloWhatsApp ofertas;
+    private final PerguntaDeMotivo motivos;
 
     public ProcessarRespostaUseCaseImpl(RegistroMensagemPort registros, MensagemRecebidaPort recebidas,
                                         AgendamentoRepositoryPort agendamentos, EncaminhamentoRepositoryPort encaminhamentos,
@@ -61,6 +63,15 @@ public class ProcessarRespostaUseCaseImpl implements ProcessarRespostaUseCase {
                                         PacienteRepositoryPort pacientes, EnviadorMensagemPort enviador,
                                         ModeloMensagens modelos, TransacaoPort transacao, Clock clock,
                                         AssistenteWhatsApp assistente, RespostaDeOfertaPeloWhatsApp ofertas) {
+        this(registros, recebidas, agendamentos, encaminhamentos, pacientes, enviador, modelos, transacao, clock, assistente, ofertas, null);
+    }
+
+    public ProcessarRespostaUseCaseImpl(RegistroMensagemPort registros, MensagemRecebidaPort recebidas,
+                                        AgendamentoRepositoryPort agendamentos, EncaminhamentoRepositoryPort encaminhamentos,
+                                        PacienteRepositoryPort pacientes, EnviadorMensagemPort enviador,
+                                        ModeloMensagens modelos, TransacaoPort transacao, Clock clock,
+                                        AssistenteWhatsApp assistente, RespostaDeOfertaPeloWhatsApp ofertas,
+                                        PerguntaDeMotivo motivos) {
         this.registros = registros;
         this.recebidas = recebidas;
         this.agendamentos = agendamentos;
@@ -72,6 +83,7 @@ public class ProcessarRespostaUseCaseImpl implements ProcessarRespostaUseCase {
         this.clock = clock;
         this.assistente = assistente;
         this.ofertas = ofertas;
+        this.motivos = motivos;
     }
 
     private record Aplicacao(ResultadoResposta ignorada, Agendamento agendamento, Telefone destino) {
@@ -89,12 +101,20 @@ public class ProcessarRespostaUseCaseImpl implements ProcessarRespostaUseCase {
         Optional<RespostaPaciente> resposta = RespostaPaciente.interpretar(texto);
         Optional<ResultadoResposta> daOferta = ofertas == null ? Optional.empty() : ofertas.responder(remetente, texto);
         ResultadoResposta resultado;
+        if (daOferta.isEmpty()) daOferta = motivoDaAusencia(remetente, texto);
         if (daOferta.isPresent()) resultado = daOferta.get();
         else if (paraOAssistente(remetente, texto, resposta)) resultado = assistente.atender(remetente, texto);
         else resultado = resposta.isEmpty() ? orientar(remetente) : responder(remetente, resposta.get());
         recebidas.salvarRecebida(new MensagemRecebida(vinculo(remetente, resultado), remetente,
                 Objects.requireNonNullElse(texto, ""), idMensagem, resposta.orElse(null), recebidaEm));
         return resultado;
+    }
+
+    private Optional<ResultadoResposta> motivoDaAusencia(Telefone remetente, String texto) {
+        if (motivos == null || pedidoPendente(remetente).isPresent()) return Optional.empty();
+        if (assistente != null && assistente.conversaAtiva(remetente)) return Optional.empty();
+        List<Paciente> doTelefone = assistente != null ? assistente.pacientesDoTelefone(remetente) : pacientes.buscarPorTelefone(remetente);
+        return motivos.responder(remetente, texto, doTelefone, assistente != null && assistente.pedidoDeMenu(texto));
     }
 
     private boolean paraOAssistente(Telefone remetente, String texto, Optional<RespostaPaciente> resposta) {
@@ -131,6 +151,7 @@ public class ProcessarRespostaUseCaseImpl implements ProcessarRespostaUseCase {
         boolean retornoEnviado = pacientes.buscarPaciente(a.getPacienteId())
                 .map(p -> enviar(a.getId(), aplicacao.destino(), retorno(resposta, p, a)))
                 .orElse(false);
+        if (motivos != null && resposta == RespostaPaciente.CANCELAR) motivos.aposCancelamento(a, aplicacao.destino());
         return ResultadoResposta.aplicada(a.getId(), a.getStatus(), retornoEnviado);
     }
 

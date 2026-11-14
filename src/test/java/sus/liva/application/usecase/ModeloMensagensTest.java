@@ -30,6 +30,16 @@ class ModeloMensagensTest {
     }
 
     @Test
+    void confirmacaoTrazComoChegarELinkParaSalvarNaAgendaDoCelular() {
+        String texto = modelos.montar(TipoLembrete.CONFIRMACAO_AGENDAMENTO, paciente, agendamento);
+
+        assertThat(texto).contains("Como chegar: https://www.google.com/maps/search/?api=1&query=Rua+A%2C+UBS+Centro")
+                .contains("Salvar na agenda do celular: https://calendar.google.com/calendar/render?action=TEMPLATE")
+                .contains("&dates=20261116T093000/20261116T100000")
+                .contains("&text=Consulta+na+UBS+Centro");
+    }
+
+    @Test
     void orientacaoParaRespostaNaoReconhecidaListaAsOpcoes() {
         String texto = modelos.naoEntendi(paciente, agendamento);
 

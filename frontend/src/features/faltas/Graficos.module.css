@@ -1,0 +1,199 @@
+.figura {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-3);
+  margin: 0;
+}
+
+.legenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espaco-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--cor-texto-suave);
+  font-size: var(--texto-xs);
+}
+
+.legenda li {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espaco-2);
+}
+
+.amostra {
+  display: inline-block;
+  flex-shrink: 0;
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: 2px;
+}
+
+.area {
+  position: relative;
+}
+
+.svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.grade {
+  stroke: var(--grafico-grade);
+  stroke-width: 1;
+}
+
+.eixoY,
+.eixoX {
+  fill: var(--cor-texto-suave);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.eixoY {
+  text-anchor: end;
+  dominant-baseline: middle;
+}
+
+.eixoX {
+  text-anchor: middle;
+}
+
+.coluna {
+  transform-box: fill-box;
+  transform-origin: bottom;
+  animation: crescer 520ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.alvo {
+  fill: transparent;
+  cursor: crosshair;
+}
+
+.alvo:focus-visible {
+  outline: none;
+  stroke: var(--cor-foco);
+  stroke-width: 2;
+}
+
+.realce {
+  fill: var(--cor-primaria);
+  opacity: 0.06;
+}
+
+.linhaTaxa {
+  fill: none;
+  stroke: var(--grafico-faltou);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: desenhar 1100ms ease-out forwards;
+}
+
+.areaTaxa {
+  animation: aparecer 900ms ease-out 300ms both;
+}
+
+.mira {
+  stroke: var(--cor-borda-forte);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+
+.ponto {
+  fill: var(--grafico-faltou);
+  stroke: var(--cor-superficie);
+  stroke-width: 2;
+}
+
+.dica {
+  position: absolute;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-1);
+  min-width: 11rem;
+  padding: var(--espaco-2) var(--espaco-3);
+  border-radius: var(--raio-lg);
+  background: var(--cor-roxo-950);
+  color: var(--cor-texto-invertido);
+  box-shadow: var(--sombra-elevada);
+  font-size: var(--texto-xs);
+  pointer-events: none;
+  transform: translateX(12px);
+}
+
+.dica[data-lado="esquerda"] {
+  transform: translateX(calc(-100% - 12px));
+}
+
+.dica strong {
+  font-size: var(--texto-sm);
+}
+
+.linhaDica {
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-2);
+}
+
+.linhaDica b {
+  margin-left: auto;
+  padding-left: var(--espaco-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.rodapeDica {
+  margin-top: var(--espaco-1);
+  padding-top: var(--espaco-1);
+  border-top: 1px solid rgb(255 255 255 / 0.2);
+  opacity: 0.85;
+}
+
+.somenteLeitor {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@keyframes crescer {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes desenhar {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes aparecer {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .coluna,
+  .linhaTaxa,
+  .areaTaxa {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+}

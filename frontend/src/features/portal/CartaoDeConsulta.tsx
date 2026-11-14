@@ -1,16 +1,20 @@
 "use client";
 
-import { CalendarClock, MapPin, Stethoscope, XCircle } from "lucide-react";
+import { CalendarClock, CalendarPlus, MapPin, Navigation, Stethoscope, XCircle } from "lucide-react";
 import { useState } from "react";
 import { cancelarConsulta } from "@/features/assistencial/api";
+import { registrarMotivo } from "@/features/faltas/api";
+import { MOTIVOS, ORDEM_DOS_MOTIVOS } from "@/features/faltas/rotulos";
+import type { MotivoDeAusencia } from "@/features/faltas/tipos";
 import { NATUREZAS, STATUS_DA_CONSULTA, nomeDaEspecialidade } from "@/features/assistencial/rotulos";
 import { useAcao } from "@/shared/hooks/useAcao";
 import { classes } from "@/shared/lib/classes";
 import { dataDe, diaDoMes, formatarDataCurta, horaDe, nomeDiaCurto } from "@/shared/lib/datas";
 import { Alerta } from "@/shared/ui/Alerta";
 import { Botao, BotaoLink } from "@/shared/ui/Botao";
+import { Chip } from "@/shared/ui/Chip";
 import { Etiqueta } from "@/shared/ui/Etiqueta";
-import { type ConsultaDoPaciente, linkDeRemarcacao, podeCancelar, podeRemarcar } from "./consultas";
+import { type ConsultaDoPaciente, linkComoChegar, linkDeRemarcacao, linkParaAgenda, podeCancelar, podeRemarcar } from "./consultas";
 import estilos from "./CartaoDeConsulta.module.css";
 
 type Props = {
@@ -23,12 +27,18 @@ type Props = {
 export function CartaoDeConsulta({ item, nomeProfissional, destaque = false, aoAlterar }: Props) {
   const { consulta, encaminhamento } = item;
   const [confirmando, setConfirmando] = useState(false);
+  const [motivo, setMotivo] = useState<MotivoDeAusencia | null>(null);
   const acao = useAcao();
   const dia = dataDe(consulta.inicio);
   const titulo = encaminhamento ? nomeDaEspecialidade(encaminhamento.especialidade) : NATUREZAS[consulta.natureza];
 
   async function cancelar() {
-    if (await acao.executar("cancelar", () => cancelarConsulta(consulta.id, consulta.versao))) {
+    const cancelada = await acao.executar("cancelar", async () => {
+      const resultado = await cancelarConsulta(consulta.id, consulta.versao);
+      if (motivo) await registrarMotivo(consulta.id, motivo).catch(() => undefined);
+      return resultado;
+    });
+    if (cancelada) {
       setConfirmando(false);
       aoAlterar();
     }
@@ -62,6 +72,18 @@ export function CartaoDeConsulta({ item, nomeProfissional, destaque = false, aoA
           <MapPin size={16} aria-hidden="true" />
           {consulta.unidade} · {consulta.endereco}
         </p>
+        {podeCancelar(item) && (
+          <p className={estilos.atalhos}>
+            <a href={linkComoChegar(item)} target="_blank" rel="noopener noreferrer">
+              <Navigation size={14} aria-hidden="true" />
+              Como chegar
+            </a>
+            <a href={linkParaAgenda(item, titulo)} target="_blank" rel="noopener noreferrer">
+              <CalendarPlus size={14} aria-hidden="true" />
+              Salvar na agenda do celular
+            </a>
+          </p>
+        )}
 
         {acao.falha && <Alerta tom="perigo">{acao.falha}</Alerta>}
 
@@ -83,8 +105,25 @@ export function CartaoDeConsulta({ item, nomeProfissional, destaque = false, aoA
         {confirmando && (
           <div className={estilos.confirmar}>
             <p>Cancelar esta consulta? O horário fica livre para outro paciente.</p>
+            <fieldset className={estilos.motivos}>
+              <legend>Se quiser, conte o motivo. Isso ajuda a unidade a melhorar.</legend>
+              <div className={estilos.opcoes}>
+                {ORDEM_DOS_MOTIVOS.map((m) => (
+                  <Chip key={m} selecionado={motivo === m} onClick={() => setMotivo(motivo === m ? null : m)}>
+                    {MOTIVOS[m].rotulo}
+                  </Chip>
+                ))}
+              </div>
+            </fieldset>
             <div className={estilos.acoes}>
-              <Botao variante="contorno" tamanho="pequeno" onClick={() => setConfirmando(false)}>
+              <Botao
+                variante="contorno"
+                tamanho="pequeno"
+                onClick={() => {
+                  setConfirmando(false);
+                  setMotivo(null);
+                }}
+              >
                 Manter consulta
               </Botao>
               <Botao variante="perigo" tamanho="pequeno" carregando={acao.executando === "cancelar"} onClick={cancelar}>

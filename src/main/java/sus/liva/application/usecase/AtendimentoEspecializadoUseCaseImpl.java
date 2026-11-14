@@ -37,10 +37,17 @@ public class AtendimentoEspecializadoUseCaseImpl implements AtendimentoEspeciali
     private final TransacaoPort transacao;
     private final Auditor auditor;
     private final Clock clock;
+    private final PerguntaDeMotivo motivos;
 
     public AtendimentoEspecializadoUseCaseImpl(AgendamentoRepositoryPort agendamentos, EncaminhamentoRepositoryPort encaminhamentos,
                                                EvolucaoClinicaPort evolucoes, PacienteRepositoryPort pacientes,
                                                TransacaoPort transacao, AuditoriaPort auditoria, Clock clock) {
+        this(agendamentos, encaminhamentos, evolucoes, pacientes, transacao, auditoria, clock, null);
+    }
+
+    public AtendimentoEspecializadoUseCaseImpl(AgendamentoRepositoryPort agendamentos, EncaminhamentoRepositoryPort encaminhamentos,
+                                               EvolucaoClinicaPort evolucoes, PacienteRepositoryPort pacientes,
+                                               TransacaoPort transacao, AuditoriaPort auditoria, Clock clock, PerguntaDeMotivo motivos) {
         this.agendamentos = agendamentos;
         this.encaminhamentos = encaminhamentos;
         this.evolucoes = evolucoes;
@@ -48,6 +55,7 @@ public class AtendimentoEspecializadoUseCaseImpl implements AtendimentoEspeciali
         this.transacao = transacao;
         this.auditor = new Auditor(auditoria, clock);
         this.clock = clock;
+        this.motivos = motivos;
     }
 
     @Override
@@ -102,12 +110,14 @@ public class AtendimentoEspecializadoUseCaseImpl implements AtendimentoEspeciali
 
     @Override
     public Agendamento registrarFalta(Ator ator, UUID consultaId, long versao) {
-        return alterar(ator, consultaId, versao, "REGISTRAR_FALTA", (c, e) -> {
+        Agendamento faltou = alterar(ator, consultaId, versao, "REGISTRAR_FALTA", (c, e) -> {
             if (LocalDateTime.now(clock).isBefore(c.getDataHora()))
                 throw new IllegalStateException("A falta só pode ser registrada após o horário da consulta");
             c.registrarFalta();
             e.consultaDesmarcada();
         });
+        if (motivos != null) motivos.aposFalta(faltou);
+        return faltou;
     }
 
     private Agendamento alterar(Ator ator, UUID consultaId, long versao, String acao, BiConsumer<Agendamento, Encaminhamento> alteracao) {

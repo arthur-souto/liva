@@ -79,6 +79,23 @@
 }
 
 .quando svg,
+.atalhos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espaco-2) var(--espaco-4);
+  margin: 0;
+  font-size: var(--texto-sm);
+}
+
+.atalhos a {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espaco-1);
+  min-height: 2rem;
+  color: var(--cor-link);
+  font-weight: var(--peso-semi);
+}
+
 .linha svg {
   flex-shrink: 0;
   color: var(--cor-secundaria);
@@ -107,4 +124,26 @@
   border-radius: var(--raio-md);
   background: var(--cor-perigo-fundo);
   font-size: var(--texto-sm);
+}
+
+.motivos {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-2);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.motivos legend {
+  margin-bottom: var(--espaco-2);
+  padding: 0;
+  color: var(--cor-texto-suave);
+  font-size: var(--texto-xs);
+}
+
+.opcoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espaco-2);
 }
